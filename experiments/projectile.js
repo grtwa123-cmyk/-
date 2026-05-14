@@ -24,6 +24,9 @@
   const launchBtn = document.getElementById('launch-btn');
   const resetBtn = document.getElementById('reset-btn');
 
+  const i18nText = (key, fallback) =>
+    (window.i18n && window.i18n.t(key)) || fallback;
+
   const toRad = (deg) => (deg * Math.PI) / 180;
   const fmt = (n, digits = 2) => Number.isFinite(n) ? n.toFixed(digits) : '0.00';
 
@@ -215,7 +218,7 @@
       out.speed.textContent = fmt(Math.hypot(p.v0 * d.cosT, p.v0 * d.sinT - p.g * finalT));
       running = false;
       animId = null;
-      launchBtn.textContent = 'Launch';
+      launchBtn.textContent = i18nText('launchBtn', 'Launch');
       return;
     }
 
@@ -245,7 +248,7 @@
     trail = [{ x: 0, y: 0 }];
     startTs = 0;
     running = true;
-    launchBtn.textContent = 'Launching…';
+    launchBtn.textContent = i18nText('launchingBtn', 'Launching…');
     animId = requestAnimationFrame(step);
   }
 
@@ -254,7 +257,7 @@
     animId = null;
     running = false;
     trail = [];
-    launchBtn.textContent = 'Launch';
+    launchBtn.textContent = i18nText('launchBtn', 'Launch');
     renderStatic();
   }
 
@@ -278,6 +281,12 @@
     canvas.height = Math.max(Math.round(rect.height), 240);
     renderStatic();
   }
+
+  document.addEventListener('langchange', () => {
+    launchBtn.textContent = running
+      ? i18nText('launchingBtn', 'Launching…')
+      : i18nText('launchBtn', 'Launch');
+  });
 
   window.addEventListener('resize', resizeCanvas);
   wireInputs();

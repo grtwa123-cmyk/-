@@ -3,55 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Projectile Motion · Science Experiments</title>
+  <title data-i18n="projectilePageTitle">Projectile Motion · Science Experiments</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
   <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+    </div>
+
     <div class="crumbs">
-      <a href="../index.html">&larr; Back to hub</a>
-      <span style="color: var(--muted); font-size: 0.9rem;">Experiment 1 of 4</span>
+      <a href="../index.html" data-i18n="backToHub">&larr; Back to hub</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount">Experiment 1 of 4</span>
     </div>
 
     <header class="site-header">
-      <h1>Projectile Motion</h1>
-      <p>Adjust the launch parameters and click <strong>Launch</strong> to fire the projectile.</p>
+      <h1 data-i18n="projectileTitle">Projectile Motion</h1>
+      <p data-i18n="projectileIntro">Adjust the launch parameters and click Launch to fire the projectile.</p>
     </header>
 
     <main class="experiment">
       <section class="panel" aria-label="Controls">
-        <h2>Controls</h2>
+        <h2 data-i18n="controls">Controls</h2>
 
         <div class="control">
-          <label for="velocity">Initial velocity v<sub>0</sub></label>
+          <label for="velocity" data-i18n="velocityLabel">Initial velocity v₀</label>
           <span class="value"><span id="velocity-value">30</span> m/s</span>
           <input type="range" id="velocity" min="1" max="100" step="1" value="30" />
         </div>
 
         <div class="control">
-          <label for="angle">Launch angle &theta;</label>
+          <label for="angle" data-i18n="angleLabel">Launch angle θ</label>
           <span class="value"><span id="angle-value">45</span>&deg;</span>
           <input type="range" id="angle" min="0" max="90" step="1" value="45" />
         </div>
 
         <div class="control">
-          <label for="gravity">Gravity g</label>
+          <label for="gravity" data-i18n="gravityLabel">Gravity g</label>
           <span class="value"><span id="gravity-value">9.81</span> m/s&sup2;</span>
           <input type="range" id="gravity" min="1" max="25" step="0.01" value="9.81" />
         </div>
 
         <div class="buttons">
-          <button id="launch-btn" type="button">Launch</button>
-          <button id="reset-btn" type="button" class="secondary">Reset</button>
+          <button id="launch-btn" type="button" data-i18n="launchBtn">Launch</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
         </div>
 
         <details class="formulas">
-          <summary>Formulas</summary>
+          <summary data-i18n="formulas">Formulas</summary>
           <ul>
-            <li>Range: <code>R = v&sub0;&sup2; &middot; sin(2&theta;) / g</code></li>
-            <li>Max height: <code>H = (v&sub0; &middot; sin&theta;)&sup2; / (2g)</code></li>
-            <li>Time of flight: <code>T = 2 &middot; v&sub0; &middot; sin&theta; / g</code></li>
-            <li>Position: <code>x(t) = v&sub0;cos&theta; &middot; t</code>, <code>y(t) = v&sub0;sin&theta; &middot; t &minus; &frac12;gt&sup2;</code></li>
+            <li><span data-i18n="formulaRange">Range</span>: <code>R = v₀² · sin(2θ) / g</code></li>
+            <li><span data-i18n="formulaMaxHeight">Max height</span>: <code>H = (v₀ · sinθ)² / (2g)</code></li>
+            <li><span data-i18n="formulaTime">Time of flight</span>: <code>T = 2 · v₀ · sinθ / g</code></li>
+            <li><span data-i18n="formulaPosition">Position</span>: <code>x(t) = v₀cosθ · t</code>, <code>y(t) = v₀sinθ · t − ½gt²</code></li>
           </ul>
         </details>
       </section>
@@ -61,31 +66,31 @@
 
         <div class="readouts">
           <div class="readout">
-            <div class="label">Range</div>
+            <div class="label" data-i18n="outRange">Range</div>
             <div class="num"><span id="out-range">0.00</span> m</div>
           </div>
           <div class="readout">
-            <div class="label">Max height</div>
+            <div class="label" data-i18n="outHeight">Max height</div>
             <div class="num"><span id="out-height">0.00</span> m</div>
           </div>
           <div class="readout">
-            <div class="label">Time of flight</div>
+            <div class="label" data-i18n="outTime">Time of flight</div>
             <div class="num"><span id="out-time">0.00</span> s</div>
           </div>
           <div class="readout">
-            <div class="label">Current t</div>
+            <div class="label" data-i18n="outT">Current t</div>
             <div class="num"><span id="out-t">0.00</span> s</div>
           </div>
           <div class="readout">
-            <div class="label">Current x</div>
+            <div class="label" data-i18n="outX">Current x</div>
             <div class="num"><span id="out-x">0.00</span> m</div>
           </div>
           <div class="readout">
-            <div class="label">Current y</div>
+            <div class="label" data-i18n="outY">Current y</div>
             <div class="num"><span id="out-y">0.00</span> m</div>
           </div>
           <div class="readout">
-            <div class="label">Speed</div>
+            <div class="label" data-i18n="outSpeed">Speed</div>
             <div class="num"><span id="out-speed">0.00</span> m/s</div>
           </div>
         </div>
@@ -93,6 +98,7 @@
     </main>
   </div>
 
+  <script src="../i18n.js"></script>
   <script src="projectile.js"></script>
 </body>
 </html>
