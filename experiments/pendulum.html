@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="pendulumPageTitle">Pendulum · Science Experiments</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../index.html" data-i18n="backToHub">&larr; Back to hub</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount2">Experiment 2 of 4</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="pendulumTitle">Pendulum</h1>
+      <p data-i18n="pendulumIntro">Adjust the length, gravity, initial angle, and damping. Press Start to set it swinging.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="length" data-i18n="lengthLabel">Length L</label>
+          <span class="value"><span id="length-value">1.50</span> m</span>
+          <input type="range" id="length" min="0.30" max="3.00" step="0.01" value="1.50" />
+        </div>
+
+        <div class="control">
+          <label for="gravity" data-i18n="gravityLabel">Gravity g</label>
+          <span class="value"><span id="gravity-value">9.81</span> m/s&sup2;</span>
+          <input type="range" id="gravity" min="1" max="25" step="0.01" value="9.81" />
+        </div>
+
+        <div class="control">
+          <label for="angle" data-i18n="initialAngleLabel">Initial angle θ₀</label>
+          <span class="value"><span id="angle-value">30</span>&deg;</span>
+          <input type="range" id="angle" min="-90" max="90" step="1" value="30" />
+        </div>
+
+        <div class="control">
+          <label for="damping" data-i18n="dampingLabel">Damping b</label>
+          <span class="value"><span id="damping-value">0.10</span></span>
+          <input type="range" id="damping" min="0" max="1" step="0.01" value="0.10" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="formulaPeriod">Period (small angle)</span>: <code>T = 2π · √(L / g)</code></li>
+            <li><span data-i18n="formulaEom">Equation of motion</span>: <code>θ̈ = −(g/L)·sin(θ) − b·θ̇</code></li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="400" aria-label="Pendulum swing"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="outPeriod">Period</div>
+            <div class="num"><span id="out-period">0.00</span> s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outAngle">Angle</div>
+            <div class="num"><span id="out-angle">0.00</span>&deg;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outAngVel">Angular velocity</div>
+            <div class="num"><span id="out-angvel">0.00</span>&deg;/s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outTime">Elapsed time</div>
+            <div class="num"><span id="out-time">0.00</span> s</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="pendulum.js"></script>
+</body>
+</html>
