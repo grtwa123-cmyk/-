@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="physicsHubTitle">Physics</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="subnav">
+      <a class="back-home" href="index.html" data-i18n="backHome">← Home</a>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="physicsHubTitle">Physics</h1>
+      <p data-i18n="physicsHubSubtitle">Hands-on simulations for motion, forces, and waves.</p>
+    </header>
+
+    <main class="card-grid">
+      <a class="card" href="experiments/projectile.html">
+        <h2 data-i18n="projectileTitle">Projectile Motion</h2>
+        <p data-i18n="projectileDesc">Launch a projectile with adjustable velocity, angle, and gravity.</p>
+        <span class="tag" data-i18n="tagOpen">Open</span>
+      </a>
+
+      <a class="card" href="experiments/pendulum.html">
+        <h2 data-i18n="pendulumTitle">Pendulum</h2>
+        <p data-i18n="pendulumDesc">Swing a pendulum with adjustable length, gravity, initial angle, and damping.</p>
+        <span class="tag" data-i18n="tagOpen">Open</span>
+      </a>
+
+      <div class="card coming-soon" aria-disabled="true">
+        <h2 data-i18n="orbitsTitle">Gravity &amp; Orbits</h2>
+        <p data-i18n="orbitsDesc">Drag a planet to set its initial velocity around a star. Coming soon.</p>
+        <span class="tag" data-i18n="tagSoon">Coming soon</span>
+      </div>
+
+      <div class="card coming-soon" aria-disabled="true">
+        <h2 data-i18n="waveTitle">Wave Interference</h2>
+        <p data-i18n="waveDesc">Two sources, adjustable frequency, visible interference pattern. Coming soon.</p>
+        <span class="tag" data-i18n="tagSoon">Coming soon</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="i18n.js"></script>
+</body>
+</html>
