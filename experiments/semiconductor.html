@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="semiPageTitle">Semiconductors · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount4">Physics · Semiconductors</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="semiTitle">Semiconductors &amp; Battery</h1>
+      <p data-i18n="semiIntro">Three semiconductors share one battery. Flip the polarity and watch electrons and holes redistribute.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="battery">Battery</h2>
+
+        <div class="control">
+          <label for="battery-toggle" data-i18n="batteryOnLabel">Battery on</label>
+          <span class="value">
+            <input type="checkbox" id="battery-toggle" checked />
+          </span>
+        </div>
+
+        <div class="control">
+          <label for="voltage" data-i18n="voltageLabel">Voltage</label>
+          <span class="value"><span id="voltage-value">1.00</span></span>
+          <input type="range" id="voltage" min="0" max="2" step="0.05" value="1.00" />
+        </div>
+
+        <div class="control">
+          <label for="temperature" data-i18n="temperatureLabel">Temperature</label>
+          <span class="value"><span id="temperature-value">0.50</span></span>
+          <input type="range" id="temperature" min="0" max="1.5" step="0.05" value="0.50" />
+        </div>
+
+        <div class="buttons">
+          <button id="reverse-btn" type="button" data-i18n="reversePolarityBtn">Reverse polarity</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="currentDirection">Conventional current</span><span class="property-value" id="prop-current">→</span></div>
+        </div>
+
+        <details class="formulas" open>
+          <summary data-i18n="legend">Legend</summary>
+          <ul class="legend-list">
+            <li><span class="legend-dot el-electron"></span> <span data-i18n="legendElectron">Electron (−)</span></li>
+            <li><span class="legend-dot el-hole"></span> <span data-i18n="legendHole">Hole (+)</span></li>
+            <li><span class="legend-dot el-si"></span> <span data-i18n="legendSi">Silicon atom</span></li>
+            <li><span class="legend-dot el-donor"></span> <span data-i18n="legendDonor">Donor (P, +5)</span></li>
+            <li><span class="legend-dot el-acceptor"></span> <span data-i18n="legendAcceptor">Acceptor (B, +3)</span></li>
+          </ul>
+        </details>
+
+        <details class="formulas">
+          <summary data-i18n="semiNotes">Notes</summary>
+          <ul>
+            <li><strong data-i18n="typeIntrinsic">Intrinsic</strong> — <span data-i18n="semiNoteIntrinsic">Equal numbers of electrons and holes from thermal pair creation.</span></li>
+            <li><strong data-i18n="typeNType">N-type</strong> — <span data-i18n="semiNoteNType">Donor atoms supply free electrons (majority carriers).</span></li>
+            <li><strong data-i18n="typePType">P-type</strong> — <span data-i18n="semiNotePType">Acceptor atoms create holes (majority carriers).</span></li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="620" aria-label="Semiconductor simulation"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="semiconductor.js"></script>
+</body>
+</html>

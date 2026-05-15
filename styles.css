@@ -206,6 +206,37 @@ body {
   font-size: 0.95rem;
 }
 
+.legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: 0 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.legend-dot.el-electron { background: #6ea8ff; }
+.legend-dot.el-hole { background: #ff6b8a; }
+.legend-dot.el-si { background: #6b748f; }
+.legend-dot.el-donor { background: #6effc6; }
+.legend-dot.el-acceptor { background: #ffb86b; }
+
 header.site-header {
   text-align: center;
   margin: 0.5rem 0 2.5rem;
