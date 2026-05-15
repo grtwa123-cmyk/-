@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="chemistryHubTitle">Chemistry</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="subnav">
+      <a class="back-home" href="index.html" data-i18n="backHome">← Home</a>
+      <nav class="hub-tabs" role="tablist" aria-label="Category">
+        <a href="physics.html" class="hub-tab" role="tab" data-i18n="categoryPhysics">Physics</a>
+        <a href="chemistry.html" class="hub-tab active" role="tab" aria-current="page" data-i18n="categoryChemistry">Chemistry</a>
+      </nav>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="chemistryHubTitle">Chemistry</h1>
+      <p data-i18n="chemistryHubSubtitle">Visualize structure and discover patterns in matter.</p>
+    </header>
+
+    <main class="card-grid">
+      <a class="card" href="experiments/molecule.html">
+        <h2 data-i18n="moleculeTitle">Molecule Viewer</h2>
+        <p data-i18n="moleculeDesc">Browse common molecules — atoms, bonds, geometry, and the patterns they reveal across matter.</p>
+        <span class="tag" data-i18n="tagOpen">Open</span>
+      </a>
+
+      <div class="card coming-soon" aria-disabled="true">
+        <h2 data-i18n="crystalTitle">Crystal Lattice</h2>
+        <p data-i18n="crystalDesc">Ionic and metallic lattices arranged in repeating units. Coming soon.</p>
+        <span class="tag" data-i18n="tagSoon">Coming soon</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="i18n.js"></script>
+</body>
+</html>

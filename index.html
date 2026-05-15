@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title data-i18n="pageTitle">Science Experiments</title>
+  <title data-i18n="pageTitle">Science Lab</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,73 +15,46 @@
     </div>
 
     <header class="site-header">
-      <h1 data-i18n="heroTitle">Science Experiments</h1>
-      <p data-i18n="heroSubtitle">Interactive simulations you can poke at in the browser.</p>
+      <h1 data-i18n="heroTitle">Science Lab</h1>
+      <p data-i18n="heroSubtitle">Pick a discipline to begin.</p>
     </header>
 
-    <div class="tabs" role="tablist">
-      <button type="button" class="tab-btn active" role="tab" data-tab="physics" aria-selected="true" data-i18n="categoryPhysics">Physics</button>
-      <button type="button" class="tab-btn" role="tab" data-tab="chemistry" aria-selected="false" data-i18n="categoryChemistry">Chemistry</button>
-    </div>
-
-    <main class="card-grid" data-tab-panel="physics">
-      <a class="card" href="experiments/projectile.html">
-        <h2 data-i18n="projectileTitle">Projectile Motion</h2>
-        <p data-i18n="projectileDesc">Launch a projectile with adjustable velocity, angle, and gravity. Watch the parabolic trajectory and live readouts.</p>
-        <span class="tag" data-i18n="tagOpen">Open</span>
+    <main class="category-grid">
+      <a class="category-card physics" href="physics.html">
+        <div class="category-icon" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="16" cy="5" r="1.5" fill="currentColor" />
+            <line x1="16" y1="5" x2="23" y2="24" />
+            <circle cx="23" cy="24" r="4" fill="currentColor" stroke="none" />
+            <path d="M9 24 Q16 27 23 24" stroke-dasharray="2 3" />
+          </svg>
+        </div>
+        <h2 data-i18n="categoryPhysics">Physics</h2>
+        <p class="tagline" data-i18n="physicsTagline">Motion, forces, waves.</p>
+        <p class="description" data-i18n="physicsLandingDesc">Throw a projectile, swing a pendulum, watch waves interfere.</p>
+        <span class="cta" data-i18n="exploreCta">Explore</span>
       </a>
 
-      <a class="card" href="experiments/pendulum.html">
-        <h2 data-i18n="pendulumTitle">Pendulum</h2>
-        <p data-i18n="pendulumDesc">Swing a pendulum with adjustable length, gravity, initial angle, and damping.</p>
-        <span class="tag" data-i18n="tagOpen">Open</span>
+      <a class="category-card chemistry" href="chemistry.html">
+        <div class="category-icon" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="16,5 26,11 26,21 16,27 6,21 6,11" />
+            <circle cx="16" cy="5" r="2" fill="currentColor" stroke="none" />
+            <circle cx="26" cy="11" r="2" fill="currentColor" stroke="none" />
+            <circle cx="26" cy="21" r="2" fill="currentColor" stroke="none" />
+            <circle cx="16" cy="27" r="2" fill="currentColor" stroke="none" />
+            <circle cx="6" cy="21" r="2" fill="currentColor" stroke="none" />
+            <circle cx="6" cy="11" r="2" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+        <h2 data-i18n="categoryChemistry">Chemistry</h2>
+        <p class="tagline" data-i18n="chemistryTagline">Atoms, bonds, structure.</p>
+        <p class="description" data-i18n="chemistryLandingDesc">Explore molecular structure and the regularities of matter.</p>
+        <span class="cta" data-i18n="exploreCta">Explore</span>
       </a>
-
-      <div class="card coming-soon" aria-disabled="true">
-        <h2 data-i18n="orbitsTitle">Gravity &amp; Orbits</h2>
-        <p data-i18n="orbitsDesc">Drag a planet to set its initial velocity around a star. Coming soon.</p>
-        <span class="tag" data-i18n="tagSoon">Coming soon</span>
-      </div>
-
-      <div class="card coming-soon" aria-disabled="true">
-        <h2 data-i18n="waveTitle">Wave Interference</h2>
-        <p data-i18n="waveDesc">Two sources, adjustable frequency, visible interference pattern. Coming soon.</p>
-        <span class="tag" data-i18n="tagSoon">Coming soon</span>
-      </div>
-    </main>
-
-    <main class="card-grid" data-tab-panel="chemistry" hidden>
-      <a class="card" href="experiments/molecule.html">
-        <h2 data-i18n="moleculeTitle">Molecule Viewer</h2>
-        <p data-i18n="moleculeDesc">Browse common molecules — atoms, bonds, geometry, and the patterns they reveal across matter.</p>
-        <span class="tag" data-i18n="tagOpen">Open</span>
-      </a>
-
-      <div class="card coming-soon" aria-disabled="true">
-        <h2 data-i18n="crystalTitle">Crystal Lattice</h2>
-        <p data-i18n="crystalDesc">Ionic and metallic lattices arranged in repeating units. Coming soon.</p>
-        <span class="tag" data-i18n="tagSoon">Coming soon</span>
-      </div>
     </main>
   </div>
 
   <script src="i18n.js"></script>
-  <script>
-    (() => {
-      const tabs = document.querySelectorAll(".tab-btn");
-      const panels = document.querySelectorAll("[data-tab-panel]");
-      function activate(name) {
-        tabs.forEach((t) => {
-          const on = t.dataset.tab === name;
-          t.classList.toggle("active", on);
-          t.setAttribute("aria-selected", on ? "true" : "false");
-        });
-        panels.forEach((p) => {
-          p.hidden = p.dataset.tabPanel !== name;
-        });
-      }
-      tabs.forEach((t) => t.addEventListener("click", () => activate(t.dataset.tab)));
-    })();
-  </script>
 </body>
 </html>
