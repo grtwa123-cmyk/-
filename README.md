@@ -11,6 +11,7 @@ and JavaScript. No build step, no dependencies — just open
   the projectile.
 - Pendulum, Gravity & Orbits, Wave Interference — placeholders for future
   experiments.
+  -web pages is "https://grtwa123-cmyk.github.io/-/"
 
 ## Layout
 
