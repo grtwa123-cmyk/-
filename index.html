@@ -16,10 +16,15 @@
 
     <header class="site-header">
       <h1 data-i18n="heroTitle">Science Experiments</h1>
-      <p data-i18n="heroSubtitle">Interactive physics simulations you can poke at in the browser.</p>
+      <p data-i18n="heroSubtitle">Interactive simulations you can poke at in the browser.</p>
     </header>
 
-    <main class="card-grid">
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab-btn active" role="tab" data-tab="physics" aria-selected="true" data-i18n="categoryPhysics">Physics</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="chemistry" aria-selected="false" data-i18n="categoryChemistry">Chemistry</button>
+    </div>
+
+    <main class="card-grid" data-tab-panel="physics">
       <a class="card" href="experiments/projectile.html">
         <h2 data-i18n="projectileTitle">Projectile Motion</h2>
         <p data-i18n="projectileDesc">Launch a projectile with adjustable velocity, angle, and gravity. Watch the parabolic trajectory and live readouts.</p>
@@ -28,7 +33,7 @@
 
       <a class="card" href="experiments/pendulum.html">
         <h2 data-i18n="pendulumTitle">Pendulum</h2>
-        <p data-i18n="pendulumDesc">Swing a pendulum with adjustable length and gravity. Coming soon.</p>
+        <p data-i18n="pendulumDesc">Swing a pendulum with adjustable length, gravity, initial angle, and damping.</p>
         <span class="tag" data-i18n="tagOpen">Open</span>
       </a>
 
@@ -44,8 +49,39 @@
         <span class="tag" data-i18n="tagSoon">Coming soon</span>
       </div>
     </main>
+
+    <main class="card-grid" data-tab-panel="chemistry" hidden>
+      <a class="card" href="experiments/molecule.html">
+        <h2 data-i18n="moleculeTitle">Molecule Viewer</h2>
+        <p data-i18n="moleculeDesc">Browse common molecules — atoms, bonds, geometry, and the patterns they reveal across matter.</p>
+        <span class="tag" data-i18n="tagOpen">Open</span>
+      </a>
+
+      <div class="card coming-soon" aria-disabled="true">
+        <h2 data-i18n="crystalTitle">Crystal Lattice</h2>
+        <p data-i18n="crystalDesc">Ionic and metallic lattices arranged in repeating units. Coming soon.</p>
+        <span class="tag" data-i18n="tagSoon">Coming soon</span>
+      </div>
+    </main>
   </div>
 
   <script src="i18n.js"></script>
+  <script>
+    (() => {
+      const tabs = document.querySelectorAll(".tab-btn");
+      const panels = document.querySelectorAll("[data-tab-panel]");
+      function activate(name) {
+        tabs.forEach((t) => {
+          const on = t.dataset.tab === name;
+          t.classList.toggle("active", on);
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        panels.forEach((p) => {
+          p.hidden = p.dataset.tabPanel !== name;
+        });
+      }
+      tabs.forEach((t) => t.addEventListener("click", () => activate(t.dataset.tab)));
+    })();
+  </script>
 </body>
 </html>

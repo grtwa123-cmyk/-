@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="moleculePageTitle">Molecule Viewer · Science Experiments</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../index.html" data-i18n="backToHub">&larr; Back to hub</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount3">Chemistry experiment</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="moleculeTitle">Molecule Viewer</h1>
+      <p data-i18n="moleculeIntro">Pick a molecule and rotate it. Notice how molecules with the same hybridization share a geometric template.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="selectMolecule">Molecule</h2>
+
+        <div class="molecule-list" id="molecule-list" role="listbox"></div>
+
+        <div class="control" style="margin-top: 1rem;">
+          <label for="rotate-toggle" data-i18n="rotateLabel">Auto rotate</label>
+          <span class="value">
+            <input type="checkbox" id="rotate-toggle" checked />
+          </span>
+        </div>
+
+        <div class="control">
+          <label for="rotate-speed" data-i18n="rotationSpeed">Rotation</label>
+          <span class="value"><span id="rotate-speed-value">0.40</span></span>
+          <input type="range" id="rotate-speed" min="0" max="2" step="0.05" value="0.40" />
+        </div>
+
+        <div class="control">
+          <label for="labels-toggle" data-i18n="showLabelsLabel">Show element symbols</label>
+          <span class="value">
+            <input type="checkbox" id="labels-toggle" checked />
+          </span>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="propertyName">Name</span><span class="property-value" id="prop-name">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyFormula">Formula</span><span class="property-value" id="prop-formula">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyGeometry">Geometry</span><span class="property-value" id="prop-geometry">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyBondAngle">Bond angle</span><span class="property-value" id="prop-angle">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyHybridization">Hybridization</span><span class="property-value" id="prop-hybrid">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyAtomCount">Atom count</span><span class="property-value" id="prop-count">—</span></div>
+        </div>
+
+        <details class="formulas" open>
+          <summary data-i18n="patternNote">Pattern</summary>
+          <p id="pattern-body" style="margin: 0.6rem 0 0; color: var(--muted); font-size: 0.92rem;">—</p>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="500" aria-label="Molecule structure"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="molecule.js"></script>
+</body>
+</html>
