@@ -230,11 +230,23 @@ header.site-header p {
 }
 
 .subnav {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 1rem;
   gap: 1rem;
+}
+
+.subnav > :first-child { justify-self: start; }
+.subnav > .hub-tabs { justify-self: center; }
+.subnav > :last-child:not(.hub-tabs) { justify-self: end; }
+
+@media (max-width: 540px) {
+  .subnav {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  .subnav > .hub-tabs { justify-self: center; }
 }
 
 .subnav .back-home {
@@ -249,6 +261,39 @@ header.site-header p {
 .subnav .back-home:hover {
   color: var(--text);
   background: var(--surface);
+}
+
+.hub-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.hub-tab {
+  padding: 0.45rem 1.1rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.hub-tab:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.hub-tab.active {
+  background: var(--accent);
+  color: #0b1024;
+}
+
+.hub-tab.active:hover {
+  background: var(--accent);
 }
 
 .category-grid {
