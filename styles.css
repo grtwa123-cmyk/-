@@ -206,6 +206,37 @@ body {
   font-size: 0.95rem;
 }
 
+.legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.4rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: 0 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.legend-dot.el-electron { background: #6ea8ff; }
+.legend-dot.el-hole { background: #ff6b8a; }
+.legend-dot.el-si { background: #6b748f; }
+.legend-dot.el-donor { background: #6effc6; }
+.legend-dot.el-acceptor { background: #ffb86b; }
+
 header.site-header {
   text-align: center;
   margin: 0.5rem 0 2.5rem;
@@ -227,6 +258,60 @@ header.site-header p {
   margin: 0.6rem auto 0;
   max-width: 38rem;
   font-size: 1.02rem;
+}
+
+/* Landing page (no theme) — extra-dramatic hero treatment */
+body:not([data-theme]) header.site-header {
+  margin: 1.5rem 0 3rem;
+  position: relative;
+}
+
+body:not([data-theme]) header.site-header::before {
+  content: "";
+  position: absolute;
+  inset: -60px auto auto 50%;
+  width: 460px;
+  height: 460px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(110, 168, 255, 0.18) 0%, rgba(196, 123, 255, 0.08) 35%, transparent 65%);
+  pointer-events: none;
+  z-index: -1;
+  animation: heroPulse 6s ease-in-out infinite;
+}
+
+@keyframes heroPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+body:not([data-theme]) header.site-header h1 {
+  font-size: clamp(2.6rem, 5.5vw + 1rem, 4.4rem);
+  letter-spacing: -0.025em;
+  font-weight: 800;
+  line-height: 1.05;
+  background: linear-gradient(110deg, #ffffff 0%, #8cbaff 35%, #c47bff 70%, #ff8eb3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 8px 30px rgba(110, 168, 255, 0.2));
+}
+
+body:not([data-theme]) header.site-header h1::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin: 1rem auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #6ea8ff 0%, #c47bff 100%);
+  opacity: 0.85;
+}
+
+body:not([data-theme]) header.site-header p {
+  font-size: clamp(1rem, 0.6vw + 0.85rem, 1.2rem);
+  color: #b8c2db;
+  margin-top: 1.2rem;
 }
 
 .subnav {
@@ -342,15 +427,23 @@ header.site-header p {
 }
 
 .category-card .category-icon {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: var(--card-accent, var(--accent));
-  color: #0b1024;
-  margin-bottom: 1rem;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ecf0fb;
+  border: 1px solid var(--card-accent, var(--accent));
+  margin-bottom: 1.1rem;
+  box-shadow: 0 0 0 0 transparent;
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.category-card:hover .category-icon {
+  box-shadow: 0 0 0 5px var(--card-glow, var(--accent-glow));
+  transform: translateY(-2px);
 }
 
 .category-card.physics { --card-accent: #6ea8ff; --card-glow: rgba(110, 168, 255, 0.35); }
