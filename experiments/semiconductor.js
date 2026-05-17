@@ -13,6 +13,8 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
+  const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   const COLOR = {
     electron: '#6ea8ff',
     hole: '#ff6b8a',
@@ -46,14 +48,16 @@
   let layout = null;
   let animId = null;
   let lastTs = 0;
+  let CW = 800;
+  let CH = 840;
 
   function computeLayout() {
     const margin = 18;
     const batteryH = 130;
-    const rowsArea = canvas.height - batteryH - margin * 2;
+    const rowsArea = CH - batteryH - margin * 2;
     const rowH = Math.floor(rowsArea / TYPES.length);
-    const left = 110;
-    const right = canvas.width - 30;
+    const left = 180;
+    const right = CW - 40;
     return {
       margin,
       batteryTop: margin,
@@ -133,10 +137,10 @@
   }
 
   function drawBattery() {
-    const cx = canvas.width / 2;
+    const cx = CW / 2;
     const top = layout.batteryTop;
-    const bH = 70;
-    const bW = 200;
+    const bH = 80;
+    const bW = 240;
     const bx = cx - bW / 2;
     const by = top + 10;
 
@@ -145,7 +149,7 @@
     ctx.strokeStyle = 'rgba(110, 168, 255, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(bx, by, bW, bH, 12);
+    ctx.roundRect(bx, by, bW, bH, 14);
     ctx.fill();
     ctx.stroke();
 
@@ -154,25 +158,25 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.font = `bold 40px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = leftColor;
-    ctx.fillText(leftLabel, bx + 32, by + bH / 2);
+    ctx.fillText(leftLabel, bx + 38, by + bH / 2);
     ctx.fillStyle = rightColor;
-    ctx.fillText(rightLabel, bx + bW - 32, by + bH / 2);
+    ctx.fillText(rightLabel, bx + bW - 38, by + bH / 2);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(bx + 70, by + 18);
-    ctx.lineTo(bx + 70, by + bH - 18);
-    ctx.moveTo(bx + bW - 70, by + 18);
-    ctx.lineTo(bx + bW - 70, by + bH - 18);
+    ctx.moveTo(bx + 78, by + 22);
+    ctx.lineTo(bx + 78, by + bH - 22);
+    ctx.moveTo(bx + bW - 78, by + 22);
+    ctx.lineTo(bx + bW - 78, by + bH - 22);
     ctx.stroke();
 
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(232, 236, 247, 0.55)';
+    ctx.font = `600 16px ${FONT}`;
+    ctx.fillStyle = 'rgba(232, 236, 247, 0.75)';
     ctx.fillText(i18nText('battery', 'Battery'), cx, by + bH / 2);
 
     // Wires from battery terminals down and around to the semiconductor block left/right edges
@@ -185,13 +189,13 @@
     ctx.lineWidth = 2;
     ctx.beginPath();
     // Left wire from battery to semi-left
-    ctx.moveTo(bx + 32, wireY);
-    ctx.lineTo(bx + 32, wireBottom - 30);
+    ctx.moveTo(bx + 36, wireY);
+    ctx.lineTo(bx + 36, wireBottom - 30);
     ctx.lineTo(semiLeft, wireBottom - 30);
     ctx.lineTo(semiLeft, layout.rowsTop + layout.rowH * TYPES.length);
     // Right wire from battery to semi-right
-    ctx.moveTo(bx + bW - 32, wireY);
-    ctx.lineTo(bx + bW - 32, wireBottom - 30);
+    ctx.moveTo(bx + bW - 36, wireY);
+    ctx.lineTo(bx + bW - 36, wireBottom - 30);
     ctx.lineTo(semiRight, wireBottom - 30);
     ctx.lineTo(semiRight, layout.rowsTop + layout.rowH * TYPES.length);
     ctx.stroke();
@@ -202,8 +206,8 @@
     if (batteryOn) {
       const arrowY = wireBottom - 30;
       const rightward = polarity === 1;
-      drawCurrentArrow(arrowY, bx + bW - 32, semiRight, rightward);
-      drawCurrentArrow(arrowY, semiLeft, bx + 32, rightward);
+      drawCurrentArrow(arrowY, bx + bW - 36, semiRight, rightward);
+      drawCurrentArrow(arrowY, semiLeft, bx + 36, rightward);
     }
     ctx.restore();
   }
@@ -241,13 +245,14 @@
     ctx.fill();
     ctx.stroke();
 
-    // Row label
+    // Row label (further left so it doesn't crowd the polarity marker)
     ctx.fillStyle = COLOR.rowLabel;
-    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.font = `700 20px ${FONT}`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     const label = i18nText(row.type.labelKey, row.type.key);
-    ctx.fillText(label, layout.left - 12, (top + bottom) / 2);
+    const midY = (top + bottom) / 2;
+    ctx.fillText(label, layout.left - 36, midY);
 
     // Terminal markers on row sides (mirrors battery polarity)
     const leftLabel = polarity === 1 ? '−' : '+';
@@ -255,12 +260,12 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.font = `bold 26px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = batteryOn ? leftColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(leftLabel, layout.left - 8, (top + bottom) / 2 + 14);
+    ctx.fillText(leftLabel, layout.left - 16, midY);
     ctx.fillStyle = batteryOn ? rightColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(rightLabel, layout.right + 8, (top + bottom) / 2 + 14);
+    ctx.fillText(rightLabel, layout.right + 18, midY);
 
     ctx.restore();
   }
@@ -373,7 +378,7 @@
   }
 
   function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, CW, CH);
     drawBattery();
     rows.forEach(drawRow);
   }
@@ -417,13 +422,17 @@
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    const w = Math.max(Math.round(rect.width), 320);
-    const h = 620;
-    if (canvas.width === w && canvas.height === h && rows.length) {
-      return;
-    }
-    canvas.width = w;
-    canvas.height = h;
+    const dpr = window.devicePixelRatio || 1;
+    const newCW = Math.max(Math.round(rect.width), 320);
+    const newCH = 840;
+    if (newCW === CW && newCH === CH && rows.length) return;
+    CW = newCW;
+    CH = newCH;
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     buildRows();
     render();
   }

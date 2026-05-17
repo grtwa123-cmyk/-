@@ -14,6 +14,8 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
+  const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   const COLOR = {
     electron: '#6ea8ff',
     hole: '#ff6b8a',
@@ -52,17 +54,19 @@
   let animId = null;
   let lastTs = 0;
   let smoothedCurrent = 0;
+  let CW = 800;
+  let CH = 720;
 
   const BASE_DEPLETION_WIDTH = 0.18; // as fraction of device width
   const BUILT_IN_FIELD = 220; // strength of built-in field acceleration
 
   function computeLayout() {
     const margin = 18;
-    const batteryH = 130;
-    const left = 110;
-    const right = canvas.width - 30;
+    const batteryH = 140;
+    const left = 60;
+    const right = CW - 30;
     const top = batteryH + margin * 2;
-    const bottom = canvas.height - 30;
+    const bottom = CH - 30;
     const junctionX = (left + right) / 2;
     return { margin, batteryTop: margin, batteryH, left, right, top, bottom, junctionX };
   }
@@ -149,10 +153,10 @@
   }
 
   function drawBattery() {
-    const cx = canvas.width / 2;
+    const cx = CW / 2;
     const top = layout.batteryTop;
-    const bH = 70;
-    const bW = 220;
+    const bH = 84;
+    const bW = 250;
     const bx = cx - bW / 2;
     const by = top + 10;
 
@@ -161,7 +165,7 @@
     ctx.strokeStyle = 'rgba(110, 168, 255, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(bx, by, bW, bH, 12);
+    ctx.roundRect(bx, by, bW, bH, 14);
     ctx.fill();
     ctx.stroke();
 
@@ -170,54 +174,54 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.font = `bold 40px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = leftColor;
-    ctx.fillText(leftLabel, bx + 32, by + bH / 2);
+    ctx.fillText(leftLabel, bx + 38, by + bH / 2);
     ctx.fillStyle = rightColor;
-    ctx.fillText(rightLabel, bx + bW - 32, by + bH / 2);
+    ctx.fillText(rightLabel, bx + bW - 38, by + bH / 2);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(bx + 70, by + 18);
-    ctx.lineTo(bx + 70, by + bH - 18);
-    ctx.moveTo(bx + bW - 70, by + 18);
-    ctx.lineTo(bx + bW - 70, by + bH - 18);
+    ctx.moveTo(bx + 82, by + 22);
+    ctx.lineTo(bx + 82, by + bH - 22);
+    ctx.moveTo(bx + bW - 82, by + 22);
+    ctx.lineTo(bx + bW - 82, by + bH - 22);
     ctx.stroke();
 
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(232, 236, 247, 0.55)';
+    ctx.font = `600 16px ${FONT}`;
+    ctx.fillStyle = 'rgba(232, 236, 247, 0.75)';
     ctx.fillText(i18nText('battery', 'Battery'), cx, by + bH / 2);
 
     // Wires from battery to device
     const wireY = by + bH;
-    const wireBottom = layout.top - 8;
+    const wireBottom = layout.top - 10;
     ctx.strokeStyle = COLOR.wire;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(bx + 32, wireY);
-    ctx.lineTo(bx + 32, wireBottom);
+    ctx.moveTo(bx + 38, wireY);
+    ctx.lineTo(bx + 38, wireBottom);
     ctx.lineTo(layout.left, wireBottom);
     ctx.lineTo(layout.left, layout.top);
-    ctx.moveTo(bx + bW - 32, wireY);
-    ctx.lineTo(bx + bW - 32, wireBottom);
+    ctx.moveTo(bx + bW - 38, wireY);
+    ctx.lineTo(bx + bW - 38, wireBottom);
     ctx.lineTo(layout.right, wireBottom);
     ctx.lineTo(layout.right, layout.top);
     ctx.stroke();
 
     if (batteryOn) {
       const rightward = polarity === 1;
-      drawCurrentArrow(wireBottom, bx + bW - 32, layout.right, rightward);
-      drawCurrentArrow(wireBottom, layout.left, bx + 32, rightward);
+      drawCurrentArrow(wireBottom, bx + bW - 38, layout.right, rightward);
+      drawCurrentArrow(wireBottom, layout.left, bx + 38, rightward);
 
       if (smoothedCurrent > 0.02) {
         const phase = (performance.now() / 1000 * (0.8 + smoothedCurrent * 2)) % 1;
-        const rStart = rightward ? bx + bW - 32 : layout.right;
-        const rEnd   = rightward ? layout.right : bx + bW - 32;
-        const lStart = rightward ? layout.left  : bx + 32;
-        const lEnd   = rightward ? bx + 32      : layout.left;
+        const rStart = rightward ? bx + bW - 38 : layout.right;
+        const rEnd   = rightward ? layout.right : bx + bW - 38;
+        const lStart = rightward ? layout.left  : bx + 38;
+        const lEnd   = rightward ? bx + 38      : layout.left;
         ctx.fillStyle = COLOR.fieldArrow;
         ctx.beginPath();
         ctx.arc(rStart + phase * (rEnd - rStart), wireBottom, 3, 0, Math.PI * 2);
@@ -303,13 +307,13 @@
 
     // Region labels
     ctx.save();
-    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.font = `700 22px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = 'rgba(110, 168, 255, 0.9)';
-    ctx.fillText(i18nText('nRegion', 'N'), (left + depL) / 2, top + 6);
-    ctx.fillStyle = 'rgba(255, 107, 138, 0.9)';
-    ctx.fillText(i18nText('pRegion', 'P'), (depR + right) / 2, top + 6);
+    ctx.fillStyle = 'rgba(110, 168, 255, 0.95)';
+    ctx.fillText(i18nText('nRegion', 'N'), (left + depL) / 2, top + 12);
+    ctx.fillStyle = 'rgba(255, 107, 138, 0.95)';
+    ctx.fillText(i18nText('pRegion', 'P'), (depR + right) / 2, top + 12);
     ctx.restore();
 
     // Terminal markers on device edges
@@ -318,13 +322,13 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
     ctx.save();
-    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.font = `bold 28px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = batteryOn ? leftColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(leftLabel, left - 14, (top + bottom) / 2);
+    ctx.fillText(leftLabel, left - 20, (top + bottom) / 2);
     ctx.fillStyle = batteryOn ? rightColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(rightLabel, right + 14, (top + bottom) / 2);
+    ctx.fillText(rightLabel, right + 20, (top + bottom) / 2);
     ctx.restore();
 
     // Built-in field arrows (only inside depletion region)
@@ -346,10 +350,10 @@
       ctx.lineTo(arrowEnd - 6, arrowY + 5);
       ctx.closePath();
       ctx.fill();
-      ctx.font = '11px system-ui, sans-serif';
+      ctx.font = `600 15px ${FONT}`;
       ctx.fillStyle = COLOR.builtIn;
       ctx.textAlign = 'center';
-      ctx.fillText(i18nText('builtInField', 'E_built-in'), (depL + depR) / 2, arrowY - 8);
+      ctx.fillText(i18nText('builtInField', 'E_built-in'), (depL + depR) / 2, arrowY - 12);
       ctx.restore();
     }
   }
@@ -391,15 +395,14 @@
     }
 
     // Mark ionized dopants near junction with a + or − sign
-    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.font = `bold 14px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const dHalf = currentDepletionHalfWidth();
     for (const d of ionizedDonors) {
       if (Math.abs(d.x - layout.junctionX) <= dHalf + 4) {
-        ctx.fillStyle = '#0b1024';
         ctx.beginPath();
-        ctx.arc(d.x, d.y, 7, 0, Math.PI * 2);
+        ctx.arc(d.x, d.y, 9, 0, Math.PI * 2);
         ctx.fillStyle = COLOR.donor;
         ctx.fill();
         ctx.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -412,7 +415,7 @@
     for (const d of ionizedAcceptors) {
       if (Math.abs(d.x - layout.junctionX) <= dHalf + 4) {
         ctx.beginPath();
-        ctx.arc(d.x, d.y, 7, 0, Math.PI * 2);
+        ctx.arc(d.x, d.y, 9, 0, Math.PI * 2);
         ctx.fillStyle = COLOR.acceptor;
         ctx.fill();
         ctx.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -523,7 +526,7 @@
   }
 
   function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, CW, CH);
     drawDevice();
     drawAtoms();
     drawCarriers();
@@ -564,11 +567,17 @@
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    const w = Math.max(Math.round(rect.width), 320);
-    const h = 540;
-    if (canvas.width === w && canvas.height === h && atoms.length) return;
-    canvas.width = w;
-    canvas.height = h;
+    const dpr = window.devicePixelRatio || 1;
+    const newCW = Math.max(Math.round(rect.width), 320);
+    const newCH = 720;
+    if (newCW === CW && newCH === CH && atoms.length) return;
+    CW = newCW;
+    CH = newCH;
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     layout = computeLayout();
     buildLattice();
     initCarriers();
