@@ -13,6 +13,8 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
+  const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   const COLOR = {
     electron: '#6ea8ff',
     hole: '#ff6b8a',
@@ -54,8 +56,8 @@
     const batteryH = 130;
     const rowsArea = CH - batteryH - margin * 2;
     const rowH = Math.floor(rowsArea / TYPES.length);
-    const left = 130;
-    const right = CW - 30;
+    const left = 180;
+    const right = CW - 40;
     return {
       margin,
       batteryTop: margin,
@@ -156,13 +158,13 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 36px system-ui, sans-serif';
+    ctx.font = `bold 40px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = leftColor;
-    ctx.fillText(leftLabel, bx + 36, by + bH / 2);
+    ctx.fillText(leftLabel, bx + 38, by + bH / 2);
     ctx.fillStyle = rightColor;
-    ctx.fillText(rightLabel, bx + bW - 36, by + bH / 2);
+    ctx.fillText(rightLabel, bx + bW - 38, by + bH / 2);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
     ctx.lineWidth = 1;
@@ -173,8 +175,8 @@
     ctx.lineTo(bx + bW - 78, by + bH - 22);
     ctx.stroke();
 
-    ctx.font = '14px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(232, 236, 247, 0.6)';
+    ctx.font = `600 16px ${FONT}`;
+    ctx.fillStyle = 'rgba(232, 236, 247, 0.75)';
     ctx.fillText(i18nText('battery', 'Battery'), cx, by + bH / 2);
 
     // Wires from battery terminals down and around to the semiconductor block left/right edges
@@ -243,13 +245,14 @@
     ctx.fill();
     ctx.stroke();
 
-    // Row label
+    // Row label (further left so it doesn't crowd the polarity marker)
     ctx.fillStyle = COLOR.rowLabel;
-    ctx.font = 'bold 17px system-ui, sans-serif';
+    ctx.font = `700 20px ${FONT}`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     const label = i18nText(row.type.labelKey, row.type.key);
-    ctx.fillText(label, layout.left - 14, (top + bottom) / 2);
+    const midY = (top + bottom) / 2;
+    ctx.fillText(label, layout.left - 36, midY);
 
     // Terminal markers on row sides (mirrors battery polarity)
     const leftLabel = polarity === 1 ? '−' : '+';
@@ -257,12 +260,12 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.font = `bold 26px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = batteryOn ? leftColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(leftLabel, layout.left - 14, (top + bottom) / 2);
+    ctx.fillText(leftLabel, layout.left - 16, midY);
     ctx.fillStyle = batteryOn ? rightColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(rightLabel, layout.right + 14, (top + bottom) / 2);
+    ctx.fillText(rightLabel, layout.right + 18, midY);
 
     ctx.restore();
   }

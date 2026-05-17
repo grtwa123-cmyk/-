@@ -14,6 +14,8 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
+  const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+
   const COLOR = {
     electron: '#6ea8ff',
     hole: '#ff6b8a',
@@ -172,7 +174,7 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
 
-    ctx.font = 'bold 36px system-ui, sans-serif';
+    ctx.font = `bold 40px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = leftColor;
@@ -189,8 +191,8 @@
     ctx.lineTo(bx + bW - 82, by + bH - 22);
     ctx.stroke();
 
-    ctx.font = '14px system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(232, 236, 247, 0.6)';
+    ctx.font = `600 16px ${FONT}`;
+    ctx.fillStyle = 'rgba(232, 236, 247, 0.75)';
     ctx.fillText(i18nText('battery', 'Battery'), cx, by + bH / 2);
 
     // Wires from battery to device
@@ -305,13 +307,13 @@
 
     // Region labels
     ctx.save();
-    ctx.font = 'bold 19px system-ui, sans-serif';
+    ctx.font = `700 22px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(110, 168, 255, 0.95)';
-    ctx.fillText(i18nText('nRegion', 'N'), (left + depL) / 2, top + 10);
+    ctx.fillText(i18nText('nRegion', 'N'), (left + depL) / 2, top + 12);
     ctx.fillStyle = 'rgba(255, 107, 138, 0.95)';
-    ctx.fillText(i18nText('pRegion', 'P'), (depR + right) / 2, top + 10);
+    ctx.fillText(i18nText('pRegion', 'P'), (depR + right) / 2, top + 12);
     ctx.restore();
 
     // Terminal markers on device edges
@@ -320,13 +322,13 @@
     const leftColor = polarity === 1 ? COLOR.minus : COLOR.plus;
     const rightColor = polarity === 1 ? COLOR.plus : COLOR.minus;
     ctx.save();
-    ctx.font = 'bold 24px system-ui, sans-serif';
+    ctx.font = `bold 28px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = batteryOn ? leftColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(leftLabel, left - 18, (top + bottom) / 2);
+    ctx.fillText(leftLabel, left - 20, (top + bottom) / 2);
     ctx.fillStyle = batteryOn ? rightColor : 'rgba(141, 151, 182, 0.4)';
-    ctx.fillText(rightLabel, right + 18, (top + bottom) / 2);
+    ctx.fillText(rightLabel, right + 20, (top + bottom) / 2);
     ctx.restore();
 
     // Built-in field arrows (only inside depletion region)
@@ -348,10 +350,10 @@
       ctx.lineTo(arrowEnd - 6, arrowY + 5);
       ctx.closePath();
       ctx.fill();
-      ctx.font = '13px system-ui, sans-serif';
+      ctx.font = `600 15px ${FONT}`;
       ctx.fillStyle = COLOR.builtIn;
       ctx.textAlign = 'center';
-      ctx.fillText(i18nText('builtInField', 'E_built-in'), (depL + depR) / 2, arrowY - 10);
+      ctx.fillText(i18nText('builtInField', 'E_built-in'), (depL + depR) / 2, arrowY - 12);
       ctx.restore();
     }
   }
@@ -393,7 +395,7 @@
     }
 
     // Mark ionized dopants near junction with a + or − sign
-    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.font = `bold 14px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const dHalf = currentDepletionHalfWidth();
