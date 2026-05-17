@@ -53,7 +53,7 @@
   let lastTs = 0;
   let smoothedCurrent = 0;
   let CW = 800;
-  let CH = 540;
+  let CH = 720;
 
   const BASE_DEPLETION_WIDTH = 0.18; // as fraction of device width
   const BUILT_IN_FIELD = 220; // strength of built-in field acceleration
@@ -567,14 +567,14 @@
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const newCW = Math.max(Math.round(rect.width), 320);
-    const newCH = 560;
+    const newCH = 720;
     if (newCW === CW && newCH === CH && atoms.length) return;
     CW = newCW;
     CH = newCH;
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
-    canvas.style.width = CW + 'px';
-    canvas.style.height = CH + 'px';
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     layout = computeLayout();
     buildLattice();

@@ -47,7 +47,7 @@
   let animId = null;
   let lastTs = 0;
   let CW = 800;
-  let CH = 620;
+  let CH = 840;
 
   function computeLayout() {
     const margin = 18;
@@ -421,14 +421,14 @@
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     const newCW = Math.max(Math.round(rect.width), 320);
-    const newCH = 620;
+    const newCH = 840;
     if (newCW === CW && newCH === CH && rows.length) return;
     CW = newCW;
     CH = newCH;
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
-    canvas.style.width = CW + 'px';
-    canvas.style.height = CH + 'px';
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     buildRows();
     render();
