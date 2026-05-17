@@ -2,6 +2,9 @@
   const canvas = document.getElementById('stage');
   const ctx = canvas.getContext('2d');
 
+  let CW = 800;
+  let CH = 400;
+
   const inputs = {
     velocity: document.getElementById('velocity'),
     angle: document.getElementById('angle'),
@@ -51,8 +54,8 @@
 
   function fitScale(R, H) {
     const margin = 40;
-    const w = canvas.width - margin * 2;
-    const h = canvas.height - margin * 2;
+    const w = CW - margin * 2;
+    const h = CH - margin * 2;
     const worldW = Math.max(R * 1.05, 1);
     const worldH = Math.max(H * 1.2, 1);
     const scale = Math.min(w / worldW, h / worldH);
@@ -62,7 +65,7 @@
   function worldToCanvas(x, y, scale, margin) {
     return {
       cx: margin + x * scale,
-      cy: canvas.height - margin - y * scale,
+      cy: CH - margin - y * scale,
     };
   }
 
@@ -71,12 +74,12 @@
     ctx.strokeStyle = '#3a4570';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(margin, canvas.height - margin);
-    ctx.lineTo(canvas.width - margin, canvas.height - margin);
+    ctx.moveTo(margin, CH - margin);
+    ctx.lineTo(CW - margin, CH - margin);
     ctx.stroke();
 
     ctx.fillStyle = '#95a0bf';
-    ctx.font = '11px system-ui, sans-serif';
+    ctx.font = '12px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
@@ -84,7 +87,7 @@
     const rawStep = Math.max(R / target, 1);
     const pow = 10 ** Math.floor(Math.log10(rawStep));
     const niceStep = Math.ceil(rawStep / pow) * pow;
-    const maxX = (canvas.width - 2 * margin) / scale;
+    const maxX = (CW - 2 * margin) / scale;
 
     for (let x = 0; x <= maxX + 0.5; x += niceStep) {
       const { cx, cy } = worldToCanvas(x, 0, scale, margin);
@@ -157,7 +160,7 @@
   }
 
   function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, CW, CH);
   }
 
   let animId = null;
@@ -277,8 +280,16 @@
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(Math.round(rect.width), 300);
-    canvas.height = Math.max(Math.round(rect.height), 240);
+    const dpr = window.devicePixelRatio || 1;
+    CW = Math.max(Math.round(rect.width), 300);
+    CH = Math.max(Math.round(rect.height), 240);
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     renderStatic();
   }
 

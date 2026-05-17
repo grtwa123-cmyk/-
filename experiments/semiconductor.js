@@ -433,6 +433,8 @@
     canvas.style.setProperty('width', CW + 'px', 'important');
     canvas.style.setProperty('height', CH + 'px', 'important');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     buildRows();
     render();
   }
