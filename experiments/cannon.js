@@ -4,6 +4,8 @@
 
   const velocityInput = document.getElementById('velocity');
   const velocityValue = document.getElementById('velocity-value');
+  const timeScaleInput = document.getElementById('time-scale');
+  const timeScaleValue = document.getElementById('time-scale-value');
   const fireBtn = document.getElementById('fire-btn');
   const resetBtn = document.getElementById('reset-btn');
   const prop = {
@@ -34,6 +36,7 @@
   let animId = null;
   let lastTs = 0;
   let nextColor = 0;
+  let timeScale = parseFloat(timeScaleInput.value);
 
   function centerX() { return CW / 2; }
   function centerY() { return CH * 0.55; }
@@ -90,7 +93,9 @@
     if (!ball.alive) return;
     const cx = centerX();
     const cy = centerY();
-    const subSteps = 6;
+    // Keep each integration step under ~10 ms of simulated time even when
+    // the user scales time up, so high-speed orbits stay stable.
+    const subSteps = Math.max(6, Math.ceil(dt / 0.01));
     const h = dt / subSteps;
     for (let i = 0; i < subSteps; i++) {
       const dx = ball.x - cx;
@@ -122,9 +127,10 @@
     let dt = (ts - lastTs) / 1000;
     lastTs = ts;
     if (dt > 0.05) dt = 0.05;
+    const scaled = dt * timeScale;
     for (const trail of trails) {
       if (!trail.ball.alive) continue;
-      stepBall(trail.ball, dt);
+      stepBall(trail.ball, scaled);
       if (trail.points.length < 4000) {
         const last = trail.points[trail.points.length - 1];
         const ddx = last.x - trail.ball.x;
@@ -321,6 +327,10 @@
     velocityInput.addEventListener('input', () => {
       velocityValue.textContent = parseFloat(velocityInput.value).toFixed(2);
     });
+    timeScaleInput.addEventListener('input', () => {
+      timeScale = parseFloat(timeScaleInput.value);
+      timeScaleValue.textContent = timeScale.toFixed(2);
+    });
     fireBtn.addEventListener('click', fire);
     resetBtn.addEventListener('click', resetAll);
   }
@@ -346,6 +356,7 @@
   }
 
   velocityValue.textContent = parseFloat(velocityInput.value).toFixed(2);
+  timeScaleValue.textContent = timeScale.toFixed(2);
   wireEvents();
   updateActiveReadouts();
   window.addEventListener('resize', resizeCanvas);
