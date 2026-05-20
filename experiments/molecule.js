@@ -143,6 +143,8 @@
   let rotation = 0;
   let lastTs = 0;
   let animId = null;
+  let CW = 800;
+  let CH = 400;
 
   function buildList() {
     listEl.innerHTML = '';
@@ -264,7 +266,7 @@
 
   function render() {
     const mol = MOLECULES[currentKey];
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, CW, CH);
 
     const projected = mol.atoms.map((a) => project(a, rotation));
     const xs = projected.map((p) => p.x);
@@ -280,8 +282,8 @@
 
     const margin = 70;
     const scale = Math.min(
-      (canvas.width - margin * 2) / (spanX + 1.5),
-      (canvas.height - margin * 2) / (spanY + 1.5)
+      (CW - margin * 2) / (spanX + 1.5),
+      (CH - margin * 2) / (spanY + 1.5)
     );
 
     const zRange = Math.max(maxZ - minZ, 0.0001);
@@ -292,8 +294,8 @@
 
     const canvasAtoms = projected.map((p) => ({
       ...p,
-      cx: canvas.width / 2 + (p.x - midX) * scale,
-      cy: canvas.height / 2 - (p.y - midY) * scale,
+      cx: CW / 2 + (p.x - midX) * scale,
+      cy: CH / 2 - (p.y - midY) * scale,
     }));
 
     const bondItems = mol.bonds.map(([i, j, order]) => ({
@@ -409,8 +411,16 @@
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(Math.round(rect.width), 300);
-    canvas.height = Math.max(Math.round(rect.height), 300);
+    const dpr = window.devicePixelRatio || 1;
+    CW = Math.max(Math.round(rect.width), 300);
+    CH = Math.max(Math.round(rect.height), 300);
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     render();
   }
 

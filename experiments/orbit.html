@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="orbitsPageTitle">Gravity & Orbits · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount7">Physics · Gravity &amp; orbits</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="orbitsTitle">Gravity &amp; Orbits</h1>
+      <p data-i18n="orbitsIntro">Drag anywhere on the canvas: the start point places a planet, the drag direction and length set its initial velocity.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="star-mass" data-i18n="starMassLabel">Star mass</label>
+          <span class="value"><span id="star-mass-value">1.00</span></span>
+          <input type="range" id="star-mass" min="0.2" max="2.5" step="0.05" value="1.00" />
+        </div>
+
+        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0.8rem;" data-i18n="addPlanetHint">Drag on the canvas to launch a planet.</p>
+
+        <div class="buttons">
+          <button id="clear-btn" type="button" class="secondary" data-i18n="clearBtn">Clear</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="planetCount">Planets</span><span class="property-value" id="prop-count">0</span></div>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="orbitsNotes">Notes</summary>
+          <ul>
+            <li data-i18n="orbitsNote1">Each planet only feels the central star's pull.</li>
+            <li data-i18n="orbitsNote2">A short drag gives a slow planet. A perpendicular drag near orbital speed gives a near-circular orbit.</li>
+            <li data-i18n="orbitsNote3">Planets that fly off the edge or pass through the star are removed.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="640" aria-label="Gravity and orbits"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="orbit.js"></script>
+</body>
+</html>

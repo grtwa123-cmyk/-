@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="cannonPageTitle">Newton's Cannon · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount6">Physics · Newton's cannon</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="cannonTitle">Newton's Cannon</h1>
+      <p data-i18n="cannonIntro">Adjust the launch speed and fire. Below circular-orbit speed the ball falls back; above escape velocity it leaves the planet.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="velocity" data-i18n="initialSpeedLabel">Launch speed</label>
+          <span class="value"><span id="velocity-value">5.00</span></span>
+          <input type="range" id="velocity" min="0" max="14" step="0.05" value="5.00" />
+        </div>
+
+        <div class="buttons">
+          <button id="fire-btn" type="button" data-i18n="fireBtn">Fire</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="outcome">Outcome</span><span class="property-value" id="prop-outcome">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="currentSpeed">Current speed</span><span class="property-value" id="prop-speed">0.00</span></div>
+          <div class="property"><span class="property-label" data-i18n="maxAltitude">Max altitude</span><span class="property-value" id="prop-altitude">0.00</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitalSpeedRef">Circular orbit</span><span class="property-value" id="prop-vcirc">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="escapeSpeedRef">Escape velocity</span><span class="property-value" id="prop-vesc">—</span></div>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="cannonNotes">Notes</summary>
+          <ul>
+            <li data-i18n="cannonNote1">Gravity always pulls the ball toward the planet's center.</li>
+            <li data-i18n="cannonNote2">If horizontal speed matches the curvature of the surface, the ball orbits.</li>
+            <li data-i18n="cannonNote3">Beyond escape velocity, the ball flies away.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="700" aria-label="Newton's cannon"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="cannon.js"></script>
+</body>
+</html>

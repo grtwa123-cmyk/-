@@ -2,6 +2,9 @@
   const canvas = document.getElementById('stage');
   const ctx = canvas.getContext('2d');
 
+  let CW = 800;
+  let CH = 400;
+
   const inputs = {
     length: document.getElementById('length'),
     gravity: document.getElementById('gravity'),
@@ -64,15 +67,15 @@
 
   function pivotForIndex(i, N) {
     const padding = 40;
-    const y = canvas.height * 0.12;
-    if (N <= 1) return { x: canvas.width / 2, y };
-    const totalW = canvas.width - 2 * padding;
+    const y = CH * 0.12;
+    if (N <= 1) return { x: CW / 2, y };
+    const totalW = CW - 2 * padding;
     return { x: padding + (totalW * i) / (N - 1), y };
   }
 
   function pixelsPerMeter(Lmax) {
-    const yTop = canvas.height * 0.12;
-    const available = canvas.height - yTop - 30;
+    const yTop = CH * 0.12;
+    const available = CH - yTop - 30;
     return available / Math.max(Lmax, 0.0001);
   }
 
@@ -83,7 +86,7 @@
   }
 
   function drawScene(N, Lbase) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, CW, CH);
 
     const ppm = pixelsPerMeter(Lbase);
 
@@ -307,8 +310,16 @@
 
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
-    canvas.width = Math.max(Math.round(rect.width), 300);
-    canvas.height = Math.max(Math.round(rect.height), 240);
+    const dpr = window.devicePixelRatio || 1;
+    CW = Math.max(Math.round(rect.width), 300);
+    CH = Math.max(Math.round(rect.height), 240);
+    canvas.width = Math.round(CW * dpr);
+    canvas.height = Math.round(CH * dpr);
+    canvas.style.setProperty('width', CW + 'px', 'important');
+    canvas.style.setProperty('height', CH + 'px', 'important');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     if (running) drawScene(pendulums.length, activeParams.L);
     else renderStatic();
   }
