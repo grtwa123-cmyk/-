@@ -19,12 +19,6 @@
   const VELOCITY_SCALE = 0.45;
   const PALETTE = ['#6ea8ff', '#ffb86b', '#6effc6', '#ff6b8a', '#c47bff', '#ffe14a'];
 
-  const TIME_SCALE_MIN = 0.25;
-  const TIME_SCALE_MAX = 100;
-  const TIME_SCALE_RATIO = TIME_SCALE_MAX / TIME_SCALE_MIN;
-  function sliderToScale(v) {
-    return TIME_SCALE_MIN * Math.pow(TIME_SCALE_RATIO, v / 100);
-  }
   function formatScale(s) {
     if (s >= 10) return s.toFixed(0);
     if (s >= 1) return s.toFixed(1);
@@ -34,7 +28,7 @@
   let CW = 800;
   let CH = 640;
   let starMass = parseFloat(starMassInput.value);
-  let timeScale = sliderToScale(parseFloat(timeScaleInput.value));
+  let timeScale = parseFloat(timeScaleInput.value);
   let planets = [];
   let collisions = [];
   let drag = null;
@@ -45,7 +39,7 @@
   function gm() { return BASE_GM * starMass; }
   function starX() { return CW / 2; }
   function starY() { return CH / 2; }
-  function starRadius() { return STAR_RADIUS * Math.pow(starMass, 0.35); }
+  function starRadius() { return STAR_RADIUS * Math.sqrt(starMass); }
 
   function addPlanet(x, y, vx, vy) {
     planets.push({
@@ -69,12 +63,23 @@
   }
 
   function spawnCollision(x, y, color, impactSpeed) {
-    const strength = Math.min(1.5, 0.5 + impactSpeed * 0.03);
+    const strength = Math.min(2.2, 0.8 + impactSpeed * 0.03);
+    // Pull the effect outward to the star's surface so it isn't hidden
+    // inside the star body.
+    const cx = starX();
+    const cy = starY();
+    const dx = x - cx;
+    const dy = y - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const sR = starRadius();
+    const surfaceX = cx + (dx / dist) * (sR + 4);
+    const surfaceY = cy + (dy / dist) * (sR + 4);
+
     const particles = [];
-    const count = 14;
+    const count = 24;
     for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-      const speed = (80 + Math.random() * 110) * strength;
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const speed = (140 + Math.random() * 180) * strength;
       particles.push({
         x: 0,
         y: 0,
@@ -83,9 +88,12 @@
       });
     }
     collisions.push({
-      x, y, color, particles,
+      x: surfaceX,
+      y: surfaceY,
+      color,
+      particles,
       t: 0,
-      life: 1.1,
+      life: 1.8,
       strength,
     });
   }
@@ -132,14 +140,17 @@
         p.vy += a * (dy / r) * h;
         p.x += p.vx * h;
         p.y += p.vy * h;
+
+        // Sample the trail by distance, not by frame, so the curve stays
+        // smooth even at 100× time scale.
+        const last = p.trail[p.trail.length - 1];
+        const ddx = last.x - p.x;
+        const ddy = last.y - p.y;
+        if (ddx * ddx + ddy * ddy > 16 && p.trail.length < 6000) {
+          p.trail.push({ x: p.x, y: p.y });
+        }
       }
       if (!p.alive) continue;
-      const last = p.trail[p.trail.length - 1];
-      const ddx = last.x - p.x;
-      const ddy = last.y - p.y;
-      if (ddx * ddx + ddy * ddy > 2 && p.trail.length < 6000) {
-        p.trail.push({ x: p.x, y: p.y });
-      }
       const margin = 200;
       if (p.x < -margin || p.x > CW + margin || p.y < -margin || p.y > CH + margin) {
         p.alive = false;
@@ -197,21 +208,32 @@
       const alpha = 1 - life;
       ctx.save();
 
-      // Expanding ring (shockwave)
-      ctx.globalAlpha = alpha * 0.7;
+      // Outer shockwave ring (bigger, faster)
+      ctx.globalAlpha = Math.min(1, alpha * 1.1);
       ctx.strokeStyle = c.color;
-      ctx.lineWidth = 2.5 * (1 - life * 0.6);
+      ctx.lineWidth = 4 * (1 - life * 0.5);
       ctx.beginPath();
-      ctx.arc(c.x, c.y, (12 + life * 80) * c.strength, 0, Math.PI * 2);
+      ctx.arc(c.x, c.y, (22 + life * 180) * c.strength, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Bright central flash
-      const flashR = 18 * c.strength * Math.max(0, 1 - life * 1.6);
+      // Second, inner shockwave delayed slightly for layered look
+      if (life > 0.08) {
+        const life2 = (life - 0.08) / 0.92;
+        ctx.globalAlpha = (1 - life2) * 0.55;
+        ctx.lineWidth = 2.5 * (1 - life2 * 0.5);
+        ctx.strokeStyle = 'rgba(255, 240, 180, 1)';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, (12 + life2 * 130) * c.strength, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Bright central flash (radial gradient)
+      const flashR = 36 * c.strength * Math.max(0, 1 - life * 1.3);
       if (flashR > 0.5) {
         const flashGrad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, flashR);
-        flashGrad.addColorStop(0, `rgba(255, 240, 180, ${alpha * 0.95})`);
-        flashGrad.addColorStop(0.5, `rgba(255, 200, 120, ${alpha * 0.5})`);
-        flashGrad.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        flashGrad.addColorStop(0, `rgba(255, 250, 220, ${Math.min(1, alpha * 1.4)})`);
+        flashGrad.addColorStop(0.45, `rgba(255, 210, 130, ${alpha * 0.75})`);
+        flashGrad.addColorStop(1, 'rgba(255, 180, 90, 0)');
         ctx.globalAlpha = 1;
         ctx.fillStyle = flashGrad;
         ctx.beginPath();
@@ -221,10 +243,12 @@
 
       // Particles
       ctx.globalAlpha = alpha;
+      ctx.shadowColor = c.color;
+      ctx.shadowBlur = 6;
       ctx.fillStyle = c.color;
       for (const part of c.particles) {
         ctx.beginPath();
-        ctx.arc(c.x + part.x, c.y + part.y, 2.5 * (1 - life * 0.7), 0, Math.PI * 2);
+        ctx.arc(c.x + part.x, c.y + part.y, 3.5 * (1 - life * 0.6), 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -366,7 +390,7 @@
       starMassValue.textContent = formatScale(starMass);
     });
     timeScaleInput.addEventListener('input', () => {
-      timeScale = sliderToScale(parseFloat(timeScaleInput.value));
+      timeScale = parseFloat(timeScaleInput.value);
       timeScaleValue.textContent = formatScale(timeScale);
     });
     clearBtn.addEventListener('click', clearAll);
