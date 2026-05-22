@@ -4,6 +4,8 @@
 
   const starMassInput = document.getElementById('star-mass');
   const starMassValue = document.getElementById('star-mass-value');
+  const timeScaleInput = document.getElementById('time-scale');
+  const timeScaleValue = document.getElementById('time-scale-value');
   const clearBtn = document.getElementById('clear-btn');
   const propCount = document.getElementById('prop-count');
 
@@ -17,10 +19,24 @@
   const VELOCITY_SCALE = 0.45;
   const PALETTE = ['#6ea8ff', '#ffb86b', '#6effc6', '#ff6b8a', '#c47bff', '#ffe14a'];
 
+  const TIME_SCALE_MIN = 0.25;
+  const TIME_SCALE_MAX = 100;
+  const TIME_SCALE_RATIO = TIME_SCALE_MAX / TIME_SCALE_MIN;
+  function sliderToScale(v) {
+    return TIME_SCALE_MIN * Math.pow(TIME_SCALE_RATIO, v / 100);
+  }
+  function formatScale(s) {
+    if (s >= 10) return s.toFixed(0);
+    if (s >= 1) return s.toFixed(1);
+    return s.toFixed(2);
+  }
+
   let CW = 800;
   let CH = 640;
   let starMass = parseFloat(starMassInput.value);
+  let timeScale = sliderToScale(parseFloat(timeScaleInput.value));
   let planets = [];
+  let collisions = [];
   let drag = null;
   let animId = null;
   let lastTs = 0;
@@ -29,6 +45,7 @@
   function gm() { return BASE_GM * starMass; }
   function starX() { return CW / 2; }
   function starY() { return CH / 2; }
+  function starRadius() { return STAR_RADIUS * Math.pow(starMass, 0.35); }
 
   function addPlanet(x, y, vx, vy) {
     planets.push({
@@ -51,11 +68,49 @@
     propCount.textContent = String(planets.filter(p => p.alive).length);
   }
 
+  function spawnCollision(x, y, color, impactSpeed) {
+    const strength = Math.min(1.5, 0.5 + impactSpeed * 0.03);
+    const particles = [];
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+      const speed = (80 + Math.random() * 110) * strength;
+      particles.push({
+        x: 0,
+        y: 0,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+      });
+    }
+    collisions.push({
+      x, y, color, particles,
+      t: 0,
+      life: 1.1,
+      strength,
+    });
+  }
+
+  function stepCollisions(dt) {
+    for (const c of collisions) {
+      c.t += dt;
+      for (const part of c.particles) {
+        part.x += part.vx * dt;
+        part.y += part.vy * dt;
+        part.vx *= 0.94;
+        part.vy *= 0.94;
+      }
+    }
+    collisions = collisions.filter((c) => c.t < c.life);
+  }
+
   function stepPlanets(dt) {
     const cx = starX();
     const cy = starY();
     const k = gm();
-    const sub = 6;
+    const sR = starRadius();
+    // Keep each integration step under ~10 ms of simulated time, so
+    // high time-scale orbits remain stable.
+    const sub = Math.max(6, Math.ceil(dt / 0.01));
     const h = dt / sub;
     let changed = false;
     for (const p of planets) {
@@ -65,7 +120,9 @@
         const dy = p.y - cy;
         const r2 = dx * dx + dy * dy;
         const r = Math.sqrt(r2);
-        if (r < STAR_RADIUS) {
+        if (r < sR) {
+          const speed = Math.hypot(p.vx, p.vy);
+          spawnCollision(p.x, p.y, p.color, speed);
           p.alive = false;
           changed = true;
           break;
@@ -114,24 +171,64 @@
   function drawStar() {
     const cx = starX();
     const cy = starY();
-    const R = STAR_RADIUS * (0.7 + 0.3 * Math.min(starMass, 2.5));
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.5);
+    const R = starRadius();
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.8);
     grad.addColorStop(0, 'rgba(255, 235, 130, 0.95)');
     grad.addColorStop(0.4, 'rgba(255, 184, 107, 0.4)');
     grad.addColorStop(1, 'rgba(255, 184, 107, 0)');
     ctx.save();
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, R * 2.8, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.shadowColor = 'rgba(255, 220, 130, 0.85)';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 24;
     ctx.fillStyle = '#ffe0a0';
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  function drawCollisions() {
+    for (const c of collisions) {
+      const life = c.t / c.life;
+      const alpha = 1 - life;
+      ctx.save();
+
+      // Expanding ring (shockwave)
+      ctx.globalAlpha = alpha * 0.7;
+      ctx.strokeStyle = c.color;
+      ctx.lineWidth = 2.5 * (1 - life * 0.6);
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, (12 + life * 80) * c.strength, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Bright central flash
+      const flashR = 18 * c.strength * Math.max(0, 1 - life * 1.6);
+      if (flashR > 0.5) {
+        const flashGrad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, flashR);
+        flashGrad.addColorStop(0, `rgba(255, 240, 180, ${alpha * 0.95})`);
+        flashGrad.addColorStop(0.5, `rgba(255, 200, 120, ${alpha * 0.5})`);
+        flashGrad.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = flashGrad;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, flashR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Particles
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = c.color;
+      for (const part of c.particles) {
+        ctx.beginPath();
+        ctx.arc(c.x + part.x, c.y + part.y, 2.5 * (1 - life * 0.7), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   function drawPlanet(p) {
@@ -215,6 +312,7 @@
     drawStars();
     for (const p of planets) drawPlanet(p);
     drawStar();
+    drawCollisions();
     drawDrag();
     drawHint();
   }
@@ -224,7 +322,9 @@
     let dt = (ts - lastTs) / 1000;
     lastTs = ts;
     if (dt > 0.05) dt = 0.05;
-    stepPlanets(dt);
+    const scaled = dt * timeScale;
+    stepPlanets(scaled);
+    stepCollisions(dt);
     draw();
     animId = requestAnimationFrame(tick);
   }
@@ -253,7 +353,8 @@
     const vy = (drag.currentY - drag.startY) * VELOCITY_SCALE;
     const dx = drag.startX - starX();
     const dy = drag.startY - starY();
-    if (dx * dx + dy * dy >= STAR_RADIUS * STAR_RADIUS) {
+    const sR = starRadius();
+    if (dx * dx + dy * dy >= sR * sR) {
       addPlanet(drag.startX, drag.startY, vx, vy);
     }
     drag = null;
@@ -262,7 +363,11 @@
   function wireEvents() {
     starMassInput.addEventListener('input', () => {
       starMass = parseFloat(starMassInput.value);
-      starMassValue.textContent = starMass.toFixed(2);
+      starMassValue.textContent = formatScale(starMass);
+    });
+    timeScaleInput.addEventListener('input', () => {
+      timeScale = sliderToScale(parseFloat(timeScaleInput.value));
+      timeScaleValue.textContent = formatScale(timeScale);
     });
     clearBtn.addEventListener('click', clearAll);
 
@@ -312,7 +417,8 @@
     draw();
   }
 
-  starMassValue.textContent = starMass.toFixed(2);
+  starMassValue.textContent = formatScale(starMass);
+  timeScaleValue.textContent = formatScale(timeScale);
   wireEvents();
   updateCount();
   window.addEventListener('resize', resizeCanvas);
