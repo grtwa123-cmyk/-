@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="crystalPageTitle">Crystal Lattice · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount8">Chemistry · Crystal lattice</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="crystalTitle">Crystal Lattice</h1>
+      <p data-i18n="crystalIntro">Pick a lattice and rotate it. Notice how a small unit cell, repeated in three dimensions, builds an entire crystal.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="selectLattice">Lattice</h2>
+
+        <div class="molecule-list" id="lattice-list" role="listbox"></div>
+
+        <div class="control" style="margin-top: 1rem;">
+          <label for="rotate-toggle" data-i18n="rotateLabel">Auto rotate</label>
+          <span class="value">
+            <input type="checkbox" id="rotate-toggle" checked />
+          </span>
+        </div>
+
+        <div class="control">
+          <label for="rotate-speed" data-i18n="rotationSpeed">Rotation</label>
+          <span class="value"><span id="rotate-speed-value">0.45</span></span>
+          <input type="range" id="rotate-speed" min="0" max="2" step="0.05" value="0.45" />
+        </div>
+
+        <div class="control">
+          <label for="cell-toggle" data-i18n="showCellLabel">Show unit cell</label>
+          <span class="value">
+            <input type="checkbox" id="cell-toggle" checked />
+          </span>
+        </div>
+
+        <div class="control">
+          <label for="expand-toggle" data-i18n="expandLabel">Expand 2×2×2</label>
+          <span class="value">
+            <input type="checkbox" id="expand-toggle" />
+          </span>
+        </div>
+
+        <div class="control">
+          <label for="labels-toggle" data-i18n="showLabelsLabel">Show element symbols</label>
+          <span class="value">
+            <input type="checkbox" id="labels-toggle" />
+          </span>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="propertyType">Type</span><span class="property-value" id="prop-type">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyCoord">Coordination number</span><span class="property-value" id="prop-coord">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyAPF">Packing factor</span><span class="property-value" id="prop-apf">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propertyExamples">Examples</span><span class="property-value" id="prop-examples">—</span></div>
+        </div>
+
+        <details class="formulas" open>
+          <summary data-i18n="crystalPattern">Pattern</summary>
+          <p id="pattern-body" style="margin: 0.6rem 0 0; color: var(--muted); font-size: 0.92rem;">—</p>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="600" aria-label="Crystal lattice"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="crystal.js"></script>
+</body>
+</html>
