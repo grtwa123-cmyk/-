@@ -9,7 +9,7 @@
   const expandToggle = document.getElementById('expand-toggle');
   const labelsToggle = document.getElementById('labels-toggle');
   const prop = {
-    type: document.getElementById('prop-type'),
+    atoms: document.getElementById('prop-atoms'),
     coord: document.getElementById('prop-coord'),
     apf: document.getElementById('prop-apf'),
     examples: document.getElementById('prop-examples'),
@@ -67,7 +67,7 @@
   const LATTICES = {
     sc: {
       key: 'sc', nameKey: 'latticeSC',
-      typeKey: 'latticeSC',
+      atomsPerCell: '1',
       coord: '6',
       apf: '0.524',
       examples: 'α-Po',
@@ -76,7 +76,7 @@
     },
     bcc: {
       key: 'bcc', nameKey: 'latticeBCC',
-      typeKey: 'latticeBCC',
+      atomsPerCell: '2',
       coord: '8',
       apf: '0.680',
       examples: 'α-Fe, W, Na, Cr',
@@ -85,7 +85,7 @@
     },
     fcc: {
       key: 'fcc', nameKey: 'latticeFCC',
-      typeKey: 'latticeFCC',
+      atomsPerCell: '4',
       coord: '12',
       apf: '0.740',
       examples: 'Cu, Al, Au, Ag, Ni',
@@ -94,7 +94,7 @@
     },
     nacl: {
       key: 'nacl', nameKey: 'latticeNaCl',
-      typeKey: 'latticeNaCl',
+      atomsPerCell: '8 (4 Na + 4 Cl)',
       coord: '6 : 6',
       apf: '0.793',
       examples: 'NaCl, KCl, MgO',
@@ -103,7 +103,7 @@
     },
     cscl: {
       key: 'cscl', nameKey: 'latticeCsCl',
-      typeKey: 'latticeCsCl',
+      atomsPerCell: '2 (1 Cs + 1 Cl)',
       coord: '8 : 8',
       apf: '0.729',
       examples: 'CsCl, CsBr, NH₄Cl',
@@ -112,7 +112,7 @@
     },
     diamond: {
       key: 'diamond', nameKey: 'latticeDiamond',
-      typeKey: 'latticeDiamond',
+      atomsPerCell: '8',
       coord: '4',
       apf: '0.340',
       examples: 'C (diamond), Si, Ge',
@@ -304,7 +304,7 @@
 
   function updateProperties() {
     const lattice = LATTICES[currentKey];
-    prop.type.textContent = i18nText(lattice.typeKey, lattice.key);
+    prop.atoms.textContent = lattice.atomsPerCell;
     prop.coord.textContent = lattice.coord;
     prop.apf.textContent = lattice.apf;
     prop.examples.textContent = lattice.examples;
@@ -421,7 +421,7 @@
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     CW = Math.max(Math.round(rect.width), 320);
-    CH = Math.max(Math.round(rect.height), 320);
+    CH = 560;
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
     canvas.style.setProperty('width', CW + 'px', 'important');
