@@ -103,7 +103,8 @@
     return 'outcomeFalls';
   }
 
-  function stepBall(ball, dt) {
+  function stepBall(trail, dt) {
+    const ball = trail.ball;
     if (!ball.alive) return;
     const cx = centerX();
     const cy = centerY();
@@ -125,6 +126,16 @@
       ball.vy += a * (dy / r) * h;
       ball.x += ball.vx * h;
       ball.y += ball.vy * h;
+      // Sample the trail by distance, not by frame, so the curve stays
+      // smooth even at 100× time scale.
+      if (trail.points.length < 6000) {
+        const last = trail.points[trail.points.length - 1];
+        const ddx = last.x - ball.x;
+        const ddy = last.y - ball.y;
+        if (ddx * ddx + ddy * ddy > 4) {
+          trail.points.push({ x: ball.x, y: ball.y });
+        }
+      }
     }
     const dx = ball.x - cx;
     const dy = ball.y - cy;
@@ -144,15 +155,7 @@
     const scaled = dt * timeScale;
     for (const trail of trails) {
       if (!trail.ball.alive) continue;
-      stepBall(trail.ball, scaled);
-      if (trail.points.length < 4000) {
-        const last = trail.points[trail.points.length - 1];
-        const ddx = last.x - trail.ball.x;
-        const ddy = last.y - trail.ball.y;
-        if (ddx * ddx + ddy * ddy > 1) {
-          trail.points.push({ x: trail.ball.x, y: trail.ball.y });
-        }
-      }
+      stepBall(trail, scaled);
     }
     draw();
     updateActiveReadouts();
