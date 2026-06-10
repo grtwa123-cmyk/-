@@ -23,7 +23,7 @@
 
   const EGG_MASS = 0.06; // kg
   const G = 9.81;
-  const PX_PER_M = 80; // 1 m = 80 px in the scene
+  const PX_PER_M_MAX = 80; // baseline pixels per metre; auto-shrinks for tall drops
   const BREAK_THRESHOLD = 30; // N
   const COLLISION_VISUAL_DURATION = 0.55; // wall-clock seconds spent rendering each collision
 
@@ -48,6 +48,7 @@
     state: 'idle', // idle | falling | collision | done
     materialKey: 'medium',
     h: dropHeight, // height used when drop started
+    pxPerM: PX_PER_M_MAX, // scale used for this drop
     y: 0,
     vy: 0,
     t: 0,
@@ -61,8 +62,13 @@
   function sceneBottom() { return Math.round(CH * 0.58); }
   function floorYpx() { return sceneBottom() - 30; }
   function cushionTopYpx(matKey) { return floorYpx() - MATERIALS[matKey].cushionHeight; }
+  function pxPerMeter(matKey, h) {
+    const available = cushionTopYpx(matKey) - scenePadTop() - 18;
+    const safeH = Math.max(h, 0.01);
+    return Math.min(PX_PER_M_MAX, available / safeH);
+  }
   function eggStartYpx(matKey, h) {
-    return cushionTopYpx(matKey) - h * PX_PER_M;
+    return cushionTopYpx(matKey) - h * pxPerMeter(matKey, h);
   }
 
   function clampEggForIdle() {
@@ -76,6 +82,7 @@
     if (egg.state === 'falling' || egg.state === 'collision') return;
     egg.materialKey = currentMaterialKey;
     egg.h = dropHeight;
+    egg.pxPerM = pxPerMeter(egg.materialKey, egg.h);
     egg.y = eggStartYpx(egg.materialKey, egg.h);
     if (egg.y < scenePadTop() + 14) egg.y = scenePadTop() + 14;
     egg.vy = 0;
@@ -105,14 +112,14 @@
 
   function step(dt) {
     if (egg.state === 'falling') {
-      const aPx = G * PX_PER_M;
+      const aPx = G * egg.pxPerM;
       egg.vy += aPx * dt;
       egg.y += egg.vy * dt;
       const contactY = egg.contactY;
       if (egg.y >= contactY) {
         // Snap to contact and switch to collision phase.
         egg.y = contactY;
-        const vMS = egg.vy / PX_PER_M;
+        const vMS = egg.vy / egg.pxPerM;
         const mat = MATERIALS[egg.materialKey];
         const J = EGG_MASS * vMS;
         const peakF = (Math.PI * J) / (2 * mat.tCollision);

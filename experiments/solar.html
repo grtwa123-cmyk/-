@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="solarPageTitle">Solar System · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount10">Physics · Solar system</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="solarTitle">Solar System &amp; Black Holes</h1>
+      <p data-i18n="solarIntro">The eight planets orbit a Sun-scale star. Tap the canvas to drop a black hole and watch the orbits warp.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="time-scale" data-i18n="timeScaleLabel">Time scale</label>
+          <span class="value"><span id="time-scale-value">30</span>×</span>
+          <input type="range" id="time-scale" min="1" max="365" step="1" value="30" />
+        </div>
+
+        <div class="control">
+          <label for="bh-mass" data-i18n="blackHoleMassLabel">Black hole mass</label>
+          <span class="value"><span id="bh-mass-value">2.0</span>×</span>
+          <input type="range" id="bh-mass" min="0.2" max="20" step="0.1" value="2.0" />
+        </div>
+
+        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0.8rem;" data-i18n="spawnBlackHoleHint">Tap on the canvas to summon a black hole.</p>
+
+        <div class="buttons">
+          <button id="clear-bh-btn" type="button" class="secondary" data-i18n="clearBlackHolesBtn">Remove black holes</button>
+        </div>
+        <div class="buttons" style="margin-top: 0.6rem;">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetSolarBtn">Reset orbits</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="propPlanetsRemaining">Planets remaining</span><span class="property-value" id="prop-planets">8</span></div>
+          <div class="property"><span class="property-label" data-i18n="propBlackHoles">Black holes</span><span class="property-value" id="prop-bh">0</span></div>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="solarNotes">Notes</summary>
+          <ul>
+            <li data-i18n="solarNote1">Periods follow Kepler's third law; radii are compressed by √a.</li>
+            <li data-i18n="solarNote2">A black hole pulls every planet just like the Sun does.</li>
+            <li data-i18n="solarNote3">Planets crossing the event horizon are consumed.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="720" aria-label="Solar system simulation"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="solar.js"></script>
+</body>
+</html>
