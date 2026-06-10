@@ -40,7 +40,15 @@
           <input type="range" id="bh-mass" min="0.2" max="20" step="0.1" value="2.0" />
         </div>
 
-        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0.8rem;" data-i18n="spawnBlackHoleHint">Tap on the canvas to summon a black hole.</p>
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="spawnModeLabel">Tap creates</label>
+        </div>
+        <div class="molecule-list" id="mode-list" style="display: flex; gap: 0.35rem; margin-bottom: 0.7rem;">
+          <button type="button" class="mol-btn active" data-key="blackhole"><span data-i18n="modeBlackHole">Black hole</span></button>
+          <button type="button" class="mol-btn" data-key="planet"><span data-i18n="modePlanet">Planet</span></button>
+        </div>
+
+        <p style="color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0.8rem;" id="spawn-hint" data-i18n="solarHintBlackHole">Tap to summon a black hole. Massive ones even drag the Sun.</p>
 
         <div class="buttons">
           <button id="clear-bh-btn" type="button" class="secondary" data-i18n="clearBlackHolesBtn">Remove black holes</button>
