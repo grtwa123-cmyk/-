@@ -54,6 +54,7 @@
 
   function clearAll() {
     planets = [];
+    collisions = [];
     nextColor = 0;
     updateCount();
   }

@@ -504,13 +504,15 @@
   }
 
   function biasLabel() {
-    if (!batteryOn || voltage === 0) return i18nText('biasOff', 'Off');
+    if (!batteryOn) return i18nText('biasOff', 'Off');
+    if (voltage === 0) return i18nText('biasZero', 'Zero');
     if (polarity === 1) return i18nText('biasForward', 'Forward');
     return i18nText('biasReverse', 'Reverse');
   }
 
   function currentLabel() {
-    if (!batteryOn || voltage === 0) return '—';
+    if (!batteryOn) return '—';
+    if (voltage === 0) return '0%';
     if (polarity === 1) {
       const pct = Math.round(Math.min(100, smoothedCurrent * 220));
       return `${pct}%`;
