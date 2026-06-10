@@ -29,14 +29,6 @@
   const V_ESC = Math.sqrt(2 * GM / LAUNCH_R);
   const PALETTE = ['#ffb86b', '#6effc6', '#ff6b8a', '#c47bff', '#6ea8ff', '#ffe14a'];
 
-  // Logarithmic time-scale mapping: slider 0..100 maps to 0.25× .. 100×.
-  // 0 → 0.25×, 50 → 5×, 100 → 100×.
-  const TIME_SCALE_MIN = 0.25;
-  const TIME_SCALE_MAX = 100;
-  const TIME_SCALE_RATIO = TIME_SCALE_MAX / TIME_SCALE_MIN;
-  function sliderToScale(v) {
-    return TIME_SCALE_MIN * Math.pow(TIME_SCALE_RATIO, v / 100);
-  }
   function formatScale(s) {
     if (s >= 10) return s.toFixed(0);
     if (s >= 1) return s.toFixed(1);
@@ -50,7 +42,7 @@
   let animId = null;
   let lastTs = 0;
   let nextColor = 0;
-  let timeScale = sliderToScale(parseFloat(timeScaleInput.value));
+  let timeScale = parseFloat(timeScaleInput.value);
 
   function centerX() { return CW / 2; }
   function centerY() { return CH * 0.55; }
@@ -96,9 +88,11 @@
   }
 
   function classify(ball, v0) {
-    if (!ball.alive && !ball.escaped) return 'outcomeCrashed';
-    if (ball.escaped) return 'outcomeEscapes';
-    if (v0 >= V_ESC * 0.999) return 'outcomeEscapes';
+    if (ball.escaped || v0 >= V_ESC * 0.999) return 'outcomeEscapes';
+    if (!ball.alive) {
+      // Landed: a slow lob falling back is the expected outcome, not a crash.
+      return v0 < V_CIRC * 0.7 ? 'outcomeFalls' : 'outcomeCrashed';
+    }
     if (v0 >= V_CIRC * 0.7) return 'outcomeOrbits';
     return 'outcomeFalls';
   }
@@ -345,7 +339,7 @@
       velocityValue.textContent = parseFloat(velocityInput.value).toFixed(2);
     });
     timeScaleInput.addEventListener('input', () => {
-      timeScale = sliderToScale(parseFloat(timeScaleInput.value));
+      timeScale = parseFloat(timeScaleInput.value);
       timeScaleValue.textContent = formatScale(timeScale);
     });
     fireBtn.addEventListener('click', fire);
