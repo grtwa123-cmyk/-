@@ -6,6 +6,8 @@
   const timeScaleValue = document.getElementById('time-scale-value');
   const bhMassInput = document.getElementById('bh-mass');
   const bhMassValue = document.getElementById('bh-mass-value');
+  const modeList = document.getElementById('mode-list');
+  const spawnHint = document.getElementById('spawn-hint');
   const clearBhBtn = document.getElementById('clear-bh-btn');
   const resetBtn = document.getElementById('reset-btn');
   const propPlanets = document.getElementById('prop-planets');
@@ -15,75 +17,96 @@
     (window.i18n && window.i18n.t(key)) || fallback;
   const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
-  // Real Solar System data. a in AU, period in days.
+  // Real Solar System data. a in AU, real planet radius in km (for relative sizes).
+  const EARTH_RADIUS_KM = 6371;
   const PLANET_TEMPLATES = [
-    { key: 'mercury', nameKey: 'planetMercury', a: 0.39, period: 87.97,    color: '#aa8866', r: 3.5 },
-    { key: 'venus',   nameKey: 'planetVenus',   a: 0.72, period: 224.70,   color: '#e6b366', r: 5.5 },
-    { key: 'earth',   nameKey: 'planetEarth',   a: 1.00, period: 365.25,   color: '#6ea8ff', r: 5.5 },
-    { key: 'mars',    nameKey: 'planetMars',    a: 1.52, period: 686.98,   color: '#e07050', r: 4.5 },
-    { key: 'jupiter', nameKey: 'planetJupiter', a: 5.20, period: 4332.59,  color: '#cca070', r: 11 },
-    { key: 'saturn',  nameKey: 'planetSaturn',  a: 9.54, period: 10759.22, color: '#e0c080', r: 9, ring: true },
-    { key: 'uranus',  nameKey: 'planetUranus',  a: 19.2, period: 30688.50, color: '#9fe4e4', r: 7 },
-    { key: 'neptune', nameKey: 'planetNeptune', a: 30.1, period: 60182.00, color: '#4f7fd0', r: 7 },
+    { key: 'mercury', nameKey: 'planetMercury', a: 0.39, radiusKm: 2440,  color: '#b08b6a' },
+    { key: 'venus',   nameKey: 'planetVenus',   a: 0.72, radiusKm: 6052,  color: '#e6b366' },
+    { key: 'earth',   nameKey: 'planetEarth',   a: 1.00, radiusKm: 6371,  color: '#6ea8ff' },
+    { key: 'mars',    nameKey: 'planetMars',    a: 1.52, radiusKm: 3390,  color: '#e07050' },
+    { key: 'jupiter', nameKey: 'planetJupiter', a: 5.20, radiusKm: 69911, color: '#cca070' },
+    { key: 'saturn',  nameKey: 'planetSaturn',  a: 9.54, radiusKm: 58232, color: '#e0c080', ring: true },
+    { key: 'uranus',  nameKey: 'planetUranus',  a: 19.2, radiusKm: 25362, color: '#9fe4e4' },
+    { key: 'neptune', nameKey: 'planetNeptune', a: 30.1, radiusKm: 24622, color: '#4f7fd0' },
   ];
 
-  // Tunables
-  const SUN_VISUAL_R = 16;
-  // Distance scale: r_px = sqrt(a) * DISTANCE_SCALE. Chosen at resize time so Neptune fits.
+  const SUN_R = 18;                 // sun visual radius (px)
+  const EARTH_VIS_PERIOD = 365.25;  // days the Earth orbit takes in sim time
+  const ADDED_PLANET_PALETTE = ['#c47bff', '#6effc6', '#ff6b8a', '#ffe14a', '#7fd0ff', '#ff9f6b'];
+
   let DISTANCE_SCALE = 60;
+  let MU_SUN = 1;        // GM of the sun, in px³/day²
+  let VEL_SCALE = 0.01;  // px/day per px of drag, set at resize
 
   let CW = 800;
   let CH = 720;
-  let timeScale = parseFloat(timeScaleInput.value); // days per second of wall time
+  let timeScale = parseFloat(timeScaleInput.value); // days per wall-second
   let bhMassPending = parseFloat(bhMassInput.value);
+  let spawnMode = 'blackhole';
 
-  // Derived from earth's circular orbit: GM_sun chosen so earth's orbit matches its
-  // period at the visual distance assigned to earth.
-  let MU_SUN = 1;
-
+  const sun = { x: 0, y: 0, vx: 0, vy: 0, alive: true };
   let planets = [];
   let blackHoles = [];
-  let consumeEffects = [];
+  let effects = [];
+  let addedCount = 0;
   let animId = null;
   let lastTs = 0;
 
-  function sunX() { return CW / 2; }
-  function sunY() { return CH * 0.5; }
+  function planetPx(radiusKm) {
+    const rel = radiusKm / EARTH_RADIUS_KM;
+    return Math.max(3, Math.min(16, 5.5 * Math.pow(rel, 0.45)));
+  }
 
   function recomputeScale() {
     const usableR = Math.min(CW, CH) / 2 - 30;
-    // Neptune (a = 30.1) must fit
-    DISTANCE_SCALE = usableR / Math.sqrt(30.1);
-    // GM_sun: choose so earth (a_visual = sqrt(1)*scale) completes its period.
+    DISTANCE_SCALE = usableR / Math.sqrt(30.1); // Neptune must fit
     const earthR = Math.sqrt(1.0) * DISTANCE_SCALE;
-    // omega = 2pi / period_in_days, v = omega * r, GM = omega^2 * r^3
-    const omega = (2 * Math.PI) / 365.25; // rad / day
-    MU_SUN = omega * omega * earthR * earthR * earthR;
+    const omegaRef = (2 * Math.PI) / EARTH_VIS_PERIOD; // rad / day
+    MU_SUN = omegaRef * omegaRef * earthR * earthR * earthR;
+    // A drag the length of Earth's orbit radius ≈ circular speed there.
+    VEL_SCALE = Math.sqrt(MU_SUN / earthR) / earthR;
+  }
+
+  function circularVelocity(x, y, cx, cy) {
+    const dx = x - cx;
+    const dy = y - cy;
+    const r = Math.hypot(dx, dy) || 1;
+    const v = Math.sqrt(MU_SUN / r);
+    // Counter-clockwise perpendicular
+    return { vx: (-dy / r) * v, vy: (dx / r) * v };
   }
 
   function initPlanets() {
-    planets = PLANET_TEMPLATES.map((p) => {
+    sun.x = CW / 2;
+    sun.y = CH / 2;
+    sun.vx = 0;
+    sun.vy = 0;
+    sun.alive = true;
+    addedCount = 0;
+    planets = PLANET_TEMPLATES.map((p, idx) => {
       const r = Math.sqrt(p.a) * DISTANCE_SCALE;
-      // Initial angle: spread them so they don't start in a line.
-      const theta0 = (Math.PI * 2 * (PLANET_TEMPLATES.indexOf(p) / PLANET_TEMPLATES.length)) + 0.4 * p.a;
-      const omega = (2 * Math.PI) / p.period;
-      const speed = omega * r;
+      const theta0 = (Math.PI * 2 * idx) / PLANET_TEMPLATES.length + 0.4 * p.a;
+      const x = sun.x + Math.cos(theta0) * r;
+      const y = sun.y + Math.sin(theta0) * r;
+      const v = circularVelocity(x, y, sun.x, sun.y);
       return {
-        key: p.key,
-        nameKey: p.nameKey,
-        color: p.color,
-        r: p.r,
-        ring: !!p.ring,
-        a: p.a,
-        initialR: r,
-        x: sunX() + Math.cos(theta0) * r,
-        y: sunY() + Math.sin(theta0) * r,
-        vx: -Math.sin(theta0) * speed,
-        vy: Math.cos(theta0) * speed,
-        alive: true,
-        trail: [],
+        key: p.key, nameKey: p.nameKey, color: p.color,
+        r: planetPx(p.radiusKm), ring: !!p.ring,
+        guideR: r, isTemplate: true,
+        x, y, vx: v.vx, vy: v.vy, alive: true, trail: [],
       };
     });
+  }
+
+  function addPlanet(x, y, vx, vy) {
+    addedCount++;
+    planets.push({
+      key: 'added' + addedCount, nameKey: null,
+      color: ADDED_PLANET_PALETTE[(addedCount - 1) % ADDED_PLANET_PALETTE.length],
+      r: 5, ring: false, guideR: 0, isTemplate: false,
+      x, y, vx, vy, alive: true, trail: [],
+    });
+    updateCounts();
   }
 
   function updateCounts() {
@@ -98,7 +121,7 @@
 
   function resetAll() {
     blackHoles = [];
-    consumeEffects = [];
+    effects = [];
     initPlanets();
     updateCounts();
   }
@@ -106,64 +129,107 @@
   function spawnBlackHole(x, y, mass) {
     const eventHorizon = Math.max(7, 5 + mass * 1.2);
     blackHoles.push({
-      x, y, mass,
-      eventHorizon,
+      x, y, mass, eventHorizon,
       diskOuter: eventHorizon * 2.4 + 6,
       created: 0,
     });
     updateCounts();
   }
 
-  function spawnConsumeEffect(planet, blackHole) {
-    consumeEffects.push({
-      x: planet.x,
-      y: planet.y,
-      bx: blackHole.x,
-      by: blackHole.y,
-      color: planet.color,
-      t: 0,
-      life: 0.9,
-    });
+  function spawnExplosion(x, y, color, scale) {
+    const parts = [];
+    const n = 16;
+    for (let i = 0; i < n; i++) {
+      const angle = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const speed = (60 + Math.random() * 130) * scale;
+      parts.push({ x: 0, y: 0, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed });
+    }
+    effects.push({ x, y, color, parts, t: 0, life: 0.9, scale });
   }
 
-  // Days → wall-clock seconds: 1 wall-sec advances timeScale days of sim time.
+  function stepEffects(dt) {
+    for (const e of effects) {
+      e.t += dt;
+      for (const p of e.parts) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vx *= 0.92;
+        p.vy *= 0.92;
+      }
+    }
+    effects = effects.filter((e) => e.t < e.life);
+  }
+
+  // ---- physics ----
   function step(dt) {
     const simDt = dt * timeScale; // days
-    // Sub-step so inner planets and tight black-hole encounters integrate stably.
-    const innerOmega = (2 * Math.PI) / 87.97; // mercury's angular rate
-    const sub = Math.max(6, Math.ceil(simDt * innerOmega * 12));
+    const sub = Math.min(800, Math.max(6, Math.ceil(simDt / 0.25)));
     const h = simDt / sub;
+    let countDirty = false;
 
     for (let s = 0; s < sub; s++) {
+      // Sun is pulled only by black holes (planets too light to move it).
+      if (sun.alive) {
+        let sax = 0, say = 0;
+        let consumed = false;
+        for (const bh of blackHoles) {
+          const dx = sun.x - bh.x;
+          const dy = sun.y - bh.y;
+          const r2 = dx * dx + dy * dy;
+          const r = Math.sqrt(r2);
+          if (r < bh.eventHorizon) { consumed = true; break; }
+          const mu = MU_SUN * bh.mass;
+          sax += (-mu / r2) * (dx / r);
+          say += (-mu / r2) * (dy / r);
+        }
+        if (consumed) {
+          sun.alive = false;
+          spawnExplosion(sun.x, sun.y, '#ffd27a', 2.6);
+        } else {
+          sun.vx += sax * h;
+          sun.vy += say * h;
+          sun.x += sun.vx * h;
+          sun.y += sun.vy * h;
+        }
+      }
+
       for (const p of planets) {
         if (!p.alive) continue;
+        let ax = 0, ay = 0;
         // Sun
-        let dx = p.x - sunX();
-        let dy = p.y - sunY();
-        let r2 = dx * dx + dy * dy;
-        let r = Math.sqrt(r2);
-        let ax = (-MU_SUN / r2) * (dx / r);
-        let ay = (-MU_SUN / r2) * (dy / r);
-        if (r < SUN_VISUAL_R) {
-          p.alive = false;
-          continue;
+        if (sun.alive) {
+          const dx = p.x - sun.x;
+          const dy = p.y - sun.y;
+          const r2 = dx * dx + dy * dy;
+          const r = Math.sqrt(r2);
+          if (r < SUN_R) {
+            p.alive = false;
+            countDirty = true;
+            spawnExplosion(p.x, p.y, p.color, 1);
+            continue;
+          }
+          ax += (-MU_SUN / r2) * (dx / r);
+          ay += (-MU_SUN / r2) * (dy / r);
         }
         // Black holes
+        let eaten = false;
         for (const bh of blackHoles) {
-          dx = p.x - bh.x;
-          dy = p.y - bh.y;
-          r2 = dx * dx + dy * dy;
-          r = Math.sqrt(r2);
+          const dx = p.x - bh.x;
+          const dy = p.y - bh.y;
+          const r2 = dx * dx + dy * dy;
+          const r = Math.sqrt(r2);
           if (r < bh.eventHorizon) {
             p.alive = false;
-            spawnConsumeEffect(p, bh);
+            countDirty = true;
+            spawnExplosion(bh.x, bh.y, p.color, 1.1);
+            eaten = true;
             break;
           }
           const mu = MU_SUN * bh.mass;
           ax += (-mu / r2) * (dx / r);
           ay += (-mu / r2) * (dy / r);
         }
-        if (!p.alive) continue;
+        if (eaten) continue;
         p.vx += ax * h;
         p.vy += ay * h;
         p.x += p.vx * h;
@@ -171,22 +237,19 @@
       }
     }
 
-    // Trail sampling (per frame, not per sub-step, to keep it light)
+    // Trail sampling (per frame)
     for (const p of planets) {
       if (!p.alive) continue;
       const trail = p.trail;
       const last = trail[trail.length - 1];
       if (!last || (last.x - p.x) ** 2 + (last.y - p.y) ** 2 > 9) {
         trail.push({ x: p.x, y: p.y });
-        if (trail.length > 220) trail.shift();
+        if (trail.length > 260) trail.shift();
       }
     }
 
-    // Consume effects decay in wall time
-    for (const e of consumeEffects) e.t += dt;
-    consumeEffects = consumeEffects.filter((e) => e.t < e.life);
-
-    // Black hole birth animation timer
+    stepEffects(dt);
+    if (countDirty) updateCounts();
     for (const bh of blackHoles) bh.created += dt;
   }
 
@@ -197,9 +260,7 @@
     let s = 9871;
     const rng = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
     for (let i = 0; i < 140; i++) {
-      const x = rng() * CW;
-      const y = rng() * CH;
-      const r = 0.5 + rng() * 1.4;
+      const x = rng() * CW, y = rng() * CH, r = 0.5 + rng() * 1.4;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
@@ -208,36 +269,36 @@
   }
 
   function drawOrbits() {
+    if (!sun.alive) return;
     ctx.save();
     ctx.strokeStyle = 'rgba(232, 236, 247, 0.07)';
     ctx.lineWidth = 1;
     for (const p of planets) {
-      if (!p.alive) continue;
+      if (!p.alive || !p.isTemplate) continue;
       ctx.beginPath();
-      ctx.arc(sunX(), sunY(), p.initialR, 0, Math.PI * 2);
+      ctx.arc(sun.x, sun.y, p.guideR, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
   }
 
   function drawSun() {
-    const x = sunX();
-    const y = sunY();
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, SUN_VISUAL_R * 4);
+    if (!sun.alive) return;
+    const x = sun.x, y = sun.y;
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, SUN_R * 4);
     grad.addColorStop(0, 'rgba(255, 240, 180, 0.95)');
     grad.addColorStop(0.3, 'rgba(255, 200, 110, 0.5)');
     grad.addColorStop(1, 'rgba(255, 184, 107, 0)');
     ctx.save();
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x, y, SUN_VISUAL_R * 4, 0, Math.PI * 2);
+    ctx.arc(x, y, SUN_R * 4, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.shadowColor = 'rgba(255, 220, 130, 0.9)';
     ctx.shadowBlur = 22;
     ctx.fillStyle = '#ffe0a0';
     ctx.beginPath();
-    ctx.arc(x, y, SUN_VISUAL_R, 0, Math.PI * 2);
+    ctx.arc(x, y, SUN_R, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -245,7 +306,6 @@
   function drawPlanet(p) {
     if (!p.alive) return;
     ctx.save();
-    // Trail
     if (p.trail.length > 1) {
       ctx.strokeStyle = p.color;
       ctx.globalAlpha = 0.5;
@@ -256,14 +316,12 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    // Body
     ctx.shadowColor = p.color;
     ctx.shadowBlur = 10;
     ctx.fillStyle = p.color;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
     ctx.fill();
-    // Ring (Saturn)
     if (p.ring) {
       ctx.shadowBlur = 0;
       ctx.strokeStyle = 'rgba(255, 230, 170, 0.8)';
@@ -277,11 +335,9 @@
 
   function drawBlackHole(bh) {
     ctx.save();
-    const t = Math.min(1, bh.created / 0.5); // spawn-in animation
+    const t = Math.min(1, bh.created / 0.5);
     const eh = bh.eventHorizon * (0.4 + 0.6 * t);
     const disk = bh.diskOuter * (0.4 + 0.6 * t);
-
-    // Accretion disk (warm tilted ellipse)
     const tilt = 0.35;
     const grad = ctx.createRadialGradient(bh.x, bh.y, eh * 0.9, bh.x, bh.y, disk);
     grad.addColorStop(0, 'rgba(255, 220, 140, 0)');
@@ -297,61 +353,82 @@
     ctx.fill();
     ctx.scale(1, 1 / 0.42);
     ctx.rotate(-tilt);
-
-    // Photon ring rim
     ctx.strokeStyle = 'rgba(255, 230, 170, 0.55)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(0, 0, eh * 1.18, 0, Math.PI * 2);
     ctx.stroke();
-
-    // Event horizon
     ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.arc(0, 0, eh, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.restore();
   }
 
-  function drawConsumeEffect(e) {
-    const t = e.t / e.life;
-    const alpha = 1 - t;
-    // Draw a stretched streak from the planet's spawn point toward the black hole.
-    const x = e.x + (e.bx - e.x) * Math.min(1, t * 1.5);
-    const y = e.y + (e.by - e.y) * Math.min(1, t * 1.5);
+  function drawEffect(e) {
+    const life = e.t / e.life;
+    const alpha = 1 - life;
     ctx.save();
+    // Shockwave ring
+    ctx.globalAlpha = Math.min(1, alpha * 1.1);
     ctx.strokeStyle = e.color;
-    ctx.globalAlpha = alpha * 0.85;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3 * (1 - life * 0.5) * e.scale;
     ctx.beginPath();
-    ctx.moveTo(e.x, e.y);
-    ctx.lineTo(x, y);
+    ctx.arc(e.x, e.y, (16 + life * 130) * e.scale, 0, Math.PI * 2);
     ctx.stroke();
-
-    // Flash at the impact point
-    const flashR = 28 * (1 - t);
-    if (flashR > 1) {
-      const grad = ctx.createRadialGradient(e.bx, e.by, 0, e.bx, e.by, flashR);
-      grad.addColorStop(0, `rgba(255, 240, 200, ${alpha * 0.9})`);
-      grad.addColorStop(1, 'rgba(255, 200, 130, 0)');
+    // Central flash
+    const flashR = 26 * e.scale * Math.max(0, 1 - life * 1.4);
+    if (flashR > 0.5) {
+      const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, flashR);
+      g.addColorStop(0, `rgba(255, 248, 210, ${Math.min(1, alpha * 1.3)})`);
+      g.addColorStop(0.5, `rgba(255, 200, 120, ${alpha * 0.6})`);
+      g.addColorStop(1, 'rgba(255, 180, 90, 0)');
       ctx.globalAlpha = 1;
-      ctx.fillStyle = grad;
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.arc(e.bx, e.by, flashR, 0, Math.PI * 2);
+      ctx.arc(e.x, e.y, flashR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Particles
+    ctx.globalAlpha = alpha;
+    ctx.shadowColor = e.color;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = e.color;
+    for (const p of e.parts) {
+      ctx.beginPath();
+      ctx.arc(e.x + p.x, e.y + p.y, 3 * (1 - life * 0.6), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
+  function drawDrag() {
+    if (!drag || spawnMode !== 'planet') return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232, 236, 247, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(drag.startX, drag.startY);
+    ctx.lineTo(drag.curX, drag.curY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(196, 123, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(drag.startX, drag.startY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawHint() {
-    if (blackHoles.length > 0) return;
+    if (blackHoles.length > 0 || drag) return;
     ctx.save();
     ctx.font = `500 14px ${FONT}`;
     ctx.fillStyle = 'rgba(232, 236, 247, 0.5)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(i18nText('spawnBlackHoleHint', 'Tap on the canvas to summon a black hole.'), CW / 2, CH - 32);
+    const key = spawnMode === 'planet' ? 'solarHintPlanet' : 'solarHintBlackHole';
+    ctx.fillText(i18nText(key, ''), CW / 2, CH - 28);
     ctx.restore();
   }
 
@@ -362,7 +439,8 @@
     for (const p of planets) drawPlanet(p);
     drawSun();
     for (const bh of blackHoles) drawBlackHole(bh);
-    for (const e of consumeEffects) drawConsumeEffect(e);
+    for (const e of effects) drawEffect(e);
+    drawDrag();
     drawHint();
   }
 
@@ -377,17 +455,68 @@
   }
 
   // ---- input ----
+  let drag = null;
+
   function canvasPoint(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
   }
 
-  function tryAddBlackHole(x, y) {
-    // Don't drop one on top of the sun (it would just instantly nuke everything).
-    const dx = x - sunX();
-    const dy = y - sunY();
-    if (dx * dx + dy * dy < (SUN_VISUAL_R + 6) * (SUN_VISUAL_R + 6)) return;
-    spawnBlackHole(x, y, bhMassPending);
+  function nearSun(x, y) {
+    if (!sun.alive) return false;
+    const dx = x - sun.x;
+    const dy = y - sun.y;
+    return dx * dx + dy * dy < (SUN_R + 6) * (SUN_R + 6);
+  }
+
+  function onDown(x, y) {
+    drag = { startX: x, startY: y, curX: x, curY: y };
+  }
+  function onMove(x, y) {
+    if (!drag) return;
+    drag.curX = x;
+    drag.curY = y;
+  }
+  function onUp() {
+    if (!drag) return;
+    const { startX, startY, curX, curY } = drag;
+    drag = null;
+    if (spawnMode === 'blackhole') {
+      if (!nearSun(startX, startY)) spawnBlackHole(startX, startY, bhMassPending);
+      return;
+    }
+    // planet mode
+    if (nearSun(startX, startY)) return;
+    const dx = curX - startX;
+    const dy = curY - startY;
+    const dragLen = Math.hypot(dx, dy);
+    if (dragLen < 8) {
+      // tap → circular orbit around the sun
+      if (!sun.alive) return;
+      const v = circularVelocity(startX, startY, sun.x, sun.y);
+      addPlanet(startX, startY, v.vx, v.vy);
+    } else {
+      // drag → custom velocity (clamped to keep it on-screen-ish)
+      let vx = dx * VEL_SCALE;
+      let vy = dy * VEL_SCALE;
+      const vmag = Math.hypot(vx, vy);
+      const vmax = sun.alive ? 2.2 * Math.sqrt(MU_SUN / Math.max(SUN_R, Math.hypot(startX - sun.x, startY - sun.y))) : Infinity;
+      if (vmag > vmax) { vx *= vmax / vmag; vy *= vmax / vmag; }
+      addPlanet(startX, startY, vx, vy);
+    }
+  }
+
+  function selectMode(key) {
+    if (key !== 'blackhole' && key !== 'planet') return;
+    spawnMode = key;
+    modeList.querySelectorAll('.mol-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.key === key);
+    });
+    if (spawnHint) {
+      const hk = key === 'planet' ? 'solarHintPlanet' : 'solarHintBlackHole';
+      spawnHint.dataset.i18n = hk;
+      spawnHint.textContent = i18nText(hk, spawnHint.textContent);
+    }
   }
 
   function wireEvents() {
@@ -399,19 +528,29 @@
       bhMassPending = parseFloat(bhMassInput.value);
       bhMassValue.textContent = bhMassPending.toFixed(1);
     });
+    modeList.querySelectorAll('.mol-btn').forEach((btn) => {
+      btn.addEventListener('click', () => selectMode(btn.dataset.key));
+    });
     clearBhBtn.addEventListener('click', clearBlackHoles);
     resetBtn.addEventListener('click', resetAll);
 
-    canvas.addEventListener('click', (e) => {
-      const p = canvasPoint(e.clientX, e.clientY);
-      tryAddBlackHole(p.x, p.y);
-    });
+    canvas.addEventListener('mousedown', (e) => { const p = canvasPoint(e.clientX, e.clientY); onDown(p.x, p.y); });
+    window.addEventListener('mousemove', (e) => { if (drag) { const p = canvasPoint(e.clientX, e.clientY); onMove(p.x, p.y); } });
+    window.addEventListener('mouseup', onUp);
     canvas.addEventListener('touchstart', (e) => {
       if (!e.touches[0]) return;
       const p = canvasPoint(e.touches[0].clientX, e.touches[0].clientY);
-      tryAddBlackHole(p.x, p.y);
+      onDown(p.x, p.y);
       e.preventDefault();
     }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+      if (!e.touches[0]) return;
+      const p = canvasPoint(e.touches[0].clientX, e.touches[0].clientY);
+      onMove(p.x, p.y);
+      e.preventDefault();
+    }, { passive: false });
+    canvas.addEventListener('touchend', (e) => { onUp(); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchcancel', () => { drag = null; });
   }
 
   document.addEventListener('langchange', draw);
