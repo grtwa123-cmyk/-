@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="impactPageTitle">Egg Drop · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount9">Physics · Egg drop</span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="impactTitle">Impulse &amp; Force (Egg Drop)</h1>
+      <p data-i18n="impactIntro">Pick a drop height and a floor material, then drop the egg. The collision delivers the same impulse, but the peak force depends on how long the floor takes to stop the egg.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="drop-height" data-i18n="dropHeightLabel">Drop height</label>
+          <span class="value"><span id="drop-height-value">1.50</span> m</span>
+          <input type="range" id="drop-height" min="0.1" max="3" step="0.05" value="1.5" />
+        </div>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="floorMaterialLabel">Floor material</label>
+        </div>
+
+        <div class="molecule-list" id="material-list" style="display: flex; gap: 0.35rem; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn" data-key="hard"><span data-i18n="materialHard">Hard floor</span></button>
+          <button type="button" class="mol-btn active" data-key="medium"><span data-i18n="materialMedium">Soft cushion</span></button>
+          <button type="button" class="mol-btn" data-key="soft"><span data-i18n="materialSoft">Very soft cushion</span></button>
+        </div>
+
+        <div class="buttons">
+          <button id="drop-btn" type="button" data-i18n="dropBtn">Drop</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="propVerdict">Verdict</span><span class="property-value" id="prop-verdict">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propImpactVelocity">Impact velocity</span><span class="property-value" id="prop-impact-v">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propPeakForce">Peak force</span><span class="property-value" id="prop-peak-f">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propAvgForce">Average force</span><span class="property-value" id="prop-avg-f">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propImpulse">Impulse</span><span class="property-value" id="prop-impulse">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propCollisionTime">Collision time</span><span class="property-value" id="prop-collision-t">—</span></div>
+        </div>
+
+        <div class="buttons" style="margin-top: 0.6rem;">
+          <button id="clear-graph-btn" type="button" class="secondary" data-i18n="clearGraphBtn">Clear graph</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="impactNotes">Notes</summary>
+          <ul>
+            <li data-i18n="impactNote1">Impulse J = m·Δv depends only on the egg's mass and impact speed.</li>
+            <li data-i18n="impactNote2">Average force F̄ = J / Δt. Longer collisions give smaller forces.</li>
+            <li data-i18n="impactNote3">Peak force is what breaks the egg. For a half-sine, peak ≈ (π/2) × average.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="780" aria-label="Egg drop simulation"></canvas>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js"></script>
+  <script src="impact.js"></script>
+</body>
+</html>
