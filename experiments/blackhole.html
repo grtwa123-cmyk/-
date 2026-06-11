@@ -95,7 +95,7 @@
 
   <div class="overlay top-left">
     <a href="../physics.html">&larr; Back</a>
-    <span class="version-tag">v1.0.0</span>
+    <span class="version-tag">v1.0.1</span>
   </div>
 
   <div class="overlay controls">
@@ -173,13 +173,14 @@
       return s;
     }
 
-    // ════════ 흑체 색 램프 (시각용 근사) ════════
-    // t는 무차원 온도. ~0.4 깊은 적색 → 1.0 주황-백 → 1.6+ 청백.
-    // 도플러 청색편이(g>1)는 t를 키워 푸르게, 적색편이(g<1)는 붉게 만든다.
+    // ════════ 흑체 색 램프 (인터스텔라 Gargantua 풍 워밍 팔레트) ════════
+    // t는 무차원 온도. ~0.4 깊은 적색 → 1.0 주황 → 2.0 따뜻한 백색.
+    // 의도적으로 청색 끝을 없애 도플러 청색편이도 '더 하얗고 밝게'로만
+    // 표현된다 (영화처럼 색은 주황 계열 유지, 밝기 비대칭은 그대로).
     vec3 blackbody(float t) {
-      vec3 c = mix(vec3(1.00, 0.18, 0.02), vec3(1.00, 0.55, 0.18), smoothstep(0.30, 0.75, t));
-      c = mix(c, vec3(1.00, 0.90, 0.75), smoothstep(0.75, 1.20, t));
-      c = mix(c, vec3(0.65, 0.76, 1.00), smoothstep(1.20, 2.00, t));
+      vec3 c = mix(vec3(1.00, 0.16, 0.01), vec3(1.00, 0.42, 0.08), smoothstep(0.30, 0.75, t));
+      c = mix(c, vec3(1.00, 0.72, 0.38), smoothstep(0.75, 1.30, t));
+      c = mix(c, vec3(1.00, 0.93, 0.80), smoothstep(1.30, 2.20, t));
       return c * smoothstep(0.0, 0.25, t);   // 아주 차가우면 어둡게
     }
 
@@ -213,13 +214,14 @@
       float band = exp(-bx * bx);                      // 띠에서 멀수록 감쇠
       float neb  = fbm(d * 3.5 + 7.1);
       float hue  = fbm(d * 9.0 - 3.7);
-      col += band * (0.05 + 0.30 * neb * neb)
+      col += band * (0.03 + 0.16 * neb * neb)
            * mix(vec3(0.45, 0.34, 0.62), vec3(0.26, 0.44, 0.72), hue);
       // 별 두 레이어 (성긴 밝은 별 + 촘촘한 희미한 별)
-      col += stars(d, 26.0, 1.0);
-      col += stars(d, 84.0, 0.45);
-      col += band * stars(d, 140.0, 0.35);             // 은하수 안의 미세 별
-      return col;
+      col += stars(d, 26.0, 0.6);
+      col += stars(d, 84.0, 0.25);
+      col += band * stars(d, 140.0, 0.2);              // 은하수 안의 미세 별
+      // 전체 감광: 원반이 화면의 유일한 광원처럼 보이도록 (영화 룩)
+      return col * 0.45;
     }
 
     // ════════ 강착원반 발광 ════════
@@ -261,7 +263,7 @@
       // 박막 원반(Shakura–Sunyaev) 온도 분포 T(r) ∝ r^(-3/4).
       // 관측 온도 T_obs = g·T → 다가오는 쪽 청색, 멀어지는 쪽·안쪽 적색.
       float Tr   = pow(rin / r, 0.75);
-      vec3  col  = blackbody(g * Tr * 1.25);
+      vec3  col  = blackbody(g * Tr * 1.1);   // 1.1: 주황 대역 중심에 머물도록
 
       // ── 5) 밝기: 방출 분포 × 도플러 빔잉 ──
       // 단색 강도 변환 I_obs = g³·I_emit (빔잉) — 다가오는 면이 수 배 밝아진다.
