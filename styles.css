@@ -497,6 +497,20 @@ body:not([data-theme]) header.site-header p {
   margin-bottom: 1.5rem;
 }
 
+.version-tag {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .crumbs a {
   color: var(--accent);
   text-decoration: none;
