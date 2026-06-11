@@ -45,7 +45,7 @@
   let bhMassPending = parseFloat(bhMassInput.value);
   let spawnMode = 'blackhole';
 
-  const sun = { x: 0, y: 0, vx: 0, vy: 0, alive: true };
+  const sun = { x: 0, y: 0, vx: 0, vy: 0, mass: 1, alive: true, draining: null };
   let planets = [];
   let blackHoles = [];
   let effects = [];
@@ -61,6 +61,8 @@
 
   function ehFor(mass) { return Math.max(7, 5 + mass * 1.2); }
   function diskFor(mass) { return ehFor(mass) * 2.4 + 6; }
+  // Sun's visual radius shrinks as it is drained (radius ∝ mass^⅓).
+  function sunR() { return SUN_R * Math.cbrt(Math.max(sun.mass, 0.001)); }
 
   function recomputeScale() {
     const usableR = Math.min(CW, CH) / 2 - 30;
@@ -73,7 +75,7 @@
 
   // Heaviest gravity source still alive (sun counts as mass 1).
   function dominantBody() {
-    let best = sun.alive ? { x: sun.x, y: sun.y, vx: sun.vx, vy: sun.vy, mass: 1 } : null;
+    let best = sun.alive ? { x: sun.x, y: sun.y, vx: sun.vx, vy: sun.vy, mass: sun.mass } : null;
     for (const bh of blackHoles) {
       if (!best || bh.mass > best.mass) best = bh;
     }
@@ -93,7 +95,9 @@
     sun.y = CH / 2;
     sun.vx = 0;
     sun.vy = 0;
+    sun.mass = 1;
     sun.alive = true;
+    sun.draining = null;
     addedCount = 0;
     planets = PLANET_TEMPLATES.map((p, idx) => {
       const r = Math.sqrt(p.a) * DISTANCE_SCALE;
@@ -186,8 +190,9 @@
           const dy = bh.y - sun.y;
           const r2 = dx * dx + dy * dy;
           const r = Math.sqrt(r2) || 1;
-          ax += (-MU_SUN / r2) * (dx / r);
-          ay += (-MU_SUN / r2) * (dy / r);
+          const mu = MU_SUN * sun.mass;
+          ax += (-mu / r2) * (dx / r);
+          ay += (-mu / r2) * (dy / r);
         }
         for (const other of blackHoles) {
           if (other === bh) continue;
@@ -229,34 +234,25 @@
         }
       }
 
-      // Sun: pulled by black holes; eaten on contact with a horizon.
+      // Sun: pulled by black holes. Touching a horizon doesn't delete it —
+      // it marks the hole as draining the sun (gradual accretion below).
       if (sun.alive) {
         let sax = 0, say = 0;
-        let eatenBy = null;
+        sun.draining = null;
         for (const bh of blackHoles) {
           const dx = sun.x - bh.x;
           const dy = sun.y - bh.y;
           const r2 = dx * dx + dy * dy;
           const r = Math.sqrt(r2) || 1;
-          if (r < ehFor(bh.mass) + SUN_R * 0.4) { eatenBy = bh; break; }
+          if (r < ehFor(bh.mass) + sunR() * 0.7) sun.draining = bh;
           const mu = MU_SUN * bh.mass;
           sax += (-mu / r2) * (dx / r);
           say += (-mu / r2) * (dy / r);
         }
-        if (eatenBy) {
-          sun.alive = false;
-          spawnExplosion(sun.x, sun.y, '#ffd27a', 2.6);
-          // The hole swallows the sun's mass and momentum.
-          const m = eatenBy.mass + 1;
-          eatenBy.vx = (eatenBy.vx * eatenBy.mass + sun.vx) / m;
-          eatenBy.vy = (eatenBy.vy * eatenBy.mass + sun.vy) / m;
-          eatenBy.mass = m;
-        } else {
-          sun.vx += sax * h;
-          sun.vy += say * h;
-          sun.x += sun.vx * h;
-          sun.y += sun.vy * h;
-        }
+        sun.vx += sax * h;
+        sun.vy += say * h;
+        sun.x += sun.vx * h;
+        sun.y += sun.vy * h;
       }
 
       // Planets
@@ -268,14 +264,15 @@
           const dy = p.y - sun.y;
           const r2 = dx * dx + dy * dy;
           const r = Math.sqrt(r2);
-          if (r < SUN_R) {
+          if (r < sunR()) {
             p.alive = false;
             countDirty = true;
             spawnExplosion(p.x, p.y, p.color, 1);
             continue;
           }
-          ax += (-MU_SUN / r2) * (dx / r);
-          ay += (-MU_SUN / r2) * (dy / r);
+          const mu = MU_SUN * sun.mass;
+          ax += (-mu / r2) * (dx / r);
+          ay += (-mu / r2) * (dy / r);
         }
         let eaten = false;
         for (const bh of blackHoles) {
@@ -299,6 +296,30 @@
         p.vy += ay * h;
         p.x += p.vx * h;
         p.y += p.vy * h;
+      }
+    }
+
+    // Gradual accretion: a hole in contact drains the sun instead of
+    // deleting it. The sun shrinks, the hole grows, momentum is conserved.
+    if (sun.alive && sun.draining) {
+      const bh = sun.draining;
+      const rate = 0.35 + 0.25 * Math.sqrt(bh.mass); // solar masses per wall-second
+      const dm = Math.min(sun.mass, rate * dt);
+      const newM = bh.mass + dm;
+      bh.vx = (bh.vx * bh.mass + sun.vx * dm) / newM;
+      bh.vy = (bh.vy * bh.mass + sun.vy * dm) / newM;
+      bh.mass = newM;
+      sun.mass -= dm;
+      // Soft velocity coupling keeps the locked pair from drifting apart.
+      const k = Math.min(1, dt * 2.5);
+      sun.vx += (bh.vx - sun.vx) * k;
+      sun.vy += (bh.vy - sun.vy) * k;
+      if (sun.mass <= 0.04) {
+        bh.mass += sun.mass;
+        sun.mass = 0;
+        sun.alive = false;
+        sun.draining = null;
+        spawnExplosion(sun.x, sun.y, '#ffd27a', 2.2);
       }
     }
 
@@ -353,21 +374,60 @@
   function drawSun() {
     if (!sun.alive) return;
     const x = sun.x, y = sun.y;
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, SUN_R * 2.4);
+    const R = sunR();
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, R * 2.4);
     grad.addColorStop(0, 'rgba(255, 240, 180, 0.9)');
     grad.addColorStop(0.45, 'rgba(255, 200, 110, 0.35)');
     grad.addColorStop(1, 'rgba(255, 184, 107, 0)');
     ctx.save();
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(x, y, SUN_R * 2.4, 0, Math.PI * 2);
+    ctx.arc(x, y, R * 2.4, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowColor = 'rgba(255, 220, 130, 0.9)';
     ctx.shadowBlur = 24;
     ctx.fillStyle = '#ffe0a0';
     ctx.beginPath();
-    ctx.arc(x, y, SUN_R, 0, Math.PI * 2);
+    ctx.arc(x, y, R, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  // Glowing stream of plasma flowing from the sun's surface into the hole.
+  function drawAccretionStream() {
+    if (!sun.alive || !sun.draining) return;
+    const bh = sun.draining;
+    const dx = bh.x - sun.x;
+    const dy = bh.y - sun.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d, uy = dy / d;
+    const px = -uy, py = ux; // perpendicular
+    const sx = sun.x + ux * sunR() * 0.85;
+    const sy = sun.y + uy * sunR() * 0.85;
+
+    ctx.save();
+    // Three bowed filaments
+    for (let k = -1; k <= 1; k++) {
+      const bow = k * Math.min(14, d * 0.18);
+      const mx = (sx + bh.x) / 2 + px * bow;
+      const my = (sy + bh.y) / 2 + py * bow;
+      ctx.strokeStyle = `rgba(255, 205, 125, ${0.55 - Math.abs(k) * 0.18})`;
+      ctx.lineWidth = 3.5 - Math.abs(k) * 1.2;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(mx, my, bh.x, bh.y);
+      ctx.stroke();
+    }
+    // Plasma blobs travelling along the stream
+    ctx.fillStyle = 'rgba(255, 235, 170, 0.9)';
+    for (let i = 0; i < 4; i++) {
+      const t = ((bh.spin * 0.45 + i / 4) % 1);
+      const bx = sx + (bh.x - sx) * t;
+      const by = sy + (bh.y - sy) * t;
+      ctx.beginPath();
+      ctx.arc(bx, by, 2.6 * (1 - t * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -547,6 +607,7 @@
     drawStarfield();
     drawOrbits();
     drawSun();
+    drawAccretionStream();
     for (const p of planets) drawPlanet(p);
     for (const bh of blackHoles) drawBlackHole(bh);
     for (const e of effects) drawEffect(e);
@@ -576,7 +637,8 @@
     if (!sun.alive) return false;
     const dx = x - sun.x;
     const dy = y - sun.y;
-    return dx * dx + dy * dy < (SUN_R + 6) * (SUN_R + 6);
+    const R = sunR() + 6;
+    return dx * dx + dy * dy < R * R;
   }
 
   function onDown(x, y) {

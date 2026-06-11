@@ -267,7 +267,7 @@
       propBlackHoles: "Black holes",
       solarNotes: "Notes",
       solarNote1: "Planet sizes use the real radius ratios — Jupiter really is ~11× Earth on screen. Distances are compressed by √a so all eight orbits fit, and every planet starts at its stable circular speed v = √(GM/r).",
-      solarNote2: "Black holes are dynamic bodies: they fall toward the Sun, orbit it, merge with each other on contact, and a hole that swallows the Sun absorbs its mass and momentum.",
+      solarNote2: "Black holes are dynamic bodies: they fall toward the Sun, orbit it, and merge on contact. A hole touching the Sun doesn't delete it — it drains it through a glowing accretion stream: the Sun shrinks while the hole's mass and horizon grow. A black hole always wins, no matter how small it looks.",
       solarNote3: "A planet approaching a horizon is tidally stretched (spaghettification) before it is consumed. Every destruction — planet into Sun, planet into hole, Sun into hole, hole merger — plays a collision flash.",
     },
     ko: {
@@ -537,7 +537,7 @@
       propBlackHoles: "블랙홀",
       solarNotes: "설명",
       solarNote1: "행성 크기는 실제 반지름 비율 그대로입니다 — 화면에서도 목성이 지구의 약 11배. 거리는 여덟 궤도가 다 들어오도록 √a 압축하고, 각 행성은 안정적인 원궤도 속도 v = √(GM/r)로 시작합니다.",
-      solarNote2: "블랙홀도 움직이는 천체입니다. 태양을 향해 떨어지거나 공전하고, 서로 닿으면 병합하며, 태양을 삼킨 블랙홀은 태양의 질량과 운동량을 흡수합니다.",
+      solarNote2: "블랙홀도 움직이는 천체입니다. 태양을 향해 떨어지거나 공전하고, 서로 닿으면 병합합니다. 태양에 닿은 블랙홀은 태양을 한 번에 지우지 않고 빛나는 강착 스트림으로 서서히 빨아들입니다 — 태양은 점점 줄어들고 블랙홀의 질량과 지평선은 그만큼 커집니다. 아무리 작아 보여도 블랙홀이 항상 이깁니다.",
       solarNote3: "사건의 지평선에 다가가는 행성은 조석력으로 길게 늘어난(스파게티화) 뒤 삼켜집니다. 행성-태양, 행성-블랙홀, 태양-블랙홀, 블랙홀 병합 — 모든 파괴에 충돌 섬광이 재생됩니다.",
     },
   };
