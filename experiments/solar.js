@@ -174,6 +174,12 @@
     effects = effects.filter((e) => e.t < e.life);
   }
 
+  // Plummer softening: any pair separation r is replaced by sqrt(r² + EPS²) in
+  // the force calculation, so two bodies in contact don't catapult each other
+  // across the canvas through a 1/r² singularity. We still use the un-softened
+  // r for the direction unit vector.
+  const GRAV_EPS2 = 4;
+
   // ---- physics ----
   function step(dt) {
     const simDt = dt * timeScale; // days
@@ -191,8 +197,9 @@
           const r2 = dx * dx + dy * dy;
           const r = Math.sqrt(r2) || 1;
           const mu = MU_SUN * sun.mass;
-          ax += (-mu / r2) * (dx / r);
-          ay += (-mu / r2) * (dy / r);
+          const denom = r2 + GRAV_EPS2;
+          ax += (-mu / denom) * (dx / r);
+          ay += (-mu / denom) * (dy / r);
         }
         for (const other of blackHoles) {
           if (other === bh) continue;
@@ -201,8 +208,9 @@
           const r2 = dx * dx + dy * dy;
           const r = Math.sqrt(r2) || 1;
           const mu = MU_SUN * other.mass;
-          ax += (-mu / r2) * (dx / r);
-          ay += (-mu / r2) * (dy / r);
+          const denom = r2 + GRAV_EPS2;
+          ax += (-mu / denom) * (dx / r);
+          ay += (-mu / denom) * (dy / r);
         }
         bh.vx += ax * h;
         bh.vy += ay * h;
@@ -226,6 +234,9 @@
               A.vx = (A.vx * A.mass + B.vx * B.mass) / m;
               A.vy = (A.vy * A.mass + B.vy * B.mass) / m;
               A.mass = m;
+              // The draining reference must follow the surviving hole, not
+              // the spliced-out one, otherwise accretion fattens a zombie.
+              if (sun.draining === B) sun.draining = A;
               blackHoles.splice(j, 1);
               countDirty = true;
               j--;
@@ -246,8 +257,9 @@
           const r = Math.sqrt(r2) || 1;
           if (r < ehFor(bh.mass) + sunR() * 0.7) sun.draining = bh;
           const mu = MU_SUN * bh.mass;
-          sax += (-mu / r2) * (dx / r);
-          say += (-mu / r2) * (dy / r);
+          const denom = r2 + GRAV_EPS2;
+          sax += (-mu / denom) * (dx / r);
+          say += (-mu / denom) * (dy / r);
         }
         sun.vx += sax * h;
         sun.vy += say * h;
@@ -271,8 +283,9 @@
             continue;
           }
           const mu = MU_SUN * sun.mass;
-          ax += (-mu / r2) * (dx / r);
-          ay += (-mu / r2) * (dy / r);
+          const denom = r2 + GRAV_EPS2;
+          ax += (-mu / denom) * (dx / r);
+          ay += (-mu / denom) * (dy / r);
         }
         let eaten = false;
         for (const bh of blackHoles) {
@@ -288,8 +301,9 @@
             break;
           }
           const mu = MU_SUN * bh.mass;
-          ax += (-mu / r2) * (dx / r);
-          ay += (-mu / r2) * (dy / r);
+          const denom = r2 + GRAV_EPS2;
+          ax += (-mu / denom) * (dx / r);
+          ay += (-mu / denom) * (dy / r);
         }
         if (eaten) continue;
         p.vx += ax * h;
