@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Black Hole · Schwarzschild Lensing</title>
+  <style>
+    :root {
+      --panel-bg: rgba(10, 12, 20, 0.72);
+      --panel-border: rgba(255, 255, 255, 0.14);
+      --text: #e8ecf4;
+      --muted: #93a0b4;
+      --accent: #7aa7ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    .overlay { position: fixed; z-index: 10; }
+
+    .top-left { top: 12px; left: 14px; display: flex; align-items: center; gap: 0.6rem; }
+    .top-left a { color: var(--accent); text-decoration: none; font-size: 0.95rem; }
+    .top-left a:hover { text-decoration: underline; }
+    .version-tag {
+      padding: 0.1rem 0.5rem; font-size: 0.72rem; font-weight: 600;
+      color: var(--muted); background: var(--panel-bg);
+      border: 1px solid var(--panel-border); border-radius: 999px;
+      font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    }
+
+    .controls {
+      top: 12px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; align-items: center;
+      padding: 0.55rem 0.95rem; max-width: min(92vw, 880px);
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      border-radius: 12px; backdrop-filter: blur(8px);
+    }
+    .ctrl { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+    .ctrl input[type="range"] { width: 90px; accent-color: var(--accent); }
+    .ctrl .val { color: var(--text); font-variant-numeric: tabular-nums; min-width: 2.4em; text-align: right; }
+    .ctrl button, .ctrl select {
+      background: rgba(255,255,255,0.08); color: var(--text);
+      border: 1px solid var(--panel-border); border-radius: 8px;
+      padding: 0.25rem 0.6rem; font-size: 0.8rem; cursor: pointer;
+    }
+    .ctrl button:hover { background: rgba(255,255,255,0.15); }
+
+    .readout {
+      top: 50%; right: 14px; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 0.5rem;
+      padding: 0.7rem 0.9rem; background: var(--panel-bg);
+      border: 1px solid var(--panel-border); border-radius: 12px;
+      backdrop-filter: blur(8px); text-align: right;
+    }
+    .readout .label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .readout .num { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
+    .hint {
+      bottom: 12px; left: 50%; transform: translateX(-50%);
+      font-size: 0.75rem; color: var(--muted);
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      border-radius: 999px; padding: 0.3rem 0.9rem; backdrop-filter: blur(8px);
+    }
+    @media (max-width: 760px) {
+      .controls { max-width: 94vw; gap: 0.3rem 0.7rem; }
+      .ctrl input[type="range"] { width: 64px; }
+      .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    ════════════════════════════════════════════════════════════════════
+    슈바르츠실트 블랙홀 실시간 렌더러
+    ────────────────────────────────────────────────────────────────────
+    구조:
+      · Three.js로 풀스크린 쿼드 1장 + ShaderMaterial.
+      · 모든 물리는 아래 프래그먼트 셰이더에서 픽셀 단위로 계산.
+      · 단위계: G = c = 1, 길이 단위는 블랙홀 질량 M.
+        사건의 지평선 r_s = 2M, 광자구 r = 3M, ISCO r = 6M.
+
+    핵심 물리 (프래그먼트 셰이더):
+      1. 광자 측지선 — 비네 방정식 u'' + u = 3Mu² 의 3D 벡터형
+           d²x/dλ² = -3·M·h²·x / r⁵   (h = |x×v|, 광선별 보존량)
+         을 leapfrog(KDK)로 수치 적분. 궤적 모양이 정확하므로
+         아인슈타인 링·광자구 그림자(b_c = 3√3·M)가 자동으로 생긴다.
+      2. 강착원반 — 적도면 교차를 보간으로 찾아 ISCO(6M)~16M이면 발광 누적.
+         케플러 회전 v = √(M/(r-2M)), 합성 편이 g = √(1-3M/r)/(1-β·n̂),
+         빔잉 I ∝ g³, 색은 T(r) ∝ r^(-3/4)에 g를 곱한 흑체 램프.
+      3. 배경 — 절차적 별(큐브면 셀 해시) + FBM 은하수 띠.
+         탈출 광선의 최종 방향으로 샘플링 → 별도 렌즈 왜곡됨.
+    ════════════════════════════════════════════════════════════════════
+  -->
+
+  <div class="overlay top-left">
+    <a href="../physics.html">&larr; Back</a>
+    <span class="version-tag">v1.0.0</span>
+  </div>
+
+  <div class="overlay controls">
+    <span class="ctrl">Mass M <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></span>
+    <span class="ctrl">Disk <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></span>
+    <span class="ctrl"><label><input type="checkbox" id="ui-doppler-on" checked /> Doppler</label>
+      <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" /><span class="val" id="ui-doppler-val">1.00</span></span>
+    <span class="ctrl"><button type="button" id="ui-spin">Spin: CCW</button></span>
+    <span class="ctrl">Quality
+      <select id="ui-quality">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select></span>
+  </div>
+
+  <div class="overlay readout">
+    <div><div class="label">Camera distance</div><div class="num"><span id="ui-dist">30.0</span> M</div></div>
+    <div><div class="label">FPS</div><div class="num" id="ui-fps">—</div></div>
+  </div>
+
+  <div class="overlay hint">Drag to orbit · Scroll to zoom</div>
+
+  <!-- ════════════ 프래그먼트 셰이더: 모든 물리 계산 ════════════ -->
+  <script id="frag" type="x-shader/x-fragment">
+    precision highp float;
+
+    uniform vec2  uRes;        // 렌더 해상도(px)
+    uniform float uPhase;      // 원반 회전 위상 ∫spin·dt (방향 토글 시 점프 방지)
+    uniform vec3  uCamPos;     // 카메라 위치 (M 단위 좌표)
+    uniform vec3  uCamRight;   // 카메라 기저 벡터
+    uniform vec3  uCamUp;
+    uniform vec3  uCamFwd;
+    uniform float uTanHalfFov; // tan(FOV/2)
+    uniform float uM;          // 블랙홀 질량 (렌즈 강도; r_s = 2M)
+    uniform float uDiskGain;   // 원반 밝기 배율
+    uniform float uDoppler;    // 도플러 효과 강도 0~1 (0 = off)
+    uniform float uSpin;       // 원반 회전 방향 ±1
+
+    // ── 성능 상수 (JS에서 품질 프리셋으로 주입) ──
+    // STEPS:      광선당 최대 적분 스텝 수
+    // STEP_SCALE: 스텝 크기 배율 (클수록 빠르고 거칠다)
+    #ifndef STEPS
+      #define STEPS 220
+    #endif
+    #ifndef STEP_SCALE
+      #define STEP_SCALE 1.0
+    #endif
+
+    // ════════ 해시 / 노이즈 ════════
+    float hash12(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+    float hash13(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+    // 3D 값 노이즈 (8꼭짓점 보간)
+    float vnoise(vec3 p) {
+      vec3 i = floor(p), f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float n000 = hash13(i + vec3(0,0,0)), n100 = hash13(i + vec3(1,0,0));
+      float n010 = hash13(i + vec3(0,1,0)), n110 = hash13(i + vec3(1,1,0));
+      float n001 = hash13(i + vec3(0,0,1)), n101 = hash13(i + vec3(1,0,1));
+      float n011 = hash13(i + vec3(0,1,1)), n111 = hash13(i + vec3(1,1,1));
+      return mix(mix(mix(n000,n100,f.x), mix(n010,n110,f.x), f.y),
+                 mix(mix(n001,n101,f.x), mix(n011,n111,f.x), f.y), f.z);
+    }
+    float fbm(vec3 p) {
+      float a = 0.5, s = 0.0;
+      for (int i = 0; i < 4; i++) { s += a * vnoise(p); p *= 2.13; a *= 0.5; }
+      return s;
+    }
+
+    // ════════ 흑체 색 램프 (시각용 근사) ════════
+    // t는 무차원 온도. ~0.4 깊은 적색 → 1.0 주황-백 → 1.6+ 청백.
+    // 도플러 청색편이(g>1)는 t를 키워 푸르게, 적색편이(g<1)는 붉게 만든다.
+    vec3 blackbody(float t) {
+      vec3 c = mix(vec3(1.00, 0.18, 0.02), vec3(1.00, 0.55, 0.18), smoothstep(0.30, 0.75, t));
+      c = mix(c, vec3(1.00, 0.90, 0.75), smoothstep(0.75, 1.20, t));
+      c = mix(c, vec3(0.65, 0.76, 1.00), smoothstep(1.20, 2.00, t));
+      return c * smoothstep(0.0, 0.25, t);   // 아주 차가우면 어둡게
+    }
+
+    // ════════ 절차적 별: 큐브면 셀 해시 ════════
+    // 방향 d를 큐브 면에 투영 → n×n 셀마다 별 1개 후보.
+    // 밝기를 멱법칙(pow)으로 깎아 대부분 희미하고 소수만 밝게.
+    vec3 stars(vec3 d, float n, float gain) {
+      vec3 a = abs(d);
+      vec2 uv; float face;
+      if (a.x >= a.y && a.x >= a.z) { uv = d.yz / a.x; face = d.x > 0.0 ? 1.0 : 2.0; }
+      else if (a.y >= a.z)          { uv = d.xz / a.y; face = d.y > 0.0 ? 3.0 : 4.0; }
+      else                          { uv = d.xy / a.z; face = d.z > 0.0 ? 5.0 : 6.0; }
+      vec2 g  = (uv * 0.5 + 0.5) * n;
+      vec2 id = floor(g), f = fract(g);
+      float h  = hash12(id + face * 101.7);
+      vec2  sp = vec2(hash12(id + face * 101.7 + 1.31),
+                      hash12(id + face * 101.7 + 2.67)) * 0.8 + 0.1;
+      float dist2 = dot(f - sp, f - sp);
+      float bri = exp(-dist2 * 220.0) * pow(h, 18.0) * 60.0 * gain;
+      // 색온도: 따뜻한 별 ↔ 푸른 별
+      vec3 tint = mix(vec3(1.0, 0.82, 0.65), vec3(0.72, 0.82, 1.0), hash12(id + face * 7.3));
+      return bri * tint;
+    }
+
+    // ════════ 우주 배경 (탈출한 광선의 최종 방향으로 샘플링) ════════
+    vec3 sky(vec3 d) {
+      vec3 col = vec3(0.0);
+      // 은하수: 기울어진 대원 띠를 따라 FBM 성운
+      vec3 mwN = normalize(vec3(0.42, 0.88, 0.18));    // 띠의 법선 (은하면 기울기)
+      float bx = dot(d, mwN) * 4.0;                    // pow(음수, ·)는 GLSL 미정의 → 직접 제곱
+      float band = exp(-bx * bx);                      // 띠에서 멀수록 감쇠
+      float neb  = fbm(d * 3.5 + 7.1);
+      float hue  = fbm(d * 9.0 - 3.7);
+      col += band * (0.05 + 0.30 * neb * neb)
+           * mix(vec3(0.45, 0.34, 0.62), vec3(0.26, 0.44, 0.72), hue);
+      // 별 두 레이어 (성긴 밝은 별 + 촘촘한 희미한 별)
+      col += stars(d, 26.0, 1.0);
+      col += stars(d, 84.0, 0.45);
+      col += band * stars(d, 140.0, 0.35);             // 은하수 안의 미세 별
+      return col;
+    }
+
+    // ════════ 강착원반 발광 ════════
+    // hit       : 적도면 교차점 (y≈0)
+    // photonDir : 그 지점에서의 광선 진행 방향 (카메라→장면)
+    // alpha     : 출력 — 이 교차에서의 불투명도
+    vec3 diskShade(vec3 hit, vec3 photonDir, out float alpha) {
+      float r    = length(hit.xz);
+      float rin  = 6.0  * uM;     // 안쪽 가장자리 = ISCO
+      float rout = 16.0 * uM;     // 바깥 가장자리
+
+      // ── 1) 케플러 회전 ──
+      // 슈바르츠실트 원궤도 각속도 Ω = √(M/r³).
+      // 정지 관측자가 잰 국소 궤도 속력 v = √(M/(r-2M)); ISCO에서 정확히 0.5c.
+      float omega   = sqrt(uM / (r * r * r));
+      float vloc    = min(sqrt(uM / max(r - 2.0 * uM, 1e-3)), 0.985);
+      vec3  betaDir = uSpin * normalize(vec3(-hit.z, 0.0, hit.x));  // 접선 방향
+
+      // ── 2) 합성 편이 인자 g = ν_obs/ν_emit ──
+      //   g = √(1 - 3M/r) / (1 - β·n̂)
+      // 분자: 중력 적색편이 √(1-2M/r) × 궤도 시간지연 1/γ 를 합친 항
+      //       (항등식 (1-2M/r)(1-v²) = 1-3M/r 이용)
+      // 분모: 특수상대론 도플러. n̂은 방출점→카메라 방향 = 광선 진행의 반대.
+      // uDoppler가 β항만 끄므로 0이면 중력 적색편이만 남는다.
+      vec3  nToCam = -photonDir;
+      float bdn    = dot(betaDir * vloc, nToCam) * uDoppler;
+      float g      = sqrt(max(1.0 - 3.0 * uM / r, 0.0)) / max(1.0 - bdn, 0.05);
+
+      // ── 3) 원반 무늬: 차등 회전하는 스트릭 ──
+      // 각도를 (cos,sin)으로 임베딩해 φ=±π 이음매를 없애고,
+      // 접선 주파수는 낮게·반경 주파수는 높게 → 길게 늘어진 줄무늬.
+      // Ω(r)이 r마다 달라 시간이 지나면 자연스럽게 전단(shear)된다.
+      float phi  = atan(hit.z, hit.x);
+      float aRot = phi - omega * uPhase * 9.0;          // 9.0 = 시각용 시간 배속
+      vec3  q    = vec3(cos(aRot), sin(aRot), 0.0) * 2.3 + vec3(0.0, 0.0, 7.0 * log(r));
+      float streak = clamp(fbm(q) * 1.9 - 0.35, 0.0, 1.4);
+
+      // ── 4) 온도와 색 ──
+      // 박막 원반(Shakura–Sunyaev) 온도 분포 T(r) ∝ r^(-3/4).
+      // 관측 온도 T_obs = g·T → 다가오는 쪽 청색, 멀어지는 쪽·안쪽 적색.
+      float Tr   = pow(rin / r, 0.75);
+      vec3  col  = blackbody(g * Tr * 1.25);
+
+      // ── 5) 밝기: 방출 분포 × 도플러 빔잉 ──
+      // 단색 강도 변환 I_obs = g³·I_emit (빔잉) — 다가오는 면이 수 배 밝아진다.
+      float em   = pow(rin / r, 2.0);                   // 안쪽일수록 밝게
+      float fade = smoothstep(rin, rin * 1.06, r) * (1.0 - smoothstep(rout * 0.72, rout, r));
+      float I    = uDiskGain * em * pow(g, 3.0) * (0.25 + 1.5 * streak) * fade;
+
+      alpha = clamp((0.35 + 0.85 * streak) * fade, 0.0, 0.95);
+      return col * I;
+    }
+
+    // ════════ 메인: 픽셀당 측지선 레이마칭 ════════
+    void main() {
+      // 화면 좌표 → 1차 광선 (핀홀 카메라)
+      vec2 ndc = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
+      vec3 dir = normalize(uCamFwd + uTanHalfFov * (ndc.x * uCamRight + ndc.y * uCamUp));
+
+      vec3 p = uCamPos;          // 광자 위치
+      vec3 v = dir;              // 광자 속도 (방향; |v|≈1)
+
+      // 보존 각운동량 h = |x×v| — 중심력이므로 광선 전체에서 일정.
+      // h가 곧 충격변수(b = h/|v|) 역할을 하며 휘어짐 정도를 결정한다.
+      vec3  Lv = cross(p, v);
+      float h2 = dot(Lv, Lv);
+
+      float rs   = 2.0 * uM;                                   // 사건의 지평선
+      float rEsc = max(50.0 * uM, length(uCamPos) * 1.6);      // 탈출 판정 반경
+
+      vec3  col = vec3(0.0);
+      float T   = 1.0;           // 누적 투과율 (원반을 지날 때마다 감쇠)
+      bool  escaped = false;
+      vec3  escDir  = v;
+
+      for (int i = 0; i < STEPS; i++) {
+        float r = length(p);
+
+        // 포획: 지평선 도달 → 그림자 (이미 쌓인 원반 빛만 남는다)
+        if (r < rs * 1.01) break;
+        // 탈출: 충분히 멀고 바깥쪽으로 진행 중 → 배경 샘플링으로 종료
+        if (r > rEsc && dot(p, v) > 0.0) { escaped = true; escDir = normalize(v); break; }
+
+        // 적응 스텝: 지평선 근처는 촘촘히, 먼 곳은 성큼.
+        float dl = STEP_SCALE * clamp(0.09 * r, 0.045, 1.6);
+
+        // ── leapfrog(KDK): a(x) = -3M h² x / r⁵ ──
+        // 비네 방정식 u''+u=3Mu² 의 벡터형. 궤적 모양이 정확해서
+        // 광자구(r=3M) 감김·아인슈타인 링이 그대로 재현된다.
+        vec3 a  = -3.0 * uM * h2 * p / pow(dot(p, p), 2.5);
+        vec3 vh = v + a * (0.5 * dl);          // half kick
+        vec3 pn = p + vh * dl;                 // drift
+        vec3 an = -3.0 * uM * h2 * pn / pow(dot(pn, pn), 2.5);
+        vec3 vn = vh + an * (0.5 * dl);        // half kick
+
+        // ── 강착원반: 이번 스텝에서 적도면(y=0)을 가로질렀는가 ──
+        if (p.y * pn.y < 0.0) {
+          float tt  = p.y / (p.y - pn.y);          // 교차 비율 (선형 보간)
+          vec3  hit = mix(p, pn, tt);
+          float rh  = length(hit.xz);
+          if (rh > 6.0 * uM && rh < 16.0 * uM) {
+            float alphaD;
+            vec3 dc = diskShade(hit, normalize(mix(v, vn, tt)), alphaD);
+            col += T * alphaD * dc;                // 발광 누적
+            T   *= (1.0 - alphaD);                 // 뒤쪽이 가려진다
+            if (T < 0.03) break;                   // 사실상 불투명 → 조기 종료
+          }
+        }
+
+        p = pn; v = vn;
+      }
+      // 스텝 소진 시(광자구 근처 감김 궤도) 탈출 처리 없이 어둡게 남긴다.
+
+      if (escaped) col += T * sky(escDir);
+
+      // 톤매핑 + 감마: 빔잉으로 강도 범위가 넓으므로 soft clip이 필수.
+      col = pow(1.0 - exp(-col), vec3(0.4545));
+      gl_FragColor = vec4(col, 1.0);
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+    // ════════ 성능 프리셋 ════════
+    // steps     : 광선당 최대 적분 스텝
+    // stepScale : 스텝 크기 배율 (커지면 빨라지지만 광자구 근처가 거칠어짐)
+    // pixel     : 렌더 해상도 배율 (devicePixelRatio에 곱함)
+    // 60fps가 안 나오면 Quality를 Low로 — GPU에 따라 Medium이 기본 타협점.
+    const PRESETS = {
+      low:    { steps: 130, stepScale: 1.55, pixel: 0.55 },
+      medium: { steps: 220, stepScale: 1.0,  pixel: 0.8  },
+      high:   { steps: 380, stepScale: 0.7,  pixel: 1.0  },
+    };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    document.body.appendChild(renderer.domElement);
+
+    const scene  = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); // 풀스크린 쿼드용 더미
+
+    const uniforms = {
+      uRes:        { value: new THREE.Vector2(1, 1) },
+      uPhase:      { value: 0 },
+      uCamPos:     { value: new THREE.Vector3() },
+      uCamRight:   { value: new THREE.Vector3() },
+      uCamUp:      { value: new THREE.Vector3() },
+      uCamFwd:     { value: new THREE.Vector3() },
+      uTanHalfFov: { value: Math.tan((60 * Math.PI) / 360) },
+      uM:          { value: 1.0 },
+      uDiskGain:   { value: 1.0 },
+      uDoppler:    { value: 1.0 },
+      uSpin:       { value: 1.0 },
+    };
+
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: "void main(){ gl_Position = vec4(position.xy, 0.0, 1.0); }",
+      fragmentShader: document.getElementById("frag").textContent,
+      defines: { STEPS: PRESETS.medium.steps, STEP_SCALE: PRESETS.medium.stepScale.toFixed(2) },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+    quad.frustumCulled = false;   // 정점 셰이더가 행렬을 무시하므로 컬링 판정이 무의미
+    scene.add(quad);
+
+    // ════════ 궤도 카메라 (yaw/pitch/dist, 관성 포함) ════════
+    const cam = { yaw: -1.6, pitch: 0.12, dist: 30, vyaw: 0, vpitch: 0 };
+    const distLimits = () => ({ min: 3.5 * uniforms.uM.value, max: 150 * uniforms.uM.value });
+
+    function updateCamera() {
+      const lim = distLimits();
+      cam.dist  = Math.min(Math.max(cam.dist, lim.min), lim.max);
+      cam.pitch = Math.min(Math.max(cam.pitch, -1.45), 1.45);
+      const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+      const cy = Math.cos(cam.yaw),   sy = Math.sin(cam.yaw);
+      const pos = new THREE.Vector3(cam.dist * cp * cy, cam.dist * sp, cam.dist * cp * sy);
+      const fwd = pos.clone().negate().normalize();          // 항상 원점(블랙홀)을 본다
+      const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+      const up = new THREE.Vector3().crossVectors(right, fwd);
+      uniforms.uCamPos.value.copy(pos);
+      uniforms.uCamFwd.value.copy(fwd);
+      uniforms.uCamRight.value.copy(right);
+      uniforms.uCamUp.value.copy(up);
+    }
+
+    let dragging = false, lastX = 0, lastY = 0;
+    const cv = renderer.domElement;
+    cv.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener("pointerup",   () => { dragging = false; });
+    cv.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      cam.yaw   += dx * 0.005;  cam.vyaw   = dx * 0.005;
+      cam.pitch += dy * 0.005;  cam.vpitch = dy * 0.005;
+    });
+    cv.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      cam.dist *= Math.exp(e.deltaY * 0.0012);
+    }, { passive: false });
+
+    // ════════ UI 바인딩 ════════
+    const $ = (id) => document.getElementById(id);
+
+    $("ui-mass").addEventListener("input", (e) => {
+      uniforms.uM.value = parseFloat(e.target.value);
+      $("ui-mass-val").textContent = uniforms.uM.value.toFixed(2);
+    });
+    $("ui-disk").addEventListener("input", (e) => {
+      uniforms.uDiskGain.value = parseFloat(e.target.value);
+      $("ui-disk-val").textContent = uniforms.uDiskGain.value.toFixed(2);
+    });
+    function syncDoppler() {
+      const on = $("ui-doppler-on").checked;
+      const s  = parseFloat($("ui-doppler").value);
+      uniforms.uDoppler.value = on ? s : 0;
+      $("ui-doppler-val").textContent = (on ? s : 0).toFixed(2);
+    }
+    $("ui-doppler").addEventListener("input", syncDoppler);
+    $("ui-doppler-on").addEventListener("change", syncDoppler);
+    $("ui-spin").addEventListener("click", () => {
+      uniforms.uSpin.value *= -1;
+      $("ui-spin").textContent = uniforms.uSpin.value > 0 ? "Spin: CCW" : "Spin: CW";
+    });
+    $("ui-quality").addEventListener("change", (e) => applyPreset(e.target.value));
+
+    function applyPreset(name) {
+      const p = PRESETS[name];
+      material.defines.STEPS = p.steps;
+      material.defines.STEP_SCALE = p.stepScale.toFixed(2);
+      material.needsUpdate = true;            // 셰이더 재컴파일
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * p.pixel);
+      onResize();
+    }
+
+    function onResize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      const dpr = renderer.getPixelRatio();
+      uniforms.uRes.value.set(window.innerWidth * dpr, window.innerHeight * dpr);
+    }
+    window.addEventListener("resize", onResize);
+    applyPreset("medium");
+
+    // ════════ 메인 루프 ════════
+    let prev = performance.now();
+    let fpsFrames = 0, fpsTime = 0;
+
+    function frame(now) {
+      const dt = Math.min((now - prev) / 1000, 0.1);
+      prev = now;
+
+      // 원반 위상: spin 방향으로 누적 → 토글해도 무늬가 점프하지 않음
+      uniforms.uPhase.value += uniforms.uSpin.value * dt;
+
+      // 드래그 관성
+      if (!dragging) {
+        cam.yaw += cam.vyaw; cam.pitch += cam.vpitch;
+        cam.vyaw *= 0.92; cam.vpitch *= 0.92;
+      }
+      updateCamera();
+      renderer.render(scene, camera);
+
+      // 우측 패널: 거리(M 단위) + fps (0.5초마다 갱신)
+      $("ui-dist").textContent = (cam.dist / uniforms.uM.value).toFixed(1);
+      fpsFrames++; fpsTime += dt;
+      if (fpsTime >= 0.5) {
+        $("ui-fps").textContent = Math.round(fpsFrames / fpsTime);
+        fpsFrames = 0; fpsTime = 0;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
