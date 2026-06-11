@@ -266,9 +266,9 @@
       propPlanetsRemaining: "Planets remaining",
       propBlackHoles: "Black holes",
       solarNotes: "Notes",
-      solarNote1: "Each planet starts on a stable circular orbit (v = √(GM/r)), so the planets stay in orbit until something disturbs them. Distances use a √a compression and sizes follow the real planet radii.",
-      solarNote2: "A black hole pulls every planet — and the Sun itself — with the same gravity law. A heavy hole can drag the Sun out of the center and fling the whole system into chaos.",
-      solarNote3: "A planet (or the Sun) that crosses an event horizon, or a planet that falls into the Sun, is destroyed with a collision flash.",
+      solarNote1: "Planet sizes use the real radius ratios — Jupiter really is ~11× Earth on screen. Distances are compressed by √a so all eight orbits fit, and every planet starts at its stable circular speed v = √(GM/r).",
+      solarNote2: "Black holes are dynamic bodies: they fall toward the Sun, orbit it, merge with each other on contact, and a hole that swallows the Sun absorbs its mass and momentum.",
+      solarNote3: "A planet approaching a horizon is tidally stretched (spaghettification) before it is consumed. Every destruction — planet into Sun, planet into hole, Sun into hole, hole merger — plays a collision flash.",
     },
     ko: {
       pageTitle: "과학 실험실",
@@ -536,9 +536,9 @@
       propPlanetsRemaining: "남은 행성",
       propBlackHoles: "블랙홀",
       solarNotes: "설명",
-      solarNote1: "각 행성은 안정적인 원궤도 속도(v = √(GM/r))로 시작하므로, 외부 교란이 없으면 궤도를 유지합니다. 거리는 √a 압축, 크기는 실제 행성 반지름 비율을 따릅니다.",
-      solarNote2: "블랙홀은 모든 행성은 물론 태양까지 같은 중력 법칙으로 끌어당깁니다. 무거운 블랙홀은 태양을 중심에서 끌어내 계 전체를 혼돈에 빠뜨립니다.",
-      solarNote3: "사건의 지평선을 넘은 행성(또는 태양), 태양에 충돌한 행성은 충돌 섬광과 함께 파괴됩니다.",
+      solarNote1: "행성 크기는 실제 반지름 비율 그대로입니다 — 화면에서도 목성이 지구의 약 11배. 거리는 여덟 궤도가 다 들어오도록 √a 압축하고, 각 행성은 안정적인 원궤도 속도 v = √(GM/r)로 시작합니다.",
+      solarNote2: "블랙홀도 움직이는 천체입니다. 태양을 향해 떨어지거나 공전하고, 서로 닿으면 병합하며, 태양을 삼킨 블랙홀은 태양의 질량과 운동량을 흡수합니다.",
+      solarNote3: "사건의 지평선에 다가가는 행성은 조석력으로 길게 늘어난(스파게티화) 뒤 삼켜집니다. 행성-태양, 행성-블랙홀, 태양-블랙홀, 블랙홀 병합 — 모든 파괴에 충돌 섬광이 재생됩니다.",
     },
   };
 
