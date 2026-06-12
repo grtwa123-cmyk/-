@@ -95,12 +95,13 @@
 
   <div class="overlay top-left">
     <a href="../physics.html">&larr; Back</a>
-    <span class="version-tag">v1.0.0</span>
+    <span class="version-tag">v1.1.0</span>
   </div>
 
   <div class="overlay controls">
     <span class="ctrl">Mass M <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></span>
     <span class="ctrl">Disk <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></span>
+    <span class="ctrl">Glow <input type="range" id="ui-glow" min="0" max="1.5" step="0.05" value="0.8" /><span class="val" id="ui-glow-val">0.80</span></span>
     <span class="ctrl"><label><input type="checkbox" id="ui-doppler-on" checked /> Doppler</label>
       <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" /><span class="val" id="ui-doppler-val">1.00</span></span>
     <span class="ctrl"><button type="button" id="ui-spin">Spin: CCW</button></span>
@@ -173,13 +174,14 @@
       return s;
     }
 
-    // ════════ 흑체 색 램프 (시각용 근사) ════════
-    // t는 무차원 온도. ~0.4 깊은 적색 → 1.0 주황-백 → 1.6+ 청백.
-    // 도플러 청색편이(g>1)는 t를 키워 푸르게, 적색편이(g<1)는 붉게 만든다.
+    // ════════ 흑체 색 램프 (인터스텔라 Gargantua 풍 워밍 팔레트) ════════
+    // t는 무차원 온도. ~0.4 깊은 적색 → 1.0 주황 → 2.0 따뜻한 백색.
+    // 의도적으로 청색 끝을 없애 도플러 청색편이도 '더 하얗고 밝게'로만
+    // 표현된다 (영화처럼 색은 주황 계열 유지, 밝기 비대칭은 그대로).
     vec3 blackbody(float t) {
-      vec3 c = mix(vec3(1.00, 0.18, 0.02), vec3(1.00, 0.55, 0.18), smoothstep(0.30, 0.75, t));
-      c = mix(c, vec3(1.00, 0.90, 0.75), smoothstep(0.75, 1.20, t));
-      c = mix(c, vec3(0.65, 0.76, 1.00), smoothstep(1.20, 2.00, t));
+      vec3 c = mix(vec3(1.00, 0.16, 0.01), vec3(1.00, 0.42, 0.08), smoothstep(0.30, 0.75, t));
+      c = mix(c, vec3(1.00, 0.72, 0.38), smoothstep(0.75, 1.30, t));
+      c = mix(c, vec3(1.00, 0.93, 0.80), smoothstep(1.30, 2.20, t));
       return c * smoothstep(0.0, 0.25, t);   // 아주 차가우면 어둡게
     }
 
@@ -213,13 +215,14 @@
       float band = exp(-bx * bx);                      // 띠에서 멀수록 감쇠
       float neb  = fbm(d * 3.5 + 7.1);
       float hue  = fbm(d * 9.0 - 3.7);
-      col += band * (0.05 + 0.30 * neb * neb)
+      col += band * (0.03 + 0.16 * neb * neb)
            * mix(vec3(0.45, 0.34, 0.62), vec3(0.26, 0.44, 0.72), hue);
       // 별 두 레이어 (성긴 밝은 별 + 촘촘한 희미한 별)
-      col += stars(d, 26.0, 1.0);
-      col += stars(d, 84.0, 0.45);
-      col += band * stars(d, 140.0, 0.35);             // 은하수 안의 미세 별
-      return col;
+      col += stars(d, 26.0, 0.6);
+      col += stars(d, 84.0, 0.25);
+      col += band * stars(d, 140.0, 0.2);              // 은하수 안의 미세 별
+      // 전체 감광: 원반이 화면의 유일한 광원처럼 보이도록 (영화 룩)
+      return col * 0.45;
     }
 
     // ════════ 강착원반 발광 ════════
@@ -248,7 +251,14 @@
       float bdn    = dot(betaDir * vloc, nToCam) * uDoppler;
       float g      = sqrt(max(1.0 - 3.0 * uM / r, 0.0)) / max(1.0 - bdn, 0.05);
 
-      // ── 3) 원반 무늬: 차등 회전하는 스트릭 ──
+      // ── 3) 노비코프–손(Novikov–Thorne) 박막원반 방출 분포 ──
+      // 실제 강착원반의 국소 플럭스: F(r) ∝ r⁻³·(1 − √(rin/r)).
+      // ISCO에서 0 (물질이 복사를 멈추고 단열 낙하), r ≈ 1.36·rin(≈8.2M)에서
+      // 최대. 계수 17.1은 피크를 1로 맞추는 정규화 상수.
+      float x   = rin / r;
+      float emN = 17.1 * x * x * x * (1.0 - sqrt(x));
+
+      // ── 4) 원반 무늬: 차등 회전하는 스트릭 + 미세 난류 결 ──
       // 각도를 (cos,sin)으로 임베딩해 φ=±π 이음매를 없애고,
       // 접선 주파수는 낮게·반경 주파수는 높게 → 길게 늘어진 줄무늬.
       // Ω(r)이 r마다 달라 시간이 지나면 자연스럽게 전단(shear)된다.
@@ -256,20 +266,23 @@
       float aRot = phi - omega * uPhase * 9.0;          // 9.0 = 시각용 시간 배속
       vec3  q    = vec3(cos(aRot), sin(aRot), 0.0) * 2.3 + vec3(0.0, 0.0, 7.0 * log(r));
       float streak = clamp(fbm(q) * 1.9 - 0.35, 0.0, 1.4);
+      streak *= 0.7 + 0.6 * vnoise(q * 5.0);            // 작은 소용돌이 결
 
-      // ── 4) 온도와 색 ──
-      // 박막 원반(Shakura–Sunyaev) 온도 분포 T(r) ∝ r^(-3/4).
-      // 관측 온도 T_obs = g·T → 다가오는 쪽 청색, 멀어지는 쪽·안쪽 적색.
-      float Tr   = pow(rin / r, 0.75);
-      vec3  col  = blackbody(g * Tr * 1.25);
+      // ── 5) 온도와 색 ──
+      // T(r) ∝ F^(1/4) (슈테판-볼츠만), 관측 온도 T_obs = g·T.
+      // 다가오는 쪽은 더 뜨겁고 하얗게, 멀어지는 쪽·ISCO 근처는 식어 붉게.
+      float Tr   = 1.18 * pow(max(emN, 0.0), 0.25);
+      vec3  col  = blackbody(g * Tr);
 
-      // ── 5) 밝기: 방출 분포 × 도플러 빔잉 ──
-      // 단색 강도 변환 I_obs = g³·I_emit (빔잉) — 다가오는 면이 수 배 밝아진다.
-      float em   = pow(rin / r, 2.0);                   // 안쪽일수록 밝게
-      float fade = smoothstep(rin, rin * 1.06, r) * (1.0 - smoothstep(rout * 0.72, rout, r));
-      float I    = uDiskGain * em * pow(g, 3.0) * (0.25 + 1.5 * streak) * fade;
+      // ── 6) 밝기: 방출 분포 × 볼로메트릭 빔잉 ──
+      // 광대역 강도 변환 I_obs = g⁴·I_emit (g³은 단색일 때) —
+      // 다가오는 면과 멀어지는 면의 밝기차가 단색보다 한층 크다.
+      float g2   = g * g;
+      float fade = smoothstep(rin, rin * 1.12, r) * (1.0 - smoothstep(rout * 0.72, rout, r));
+      float I    = uDiskGain * emN * g2 * g2 * (0.3 + 1.5 * streak) * fade * 1.6;
 
-      alpha = clamp((0.35 + 0.85 * streak) * fade, 0.0, 0.95);
+      // ISCO 안쪽은 밀도도 급감 → 불투명도도 방출과 함께 죽인다
+      alpha = clamp((0.30 + 0.85 * streak) * fade * smoothstep(0.0, 0.25, emN), 0.0, 0.95);
       return col * I;
     }
 
@@ -304,7 +317,10 @@
         if (r > rEsc && dot(p, v) > 0.0) { escaped = true; escDir = normalize(v); break; }
 
         // 적응 스텝: 지평선 근처는 촘촘히, 먼 곳은 성큼.
+        // 광자구(r=3M) 부근은 추가로 더 잘게 — 빛이 여러 바퀴 감기는
+        // 영역이라 여기 정밀도가 광자 링(고차 이미지)의 또렷함을 결정한다.
         float dl = STEP_SCALE * clamp(0.09 * r, 0.045, 1.6);
+        dl *= clamp(abs(r - 3.0 * uM) / (3.0 * uM) + 0.35, 0.35, 1.0);
 
         // ── leapfrog(KDK): a(x) = -3M h² x / r⁵ ──
         // 비네 방정식 u''+u=3Mu² 의 벡터형. 궤적 모양이 정확해서
@@ -341,8 +357,19 @@
     }
   </script>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
   <script type="module">
-    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+    import * as THREE from "three";
+    import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+    import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+    import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 
     // ════════ 성능 프리셋 ════════
     // steps     : 광선당 최대 적분 스텝
@@ -350,9 +377,9 @@
     // pixel     : 렌더 해상도 배율 (devicePixelRatio에 곱함)
     // 60fps가 안 나오면 Quality를 Low로 — GPU에 따라 Medium이 기본 타협점.
     const PRESETS = {
-      low:    { steps: 130, stepScale: 1.55, pixel: 0.55 },
-      medium: { steps: 220, stepScale: 1.0,  pixel: 0.8  },
-      high:   { steps: 380, stepScale: 0.7,  pixel: 1.0  },
+      low:    { steps: 140, stepScale: 1.55, pixel: 0.55, bloom: false },
+      medium: { steps: 240, stepScale: 1.0,  pixel: 0.8,  bloom: true  },
+      high:   { steps: 400, stepScale: 0.7,  pixel: 1.0,  bloom: true  },
     };
 
     const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -386,6 +413,16 @@
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     quad.frustumCulled = false;   // 정점 셰이더가 행렬을 무시하므로 컬링 판정이 무의미
     scene.add(quad);
+
+    // ── 블룸 후처리: 원반의 밝은 부분이 카메라 광학처럼 번지게 ──
+    // 셰이더가 이미 톤매핑한 LDR 출력에 임계값(threshold) 이상만 추출해
+    // 가우시안 블러를 더한다. OutputPass는 일부러 생략 — 색 변환 없이
+    // 셰이더 출력 그대로 합성된다.
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.8, 0.5, 0.6);
+    composer.addPass(bloomPass);
+    let bloomAllowed = true;   // 품질 프리셋이 끄면 false
 
     // ════════ 궤도 카메라 (yaw/pitch/dist, 관성 포함) ════════
     const cam = { yaw: -1.6, pitch: 0.12, dist: 30, vyaw: 0, vpitch: 0 };
@@ -447,18 +484,31 @@
       $("ui-spin").textContent = uniforms.uSpin.value > 0 ? "Spin: CCW" : "Spin: CW";
     });
     $("ui-quality").addEventListener("change", (e) => applyPreset(e.target.value));
+    $("ui-glow").addEventListener("input", (e) => {
+      bloomPass.strength = parseFloat(e.target.value);
+      $("ui-glow-val").textContent = bloomPass.strength.toFixed(2);
+      syncBloom();
+    });
+    function syncBloom() {
+      bloomPass.enabled = bloomAllowed && bloomPass.strength > 0;
+    }
 
     function applyPreset(name) {
       const p = PRESETS[name];
       material.defines.STEPS = p.steps;
       material.defines.STEP_SCALE = p.stepScale.toFixed(2);
       material.needsUpdate = true;            // 셰이더 재컴파일
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * p.pixel);
+      const ratio = Math.min(window.devicePixelRatio, 2) * p.pixel;
+      renderer.setPixelRatio(ratio);
+      composer.setPixelRatio(ratio);
+      bloomAllowed = p.bloom;                 // Low에서는 블룸도 꺼서 fps 확보
+      syncBloom();
       onResize();
     }
 
     function onResize() {
       renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
       const dpr = renderer.getPixelRatio();
       uniforms.uRes.value.set(window.innerWidth * dpr, window.innerHeight * dpr);
     }
@@ -482,7 +532,7 @@
         cam.vyaw *= 0.92; cam.vpitch *= 0.92;
       }
       updateCamera();
-      renderer.render(scene, camera);
+      composer.render();   // 비활성 패스는 건너뛰므로 블룸 off면 RenderPass만 실행
 
       // 우측 패널: 거리(M 단위) + fps (0.5초마다 갱신)
       $("ui-dist").textContent = (cam.dist / uniforms.uM.value).toFixed(1);
