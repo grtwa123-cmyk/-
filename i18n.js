@@ -3,6 +3,7 @@
     en: {
       pageTitle: "Science Lab",
       indexHint: "Drag to explore · Click a piece to enter",
+      indexTagline: "Science Lab is a collection of hands-on physics & chemistry simulations you can touch.",
       heroTitle: "Science Lab",
       heroSubtitle: "Pick a discipline to begin.",
       categoryPhysics: "Physics",
@@ -276,6 +277,7 @@
     ko: {
       pageTitle: "과학 실험실",
       indexHint: "드래그로 둘러보기 · 카드를 누르면 실험 시작",
+      indexTagline: "과학 실험실은 직접 만져 보는 물리·화학 시뮬레이션 모음입니다.",
       heroTitle: "과학 실험실",
       heroSubtitle: "관심 있는 분야를 골라 실험을 시작해 보세요.",
       categoryPhysics: "물리",
