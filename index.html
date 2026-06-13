@@ -15,6 +15,14 @@
     #scene{position:fixed;inset:0;touch-action:none}
     canvas{display:block}
 
+    /* 페이지 가장자리 비네트 — 휜 벽의 깊이감을 강조 */
+    .vignette{position:fixed;inset:0;pointer-events:none;z-index:2;
+      background:radial-gradient(120% 120% at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.5) 82%,rgba(0,0,0,.92) 100%)}
+
+    /* 스크린리더/SEO용 숨김 nav — 시각적으로 안 보이지만 항상 접근 가능 */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
     /* ── 상단 바 (phantom 느낌) ── */
     .topbar{position:fixed;z-index:5;top:0;left:0;right:0;display:flex;align-items:flex-start;
       justify-content:space-between;gap:18px;padding:18px 24px;pointer-events:none;
@@ -58,10 +66,42 @@
     #loader.gone{opacity:0;pointer-events:none}
     #loader .num{font-family:ui-monospace,monospace;font-size:42px;font-weight:300}
     #loader .cap{font-family:ui-monospace,monospace;font-size:10px;color:#8a8a93;letter-spacing:.3em;text-transform:uppercase}
+
+    /* ── 좁은 화면 정리 ── */
+    @media (max-width:720px){
+      .topbar{padding:14px 16px;gap:10px}
+      .tagline{display:none}              /* 중앙 태그라인 숨김 (카운터·링크와 겹침 방지) */
+      .clock{display:none}                /* in view / pieces 카운터 숨김 */
+      .mark{font-size:12px;letter-spacing:.16em}
+      .sub{font-size:8px}
+      .links{margin-top:0}
+      .hint{font-size:9px;letter-spacing:.18em;bottom:calc(64px + env(safe-area-inset-bottom));white-space:nowrap}
+      .lang-switch{bottom:calc(18px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%)}
+      .lang-btn{padding:8px 13px}         /* 터치 타깃 넉넉히 */
+    }
   </style>
 </head>
 <body>
   <div id="scene"></div>
+  <div class="vignette"></div>
+
+  <!-- 스크린리더/SEO: 모든 실험으로의 실제 링크 (시각적으로 숨김) -->
+  <nav class="sr-only" aria-label="All experiments">
+    <ul>
+      <li><a href="experiments/projectile.html" data-i18n="projectileTitle">Projectile Motion</a></li>
+      <li><a href="experiments/pendulum.html" data-i18n="pendulumTitle">Pendulum</a></li>
+      <li><a href="experiments/cannon.html" data-i18n="cannonTitle">Newton's Cannon</a></li>
+      <li><a href="experiments/orbit.html" data-i18n="orbitsTitle">Gravity &amp; Orbits</a></li>
+      <li><a href="experiments/impact.html" data-i18n="impactTitle">Impulse &amp; Force</a></li>
+      <li><a href="experiments/solar.html" data-i18n="solarTitle">Solar System &amp; Black Holes</a></li>
+      <li><a href="experiments/solarsystem.html" data-i18n="solarSystemTitle">Solar System Tour (3D)</a></li>
+      <li><a href="experiments/blackhole.html" data-i18n="bhTitle">Black Hole Lensing (WebGL)</a></li>
+      <li><a href="experiments/semiconductor.html" data-i18n="semiTitle">Semiconductors &amp; Battery</a></li>
+      <li><a href="experiments/diode.html" data-i18n="diodeTitle">PN Junction Diode</a></li>
+      <li><a href="experiments/molecule.html" data-i18n="moleculeTitle">Molecule Viewer</a></li>
+      <li><a href="experiments/crystal.html" data-i18n="crystalTitle">Crystal Lattice</a></li>
+    </ul>
+  </nav>
 
   <header class="topbar">
     <div class="col">
@@ -132,19 +172,116 @@
 
     // ── 실험 카탈로그 (열 우선으로 배치: 열 c, 행 r → index c*ROWS+r) ──
     const EXP = [
-      { titleKey:'projectileTitle',  url:'experiments/projectile.html',  cat:'Physics',   tags:['MOTION','2D'],         colors:['#1a2742','#f0a85e'] },
-      { titleKey:'pendulumTitle',    url:'experiments/pendulum.html',    cat:'Physics',   tags:['MOTION','OSCILLATE'],  colors:['#0c1a36','#5db0d6'] },
-      { titleKey:'cannonTitle',      url:'experiments/cannon.html',      cat:'Physics',   tags:['GRAVITY','ORBIT'],     colors:['#102132','#5fa4b8'] },
-      { titleKey:'orbitsTitle',      url:'experiments/orbit.html',       cat:'Physics',   tags:['GRAVITY','N-BODY'],    colors:['#070914','#d4c065'] },
-      { titleKey:'impactTitle',      url:'experiments/impact.html',      cat:'Physics',   tags:['FORCE','GRAPH'],       colors:['#1d1908','#e2a45a'] },
-      { titleKey:'solarTitle',       url:'experiments/solar.html',       cat:'Physics',   tags:['GRAVITY','3D'],        colors:['#080a1e','#8095e6'] },
-      { titleKey:'solarSystemTitle', url:'experiments/solarsystem.html', cat:'Physics',   tags:['3D','TOUR'],           colors:['#0a0e22','#7da3d4'] },
-      { titleKey:'bhTitle',          url:'experiments/blackhole.html',   cat:'Physics',   tags:['RELATIVITY','WEBGL'],  colors:['#1a0a06','#e08a4a'] },
-      { titleKey:'semiTitle',        url:'experiments/semiconductor.html', cat:'Physics', tags:['QUANTUM','FIELD'],     colors:['#22153a','#a06fc8'] },
-      { titleKey:'diodeTitle',       url:'experiments/diode.html',       cat:'Physics',   tags:['QUANTUM','FIELD'],     colors:['#2c0e22','#d65a8a'] },
-      { titleKey:'moleculeTitle',    url:'experiments/molecule.html',    cat:'Chemistry', tags:['3D','MODEL'],          colors:['#0a1f15','#6fbf8a'] },
-      { titleKey:'crystalTitle',     url:'experiments/crystal.html',     cat:'Chemistry', tags:['LATTICE','3D'],        colors:['#0a1822','#6fc4d4'] },
+      { titleKey:'projectileTitle',  url:'experiments/projectile.html',  cat:'Physics',   tags:['MOTION','2D'],         colors:['#1a2742','#f0a85e'], motif:'projectile' },
+      { titleKey:'pendulumTitle',    url:'experiments/pendulum.html',    cat:'Physics',   tags:['MOTION','OSCILLATE'],  colors:['#0c1a36','#5db0d6'], motif:'pendulum' },
+      { titleKey:'cannonTitle',      url:'experiments/cannon.html',      cat:'Physics',   tags:['GRAVITY','ORBIT'],     colors:['#102132','#5fa4b8'], motif:'cannon' },
+      { titleKey:'orbitsTitle',      url:'experiments/orbit.html',       cat:'Physics',   tags:['GRAVITY','N-BODY'],    colors:['#070914','#d4c065'], motif:'orbit' },
+      { titleKey:'impactTitle',      url:'experiments/impact.html',      cat:'Physics',   tags:['FORCE','GRAPH'],       colors:['#1d1908','#e2a45a'], motif:'impact' },
+      { titleKey:'solarTitle',       url:'experiments/solar.html',       cat:'Physics',   tags:['GRAVITY','3D'],        colors:['#080a1e','#8095e6'], motif:'solar' },
+      { titleKey:'solarSystemTitle', url:'experiments/solarsystem.html', cat:'Physics',   tags:['3D','TOUR'],           colors:['#0a0e22','#7da3d4'], motif:'solarsystem' },
+      { titleKey:'bhTitle',          url:'experiments/blackhole.html',   cat:'Physics',   tags:['RELATIVITY','WEBGL'],  colors:['#1a0a06','#e08a4a'], motif:'blackhole' },
+      { titleKey:'semiTitle',        url:'experiments/semiconductor.html', cat:'Physics', tags:['QUANTUM','FIELD'],     colors:['#22153a','#a06fc8'], motif:'semi' },
+      { titleKey:'diodeTitle',       url:'experiments/diode.html',       cat:'Physics',   tags:['QUANTUM','FIELD'],     colors:['#2c0e22','#d65a8a'], motif:'diode' },
+      { titleKey:'moleculeTitle',    url:'experiments/molecule.html',    cat:'Chemistry', tags:['3D','MODEL'],          colors:['#0a1f15','#6fbf8a'], motif:'molecule' },
+      { titleKey:'crystalTitle',     url:'experiments/crystal.html',     cat:'Chemistry', tags:['LATTICE','3D'],        colors:['#0a1822','#6fc4d4'], motif:'crystal' },
     ];
+
+    /* ── 실험별 절차 모티브 (이미지 블록 상단에 그리는 라인아트) ── */
+    function drawMotif(x, kind, cx, cy, s){
+      x.save(); x.translate(cx, cy);
+      x.strokeStyle = 'rgba(255,255,255,0.78)';
+      x.fillStyle   = 'rgba(255,255,255,0.92)';
+      x.lineWidth = 1.8; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 8;
+      const dot = (px,py,r)=>{ x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.fill(); };
+      const circ= (px,py,r)=>{ x.beginPath(); x.arc(px,py,r,0,Math.PI*2); x.stroke(); };
+      const line= (x1,y1,x2,y2)=>{ x.beginPath(); x.moveTo(x1,y1); x.lineTo(x2,y2); x.stroke(); };
+      const para= (a,b,k)=>{ x.beginPath();
+        for(let i=0;i<=44;i++){ const t=i/44, xx=(t-0.5)*a, yy=((t-0.5)*(t-0.5)*4 + k)*b;
+          i? x.lineTo(xx,yy) : x.moveTo(xx,yy); } x.stroke(); };
+
+      switch(kind){
+        case 'projectile': para(s*2.2, s*0.7, -1); dot(-s*1.1, s*0.7, 4); dot(s*1.1, s*0.7, 4); break;
+        case 'pendulum': {
+          line(-s*0.95,-s*0.85, s*0.95,-s*0.85);                          // 받침대
+          const a = 0.42;
+          line(0,-s*0.85, Math.sin(a)*s*1.55, -s*0.85+Math.cos(a)*s*1.55); // 줄
+          dot(Math.sin(a)*s*1.55, -s*0.85+Math.cos(a)*s*1.55, 8);          // 추
+          x.strokeStyle='rgba(255,255,255,0.30)'; x.setLineDash([3,5]);
+          x.beginPath(); x.arc(0,-s*0.85, s*1.55, Math.PI/2-0.55, Math.PI/2+0.55); x.stroke();
+          x.setLineDash([]); break;
+        }
+        case 'cannon': {
+          // 지구 호 + 궤도 아치
+          x.beginPath(); x.arc(0, s*2.9, s*2.6, -Math.PI*0.78, -Math.PI*0.22); x.stroke();
+          x.beginPath();
+          for(let i=0;i<=44;i++){ const t=i/44, xx=(t-0.5)*s*2.3;
+            const yy = ((t-0.5)*(t-0.5)*3.5 - 0.95)*s*0.75;
+            i? x.lineTo(xx,yy) : x.moveTo(xx,yy); } x.stroke();
+          dot(s*1.15, s*0.65, 4); break;
+        }
+        case 'orbit': {
+          x.beginPath(); x.ellipse(s*0.18, 0, s*1.4, s*0.85, 0, 0, Math.PI*2); x.stroke();
+          dot(-s*0.5, 0, 7); dot(s*1.45, s*0.05, 4);
+          break;
+        }
+        case 'impact': {
+          line(-s*0.5,-s*1.0, -s*0.5, s*0.7);
+          line( s*0.5,-s*1.0,  s*0.5, s*0.7);
+          x.beginPath(); x.moveTo(-s*0.5, s*0.7);
+          x.quadraticCurveTo(0, s*1.25, s*0.5, s*0.7); x.stroke();
+          x.beginPath(); x.ellipse(0,-s*0.7, s*0.3, s*0.4, 0, 0, Math.PI*2); x.stroke();
+          break;
+        }
+        case 'solar': {
+          dot(0,0,8);
+          for(let k=1;k<=3;k++){ circ(0,0, s*0.5*k); const a=k*0.7+0.2;
+            dot(Math.cos(a)*s*0.5*k, Math.sin(a)*s*0.5*k, 4); } break;
+        }
+        case 'solarsystem': {
+          x.save(); x.scale(1, 0.4); dot(0,0,9);
+          for(let k=1;k<=4;k++) circ(0,0, s*0.4*k); x.restore();
+          for(let k=1;k<=4;k++){ const a=k*0.85;
+            dot(Math.cos(a)*s*0.4*k, Math.sin(a)*s*0.4*k*0.4, 4); } break;
+        }
+        case 'blackhole': {
+          x.fillStyle='#000';
+          x.beginPath(); x.arc(0,0, s*0.78, 0, Math.PI*2); x.fill();
+          x.fillStyle='rgba(255,255,255,0.92)';
+          x.strokeStyle='rgba(255,255,255,0.9)'; x.lineWidth=2.6;
+          x.beginPath(); x.ellipse(0, s*0.08, s*1.32, s*0.38, 0, 0, Math.PI*2); x.stroke();
+          x.lineWidth=1.8; x.strokeStyle='rgba(255,255,255,0.78)'; break;
+        }
+        case 'semi': {
+          for(let k=-1;k<=1;k++){
+            line(-s*1.25, k*s*0.5,  s*1.25, k*s*0.5);
+            for(let i=0;i<6;i++) dot(-s*1.05 + i*s*0.42, k*s*0.5 - s*0.16, 2.2);
+          } break;
+        }
+        case 'diode': {
+          x.beginPath(); x.moveTo(-s*0.8,-s*0.6); x.lineTo(s*0.2, 0);
+          x.lineTo(-s*0.8, s*0.6); x.closePath(); x.stroke();
+          line(s*0.2,-s*0.7, s*0.2, s*0.7);
+          line(-s*1.4, 0, -s*0.8, 0); line(s*0.2, 0, s*1.4, 0); break;
+        }
+        case 'molecule': {
+          const r = s*0.24;
+          const A={x:0,y:0}, B={x:s*0.95,y:-s*0.7}, C={x:s*0.95,y:s*0.7}, D={x:-s*1.1,y:0};
+          line(A.x,A.y,B.x,B.y); line(A.x,A.y,C.x,C.y); line(A.x,A.y,D.x,D.y);
+          circ(A.x,A.y,r*1.3); circ(B.x,B.y,r); circ(C.x,C.y,r); circ(D.x,D.y,r); break;
+        }
+        case 'crystal': {
+          for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){
+            const px=i*s*0.72, py=j*s*0.72;
+            if(i<1) line(px,py, px+s*0.72, py);
+            if(j<1) line(px,py, px, py+s*0.72);
+          }
+          for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) dot(i*s*0.72, j*s*0.72, 4.5);
+          break;
+        }
+      }
+      x.shadowBlur=0; x.restore();
+    }
 
     const tr = (key, fb) => (window.i18n && window.i18n.t(key)) || fb || key;
 
@@ -181,7 +318,9 @@
         d[i]+=n; d[i+1]+=n; d[i+2]+=n;
       }
       x.putImageData(im, ix, iy);
-      // 4) 제목 (이미지 하단)
+      // 4) 실험별 모티브 (상단 ~중앙)
+      if(exp.motif) drawMotif(x, exp.motif, ix + iw/2, iy + ih*0.32, ih*0.21);
+      // 5) 제목 (이미지 하단)
       x.fillStyle = '#fff'; x.textAlign = 'left';
       x.font = '700 46px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
       wrapText(x, tr(exp.titleKey, ''), ix+22, iy+ih-30, iw-44, 50);
@@ -238,9 +377,29 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0a0a0d, 0.026);
     const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 100);
-    // 가운데 열은 z = -Rc 에 놓이므로, 카메라는 그 앞 CAM_DIST 지점에서 바라본다
-    camera.position.set(0, 0, -Rc + CAM_DIST);
-    camera.lookAt(0, 0, -Rc);
+
+    /* 종횡비 반응형 카메라
+       - three.js의 fov는 '세로' 화각. 세로로 긴 폰은 가로 화각이 급격히 좁아져
+         카드가 과하게 확대되고 곡률이 안 보인다 → 세로 화면일수록 fov를 키우고
+         카메라를 뒤로 물려 더 많은 열이 휜 채로 들어오게 한다.
+       - 사용자의 핀치 줌은 zoom(배율)로 따로 보존해 리사이즈/회전에도 유지된다. */
+    const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+    const mod = (a,n)=> ((a%n)+n)%n;
+    let zoom = 1;
+    const mapClamp = (v, a, b, ra, rb)=>{ const t = clamp((v-a)/(b-a), 0, 1); return ra + (rb-ra)*t; };
+    function applyCamera(){
+      const aspect = innerWidth / innerHeight;
+      camera.aspect = aspect;
+      // 세로로 길수록(aspect 작음) 카메라를 크게 뒤로 물려 더 많은 열이 휜 채 들어오게 하고,
+      // fov는 살짝만 키운다 (거리를 무르는 게 곡률 유지에 유리)
+      const baseFov  = mapClamp(aspect, 0.5, 1.8, 64, 56);
+      const dist     = mapClamp(aspect, 0.5, 1.8, 12.5, CAM_DIST);
+      camera.fov = clamp(baseFov / zoom, 38, 94);
+      camera.position.set(0, 0, -Rc + dist);
+      camera.lookAt(0, 0, -Rc);
+      camera.updateProjectionMatrix();
+    }
+    applyCamera();
 
     const group = new THREE.Group();
     scene.add(group);
@@ -270,8 +429,10 @@
 
     /* ── 스크롤 상태 ── */
     const st = { s:0, ts:0, vs:0,  y:0, ty:0, vy:0 };  // s: 가로 스크롤(열 단위), y: 세로 오프셋
-    const clamp = (v,a,b)=> v<a?a : v>b?b : v;
-    const mod = (a,n)=> ((a%n)+n)%n;
+
+    /* 모션 줄이기 환경 + 첫 인터랙션 후 드리프트 정지 */
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let interacted = false;
 
     /* 각 카드 배치: 열을 무한 재활용하며 원통면에 매핑 */
     function layout(){
@@ -292,6 +453,7 @@
     let dragging=false, down=null, pinch=0, locked=false;
     el.addEventListener('pointerdown', e=>{
       if(locked) return;
+      interacted = true;          // 첫 입력 후 자동 드리프트 정지
       el.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
       if(pointers.size===1){ dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() }; }
@@ -308,7 +470,7 @@
           st.vy = dy*DRAG_Y;
         } else if(pointers.size===2){
           const [a,b]=[...pointers.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y);
-          if(pinch>0){ camera.fov = clamp(camera.fov * pinch/dd, 44, 86); camera.updateProjectionMatrix(); }
+          if(pinch>0){ zoom = clamp(zoom * dd/pinch, 0.7, 1.9); applyCamera(); }
           pinch=dd;
         }
       }
@@ -325,6 +487,7 @@
     el.addEventListener('pointerup', endPointer);
     el.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; down=null; });
     el.addEventListener('wheel', e=>{ e.preventDefault();
+      interacted = true;
       st.ts += e.deltaX*DRAG_X*0.6;                         // 트랙패드 가로 스크롤
       st.ty = clamp(st.ty - e.deltaY*DRAG_Y*0.4, -Y_LIMIT, Y_LIMIT);
     }, { passive:false });
@@ -346,9 +509,13 @@
       if(locked) return; locked = true;
       const url = mesh.userData.exp.url;
       document.getElementById('hint').style.opacity = 0;
+      if(reduced){
+        // 단순한 페이드 후 이동
+        gsap.to('#navFade', { opacity:1, duration:0.25, onComplete:()=>{ location.href = url; } });
+        return;
+      }
       gsap.to(['.topbar', '.lang-switch'], { opacity:0, duration:0.3 });
       cards.forEach(c=>{ if(c!==mesh) gsap.to(c.material, { opacity:0, duration:0.4 }); });
-      // 카메라를 선택 카드로 살짝 당겨 들어가며 암전
       gsap.to(camera.position, { x:mesh.position.x*0.5, y:mesh.position.y*0.5,
         z:(camera.position.z + mesh.position.z)/2, duration:0.7, ease:'expo.in' });
       gsap.to(camera, { fov:34, duration:0.7, ease:'expo.in', onUpdate:()=>camera.updateProjectionMatrix() });
@@ -367,7 +534,13 @@
         if(!dragging){
           st.ts += st.vs;  st.vs *= FRICTION;
           st.ty = clamp(st.ty + st.vy, -Y_LIMIT, Y_LIMIT); st.vy *= FRICTION;
-          st.ts += DRIFT;                       // 가로 드리프트
+          // 처음에만 천천히 흐르고, 사용자가 만지면 정지 (reduced-motion이면 아예 0)
+          if(!interacted && !reduced) st.ts += DRIFT;
+          // 충분히 멈췄으면 가장 가까운 열 경계로 부드럽게 스냅
+          if(interacted && Math.abs(st.vs) < 0.0009 && !dragging){
+            const target = Math.round(st.ts);
+            st.ts += (target - st.ts) * 0.06;
+          }
         }
         st.s += (st.ts - st.s)*EASE;
         st.y += (st.ty - st.y)*EASE;
@@ -397,22 +570,30 @@
     }
 
     addEventListener('resize', ()=>{
-      camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      applyCamera();          // 회전/리사이즈 시 종횡비에 맞게 fov·거리 재계산 (zoom 보존)
     });
+    addEventListener('orientationchange', ()=> setTimeout(()=>{ renderer.setSize(innerWidth, innerHeight); applyCamera(); }, 120));
 
     /* ── 인트로 ── */
     document.getElementById('count').textContent = EXP.length;
     document.getElementById('ldNum').textContent = '100%';
     layout();
-    cards.forEach(m=> m.scale.set(0,0,0));
     const ld = document.getElementById('loader');
-    requestAnimationFrame(()=>{
-      gsap.to(ld, { opacity:0, duration:0.7, onComplete:()=> ld.classList.add('gone') });
-      gsap.to(cards.map(m=>m.scale), { x:1, y:1, z:1, duration:0.9, ease:'expo.out',
-        stagger:{ each:0.04, from:'center' }, onComplete:()=>{ introDone = true; } });
-      st.vs = -0.05;   // 시작하자마자 살짝 흐른다
-    });
+    if(reduced){
+      // 모션 줄이기: 스태거 없이 즉시 표시
+      cards.forEach(m=> m.scale.set(1,1,1));
+      introDone = true;
+      ld.classList.add('gone');
+    } else {
+      cards.forEach(m=> m.scale.set(0,0,0));
+      requestAnimationFrame(()=>{
+        gsap.to(ld, { opacity:0, duration:0.7, onComplete:()=> ld.classList.add('gone') });
+        gsap.to(cards.map(m=>m.scale), { x:1, y:1, z:1, duration:0.9, ease:'expo.out',
+          stagger:{ each:0.04, from:'center' }, onComplete:()=>{ introDone = true; } });
+        st.vs = -0.05;   // 시작 시 살짝 흐른다 (interacted=false인 동안만)
+      });
+    }
 
     tick();
   </script>
