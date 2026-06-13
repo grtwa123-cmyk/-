@@ -2,6 +2,7 @@
   const translations = {
     en: {
       pageTitle: "Science Lab",
+      indexHint: "Drag to explore · Click a piece to enter",
       heroTitle: "Science Lab",
       heroSubtitle: "Pick a discipline to begin.",
       categoryPhysics: "Physics",
@@ -274,6 +275,7 @@
     },
     ko: {
       pageTitle: "과학 실험실",
+      indexHint: "드래그로 둘러보기 · 카드를 누르면 실험 시작",
       heroTitle: "과학 실험실",
       heroSubtitle: "관심 있는 분야를 골라 실험을 시작해 보세요.",
       categoryPhysics: "물리",
