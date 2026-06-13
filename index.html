@@ -2,64 +2,436 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title data-i18n="pageTitle">Science Lab</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title data-i18n="pageTitle">Science Lab — Spherical Index</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;overflow:hidden;background:#0a0a0d;color:#f3f1ea;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif}
+    body{cursor:none}
+    @media (pointer:coarse){ body{cursor:auto} }
+    #scene{position:fixed;inset:0;touch-action:none}
+    canvas{display:block}
+
+    /* 비네트로 가장자리 살짝 죽여서 구 안쪽 느낌 강조 */
+    .vignette{position:fixed;inset:0;pointer-events:none;z-index:2;
+      background:radial-gradient(120% 120% at 50% 50%,rgba(0,0,0,0) 38%,rgba(0,0,0,.55) 78%,rgba(0,0,0,.92) 100%)}
+
+    /* ── HUD ── */
+    .hud{position:fixed;z-index:5;pointer-events:none;
+      font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;letter-spacing:.04em}
+    .hud.tl{top:calc(20px + env(safe-area-inset-top));left:24px}
+    .hud.tl .mark{font-size:13px;font-weight:600;letter-spacing:.18em}
+    .hud.tl .sub{font-size:10px;color:#8a8a93;margin-top:6px;text-transform:uppercase;letter-spacing:.22em}
+    .hud.tr{top:calc(20px + env(safe-area-inset-top));right:24px;text-align:right;
+      font-size:10px;color:#8a8a93;text-transform:uppercase;letter-spacing:.2em;line-height:1.9}
+    .hud.tr b{color:#f3f1ea;font-weight:600;margin-left:6px}
+    .hud.bc{bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+      font-size:10.5px;color:#8a8a93;text-transform:uppercase;letter-spacing:.26em;
+      transition:opacity .6s ease;text-align:center;max-width:80vw}
+
+    /* 그리드 뷰 폴백 링크 — 작게, 잘 안 보이게 */
+    .grid-fallback{position:fixed;z-index:5;bottom:calc(22px + env(safe-area-inset-bottom));left:24px;
+      pointer-events:auto;display:flex;gap:14px;
+      font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+    .grid-fallback a{color:#8a8a93;text-decoration:none;transition:color .2s}
+    .grid-fallback a:hover{color:#f3f1ea}
+
+    /* 언어 스위처 — 화면 우하단에 작게 */
+    .lang-switch{position:fixed;z-index:5;bottom:calc(22px + env(safe-area-inset-bottom));right:24px;
+      display:flex;gap:6px;pointer-events:auto}
+    .lang-btn{background:rgba(20,20,28,.7);color:#8a8a93;border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;padding:7px 11px;font-family:ui-monospace,monospace;font-size:10px;
+      cursor:pointer;letter-spacing:.06em;transition:.2s;-webkit-tap-highlight-color:transparent}
+    .lang-btn:hover{color:#f3f1ea}
+    .lang-btn.active{background:#f3f1ea;color:#0a0a0d;border-color:transparent}
+
+    /* ── 커스텀 커서 ── */
+    .cursor{position:fixed;z-index:30;top:0;left:0;width:34px;height:34px;border:1px solid rgba(243,241,234,.7);
+      border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:difference;
+      transition:width .25s ease,height .25s ease,background .25s ease,border-color .25s ease;will-change:transform}
+    .cursor.hot{width:78px;height:78px;background:rgba(243,241,234,.12);border-color:transparent}
+    .cursor .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+      opacity:0;transition:opacity .25s}
+    .cursor.hot .lbl{opacity:1}
+    @media (pointer:coarse){ .cursor{display:none} }
+
+    /* 클릭 → 페이지 전환 시 까매지는 오버레이 */
+    .nav-fade{position:fixed;inset:0;z-index:35;background:#04060d;opacity:0;pointer-events:none}
+
+    /* ── 로딩 화면 ── */
+    #loader{position:fixed;inset:0;z-index:40;background:#0a0a0d;display:flex;align-items:center;justify-content:center;
+      flex-direction:column;gap:18px;transition:opacity .8s ease}
+    #loader.gone{opacity:0;pointer-events:none}
+    #loader .num{font-family:ui-monospace,monospace;font-size:46px;font-weight:300;letter-spacing:.02em}
+    #loader .cap{font-family:ui-monospace,monospace;font-size:10px;color:#8a8a93;letter-spacing:.3em;text-transform:uppercase}
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="lang-switch" role="group" aria-label="Language">
-      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
-      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
-      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
-    </div>
+  <div id="scene"></div>
+  <div class="vignette"></div>
 
-    <header class="site-header">
-      <h1 data-i18n="heroTitle">Science Lab</h1>
-      <p data-i18n="heroSubtitle">Pick a discipline to begin.</p>
-    </header>
+  <header class="hud tl">
+    <div class="mark">&diams; SCIENCE LAB</div>
+    <div class="sub">Spherical Index</div>
+  </header>
+  <div class="hud tr">
+    <div>Pieces<b id="count">—</b></div>
+    <div>In view<b id="focus">—</b></div>
+  </div>
+  <div class="hud bc" id="hint" data-i18n="indexHint">Drag to explore · Click a piece to enter</div>
 
-    <main class="category-grid">
-      <a class="category-card physics" href="physics.html">
-        <div class="category-icon" aria-hidden="true">
-          <svg width="44" height="44" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="5" width="26" height="2.6" rx="0.5" />
-            <line x1="6" y1="7.6" x2="6" y2="19" />
-            <line x1="11" y1="7.6" x2="11" y2="19" />
-            <line x1="16" y1="7.6" x2="16" y2="19" />
-            <line x1="21" y1="7.6" x2="21" y2="19" />
-            <line x1="26" y1="7.6" x2="26" y2="19" />
-            <circle cx="6" cy="22" r="2.5" />
-            <circle cx="11" cy="22" r="2.5" />
-            <circle cx="16" cy="22" r="2.5" />
-            <circle cx="21" cy="22" r="2.5" />
-            <circle cx="26" cy="22" r="2.5" />
-          </svg>
-        </div>
-        <h2 data-i18n="categoryPhysics">Physics</h2>
-        <p class="tagline" data-i18n="physicsTagline">Motion, forces, waves.</p>
-        <p class="description" data-i18n="physicsLandingDesc">Throw a projectile, swing a pendulum, watch waves interfere.</p>
-        <span class="cta" data-i18n="exploreCta">Explore</span>
-      </a>
+  <nav class="grid-fallback" aria-label="Grid views">
+    <a href="physics.html" data-i18n="categoryPhysics">Physics</a>
+    <a href="chemistry.html" data-i18n="categoryChemistry">Chemistry</a>
+  </nav>
 
-      <a class="category-card chemistry" href="chemistry.html">
-        <div class="category-icon" aria-hidden="true">
-          <svg width="44" height="44" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="11" y1="4" x2="21" y2="4" />
-            <path d="M 12 4 L 12 12 L 5 24 Q 5 28 9 28 L 23 28 Q 27 28 27 24 L 20 12 L 20 4" />
-            <circle cx="11" cy="23" r="1" />
-            <circle cx="17" cy="20.5" r="0.85" />
-            <circle cx="14.5" cy="25.5" r="1.2" />
-          </svg>
-        </div>
-        <h2 data-i18n="categoryChemistry">Chemistry</h2>
-        <p class="tagline" data-i18n="chemistryTagline">Atoms, bonds, structure.</p>
-        <p class="description" data-i18n="chemistryLandingDesc">Explore molecular structure and the regularities of matter.</p>
-        <span class="cta" data-i18n="exploreCta">Explore</span>
-      </a>
-    </main>
+  <div class="lang-switch" role="group" aria-label="Language">
+    <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
+    <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한</button>
+    <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中</button>
+  </div>
+
+  <div class="cursor" id="cursor"><span class="lbl">Enter</span></div>
+  <div class="nav-fade" id="navFade"></div>
+
+  <div id="loader">
+    <div class="num" id="ldNum">0%</div>
+    <div class="cap">Assembling the index</div>
   </div>
 
   <script src="i18n.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+    const gsap = window.gsap;
+
+    /* ======================================================================
+       Spherical Index — 구 안쪽에서 실험을 고르는 셀렉터
+       - 12개 실험을 피보나치 나선으로 구면에 안쪽을 향하게 배치
+       - 카메라는 구 중심에 고정. 드래그로 둘러보고 클릭하면 그 실험으로 이동
+       - 각 카드는 캔버스로 그린 절차적 썸네일(그라데이션 + 노이즈 + 제목)
+       - 언어 전환 시 모든 썸네일을 새 언어로 다시 그린다
+       ====================================================================== */
+
+    // ── 튜닝 ──
+    const R = 8.5;          // 구 반지름
+    const CARD_W = 2.85;    // 카드 가로 (월드)
+    const CARD_H = 3.75;    // 카드 세로 (4:3 비율의 세로형)
+    const DRAG_K = 0.0055;  // 드래그 → 회전 감도
+    const EASE = 0.10;
+    const FRICTION = 0.94;
+    const DRIFT = 0.00075;  // 손 떼면 천천히 흐른다
+    const PITCH_LIMIT = 0.92;
+
+    // ── 실험 카탈로그 (현재 사이트에 실린 12개) ──
+    const EXP = [
+      { id:'projectile',  cat:'Physics',   titleKey:'projectileTitle',  url:'experiments/projectile.html',  colors:['#1a2742','#f0a85e'] },
+      { id:'pendulum',    cat:'Physics',   titleKey:'pendulumTitle',    url:'experiments/pendulum.html',    colors:['#0c1a36','#5db0d6'] },
+      { id:'cannon',      cat:'Physics',   titleKey:'cannonTitle',      url:'experiments/cannon.html',      colors:['#102132','#5fa4b8'] },
+      { id:'orbit',       cat:'Physics',   titleKey:'orbitsTitle',      url:'experiments/orbit.html',       colors:['#070914','#d4c065'] },
+      { id:'impact',      cat:'Physics',   titleKey:'impactTitle',      url:'experiments/impact.html',      colors:['#1d1908','#e2a45a'] },
+      { id:'solar',       cat:'Physics',   titleKey:'solarTitle',       url:'experiments/solar.html',       colors:['#080a1e','#8095e6'] },
+      { id:'solarsystem', cat:'Physics',   titleKey:'solarSystemTitle', url:'experiments/solarsystem.html', colors:['#0a0e22','#7da3d4'] },
+      { id:'blackhole',   cat:'Physics',   titleKey:'bhTitle',          url:'experiments/blackhole.html',   colors:['#1a0a06','#e08a4a'] },
+      { id:'semi',        cat:'Physics',   titleKey:'semiTitle',        url:'experiments/semiconductor.html', colors:['#22153a','#a06fc8'] },
+      { id:'diode',       cat:'Physics',   titleKey:'diodeTitle',       url:'experiments/diode.html',       colors:['#2c0e22','#d65a8a'] },
+      { id:'molecule',    cat:'Chemistry', titleKey:'moleculeTitle',    url:'experiments/molecule.html',    colors:['#0a1f15','#6fbf8a'] },
+      { id:'crystal',     cat:'Chemistry', titleKey:'crystalTitle',     url:'experiments/crystal.html',     colors:['#0a1822','#6fc4d4'] },
+    ];
+
+    /* ── 절차적 카드 썸네일 ── */
+    function tr(key, fb){ return (window.i18n && window.i18n.t(key)) || fb || key; }
+
+    function makeThumb(exp, index){
+      const W = 600, H = 800;
+      const c = document.createElement('canvas');
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+
+      // 1) 베이스 그라데이션 (실험마다 살짝 다른 각도)
+      const ang = ((exp.id.charCodeAt(0) * 13) % 90 - 45) * Math.PI / 180;
+      const dx = Math.cos(ang), dy = Math.sin(ang);
+      const g = ctx.createLinearGradient(W/2 - dx*W, H/2 - dy*H, W/2 + dx*W, H/2 + dy*H);
+      g.addColorStop(0, exp.colors[0]); g.addColorStop(1, exp.colors[1]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+      // 2) 코너 비네팅
+      const rg = ctx.createRadialGradient(W/2, H*0.42, H*0.15, W/2, H/2, H*0.95);
+      rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+
+      // 3) 노이즈 그레인 (필름 느낌)
+      const im = ctx.getImageData(0, 0, W, H);
+      const d = im.data;
+      for(let i = 0; i < d.length; i += 4){
+        const n = (Math.random() - 0.5) * 22;
+        d[i] = Math.max(0, Math.min(255, d[i] + n));
+        d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
+        d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+      }
+      ctx.putImageData(im, 0, 0);
+
+      // 4) 안쪽 테두리
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(0.75, 0.75, W-1.5, H-1.5);
+
+      // 5) 카테고리 라벨 (좌상단) + 일련번호 (우상단)
+      const catLabel = tr(exp.cat === 'Physics' ? 'categoryPhysics' : 'categoryChemistry', exp.cat).toUpperCase();
+      ctx.fillStyle = 'rgba(255,255,255,0.82)';
+      ctx.font = '600 19px ui-monospace,"SF Mono",Consolas,monospace';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(catLabel, 42, 60);
+      ctx.textAlign = 'right';
+      const idx = String(index + 1).padStart(2, '0');
+      ctx.fillText(idx + ' / ' + String(EXP.length).padStart(2,'0'), W-42, 60);
+
+      // 6) 잔잔한 모티브 (좌상단 카테고리와 우하단 사이를 잇는 가느다란 선)
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(42, 78); ctx.lineTo(W*0.42, 78);
+      ctx.moveTo(W*0.58, H-46); ctx.lineTo(W-42, H-46);
+      ctx.stroke();
+
+      // 7) 제목 (좌하단, 큰 글자, 자동 줄바꿈)
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.font = '700 56px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+      const title = tr(exp.titleKey, exp.id);
+      wrapText(ctx, title, 42, H - 70, W - 84, 62);
+
+      return c;
+    }
+
+    function wrapText(ctx, text, x, baselineY, maxW, lineH){
+      const words = (text || '').split(/\s+/);
+      const lines = [];
+      let line = '';
+      for(const w of words){
+        const test = line ? line + ' ' + w : w;
+        if(ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; }
+        else line = test;
+      }
+      if(line) lines.push(line);
+      // 마지막 줄이 baselineY에 닿도록 위로 쌓는다
+      for(let i = lines.length - 1; i >= 0; i--){
+        ctx.fillText(lines[i], x, baselineY - (lines.length - 1 - i) * lineH);
+      }
+    }
+
+    /* ── 렌더러 / 씬 / 카메라 ── */
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    document.getElementById('scene').appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x0a0a0d, 0.018);
+    const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 0);     // 구의 중심
+
+    const group = new THREE.Group();
+    group.rotation.order = 'YXZ';
+    scene.add(group);
+
+    /* 피보나치 구면 분포: N개 점을 구면에 고르게 */
+    function fibSphere(n, radius){
+      const pts = [], phi = Math.PI * (3 - Math.sqrt(5));
+      for(let i = 0; i < n; i++){
+        const y = 1 - (i/(n-1)) * 2;
+        const rad = Math.sqrt(1 - y*y);
+        const th = phi * i;
+        pts.push(new THREE.Vector3(Math.cos(th)*rad, y, Math.sin(th)*rad).multiplyScalar(radius));
+      }
+      return pts;
+    }
+
+    /* 카드 생성 */
+    const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
+    const cards = [];
+    const positions = fibSphere(EXP.length, R);
+    const MAXANISO = renderer.capabilities.getMaxAnisotropy();
+
+    positions.forEach((p, i) => {
+      const exp = EXP[i];
+      const canvas = makeThumb(exp, i);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = MAXANISO;
+      const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity:1, fog:true });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(p);
+      mesh.lookAt(0, 0, 0);
+      mesh.userData = { exp, index:i, dir:p.clone().normalize() };
+      group.add(mesh);
+      cards.push(mesh);
+    });
+
+    /* 언어 바뀌면 모든 카드 텍스처 갱신 */
+    function repaint(){
+      cards.forEach((m, i) => {
+        const canvas = makeThumb(m.userData.exp, i);
+        m.material.map.image = canvas;
+        m.material.map.needsUpdate = true;
+      });
+    }
+    document.addEventListener('langchange', repaint);
+
+    /* ── 회전 상태 ── */
+    const rot = { tRx:0, tRy:0, cRx:0, cRy:0, vRx:0, vRy:0 };
+    const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+    /* ── 포인터 ── */
+    const el = renderer.domElement;
+    const pointers = new Map();
+    let dragging=false, down=null, pinch=0, locked=false;
+
+    el.addEventListener('pointerdown', e=>{
+      if(locked) return;
+      el.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      if(pointers.size === 1){ dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() }; }
+      if(pointers.size === 2){ const [a,b]=[...pointers.values()]; pinch = Math.hypot(a.x-b.x, a.y-b.y); }
+    });
+    el.addEventListener('pointermove', e=>{
+      const pt = pointers.get(e.pointerId);
+      if(pt){
+        const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
+        pt.x = e.clientX; pt.y = e.clientY;
+        if(pointers.size === 1 && dragging){
+          if(down) down.moved += Math.abs(dx) + Math.abs(dy);
+          rot.tRy += dx * DRAG_K;
+          rot.tRx = clamp(rot.tRx + dy * DRAG_K, -PITCH_LIMIT, PITCH_LIMIT);
+          rot.vRy = dx * DRAG_K; rot.vRx = dy * DRAG_K;
+        } else if(pointers.size === 2){
+          const [a,b] = [...pointers.values()]; const dist = Math.hypot(a.x-b.x, a.y-b.y);
+          if(pinch > 0){ camera.fov = clamp(camera.fov * pinch / dist, 42, 92); camera.updateProjectionMatrix(); }
+          pinch = dist;
+        }
+      }
+      cursor.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
+      cursorPos.x = e.clientX; cursorPos.y = e.clientY;
+    });
+    function endPointer(e){
+      pointers.delete(e.pointerId);
+      if(pointers.size < 2) pinch = 0;
+      if(pointers.size === 0) dragging = false;
+      if(down && !locked && down.moved < 6 && performance.now() - down.t < 500){ tryNav(down.x, down.y); }
+      down = null;
+    }
+    el.addEventListener('pointerup', endPointer);
+    el.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; down=null; });
+    el.addEventListener('wheel', e=>{ e.preventDefault();
+      camera.fov = clamp(camera.fov + e.deltaY * 0.02, 42, 92); camera.updateProjectionMatrix();
+    }, { passive:false });
+
+    /* 레이캐스트 */
+    const ray = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    function pickAt(x, y){
+      ndc.set(x/innerWidth * 2 - 1, -(y/innerHeight) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      return ray.intersectObjects(cards)[0]?.object || null;
+    }
+
+    /* 커스텀 커서 */
+    const cursor = document.getElementById('cursor');
+    const cursorPos = { x:innerWidth/2, y:innerHeight/2 };
+    let hovered = null;
+
+    /* ====================== 클릭 → 페이지 전환 ====================== */
+    function tryNav(x, y){
+      const mesh = pickAt(x, y); if(mesh) navigateTo(mesh);
+    }
+    function navigateTo(mesh){
+      if(locked) return;
+      locked = true;
+      const url = mesh.userData.exp.url;
+
+      // HUD/주변 카드 페이드, FOV 안쪽으로 줄이며 검정 오버레이로 덮는다
+      document.getElementById('hint').style.opacity = 0;
+      gsap.to(['.hud', '.lang-switch', '.grid-fallback'], { opacity:0, duration:0.3, ease:'power2.out' });
+      cards.forEach(c => { if(c !== mesh) gsap.to(c.material, { opacity:0, duration:0.4, ease:'power2.out' }); });
+      gsap.to(camera, { fov:24, duration:0.7, ease:'expo.in',
+        onUpdate:()=> camera.updateProjectionMatrix() });
+      gsap.to(cursor, { opacity:0, duration:0.3 });
+      gsap.to('#navFade', { opacity:1, duration:0.65, ease:'expo.in',
+        onComplete:()=>{ window.location.href = url; } });
+    }
+
+    /* ====================== 메인 루프 ====================== */
+    const focusEl = document.getElementById('focus');
+    let introDone = false, frame = 0;
+
+    function tick(){
+      requestAnimationFrame(tick);
+
+      // 회전 갱신은 잠금 안 됐을 때만 (잠금 시 GSAP가 화면을 다룬다)
+      if(!locked){
+        if(!dragging){
+          rot.tRy += rot.vRy;
+          rot.tRx = clamp(rot.tRx + rot.vRx, -PITCH_LIMIT, PITCH_LIMIT);
+          rot.vRy *= FRICTION; rot.vRx *= FRICTION;
+          rot.tRy += DRIFT;
+        }
+        rot.cRx += (rot.tRx - rot.cRx) * EASE;
+        rot.cRy += (rot.tRy - rot.cRy) * EASE;
+        group.rotation.set(rot.cRx, rot.cRy, 0);
+      }
+
+      // 시선 정렬도로 깊이감
+      let bestA = -1, best = null, visible = 0;
+      const q = group.quaternion;
+      for(const m of cards){
+        if(!m.visible) continue;
+        const wdir = m.userData.dir.clone().applyQuaternion(q);
+        const align = -wdir.z;
+        if(!locked) m.material.opacity = clamp(align * 0.95 + 0.2, 0.1, 1);
+        if(introDone && !locked){
+          const s = 1 + Math.max(0, align) * 0.10;
+          m.scale.x += (s - m.scale.x) * 0.12;
+          m.scale.y += (s - m.scale.y) * 0.12;
+        }
+        if(align > 0.55) visible++;
+        if(align > bestA){ bestA = align; best = m; }
+      }
+      if(frame % 6 === 0) focusEl.textContent = visible;
+
+      if(!locked && matchMedia('(pointer:fine)').matches){
+        const m = pickAt(cursorPos.x, cursorPos.y);
+        if(m !== hovered){ hovered = m; cursor.classList.toggle('hot', !!m); }
+      }
+
+      renderer.render(scene, camera);
+      frame++;
+    }
+
+    addEventListener('resize', ()=>{
+      camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    /* 인트로 — 카드 0 → 1 팝 */
+    document.getElementById('count').textContent = EXP.length;
+    document.getElementById('ldNum').textContent = '100%';
+
+    cards.forEach(m => m.scale.set(0, 0, 0));
+    const ld = document.getElementById('loader');
+    requestAnimationFrame(()=>{
+      gsap.to(ld, { opacity:0, duration:0.7, onComplete:()=> ld.classList.add('gone') });
+      gsap.to(cards.map(m => m.scale), {
+        x:1, y:1, z:1, duration:1.0, ease:'expo.out',
+        stagger:{ each:0.045, from:'random' },
+        onComplete:()=>{ introDone = true; }
+      });
+      rot.vRy = 0.018;   // 시작 토크
+    });
+
+    tick();
+  </script>
 </body>
 </html>
