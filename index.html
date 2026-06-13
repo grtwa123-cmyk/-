@@ -66,6 +66,19 @@
     #loader.gone{opacity:0;pointer-events:none}
     #loader .num{font-family:ui-monospace,monospace;font-size:42px;font-weight:300}
     #loader .cap{font-family:ui-monospace,monospace;font-size:10px;color:#8a8a93;letter-spacing:.3em;text-transform:uppercase}
+
+    /* ── 좁은 화면 정리 ── */
+    @media (max-width:720px){
+      .topbar{padding:14px 16px;gap:10px}
+      .tagline{display:none}              /* 중앙 태그라인 숨김 (카운터·링크와 겹침 방지) */
+      .clock{display:none}                /* in view / pieces 카운터 숨김 */
+      .mark{font-size:12px;letter-spacing:.16em}
+      .sub{font-size:8px}
+      .links{margin-top:0}
+      .hint{font-size:9px;letter-spacing:.18em;bottom:calc(64px + env(safe-area-inset-bottom));white-space:nowrap}
+      .lang-switch{bottom:calc(18px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%)}
+      .lang-btn{padding:8px 13px}         /* 터치 타깃 넉넉히 */
+    }
   </style>
 </head>
 <body>
@@ -364,9 +377,29 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x0a0a0d, 0.026);
     const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 100);
-    // 가운데 열은 z = -Rc 에 놓이므로, 카메라는 그 앞 CAM_DIST 지점에서 바라본다
-    camera.position.set(0, 0, -Rc + CAM_DIST);
-    camera.lookAt(0, 0, -Rc);
+
+    /* 종횡비 반응형 카메라
+       - three.js의 fov는 '세로' 화각. 세로로 긴 폰은 가로 화각이 급격히 좁아져
+         카드가 과하게 확대되고 곡률이 안 보인다 → 세로 화면일수록 fov를 키우고
+         카메라를 뒤로 물려 더 많은 열이 휜 채로 들어오게 한다.
+       - 사용자의 핀치 줌은 zoom(배율)로 따로 보존해 리사이즈/회전에도 유지된다. */
+    const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+    const mod = (a,n)=> ((a%n)+n)%n;
+    let zoom = 1;
+    const mapClamp = (v, a, b, ra, rb)=>{ const t = clamp((v-a)/(b-a), 0, 1); return ra + (rb-ra)*t; };
+    function applyCamera(){
+      const aspect = innerWidth / innerHeight;
+      camera.aspect = aspect;
+      // 세로로 길수록(aspect 작음) 카메라를 크게 뒤로 물려 더 많은 열이 휜 채 들어오게 하고,
+      // fov는 살짝만 키운다 (거리를 무르는 게 곡률 유지에 유리)
+      const baseFov  = mapClamp(aspect, 0.5, 1.8, 64, 56);
+      const dist     = mapClamp(aspect, 0.5, 1.8, 12.5, CAM_DIST);
+      camera.fov = clamp(baseFov / zoom, 38, 94);
+      camera.position.set(0, 0, -Rc + dist);
+      camera.lookAt(0, 0, -Rc);
+      camera.updateProjectionMatrix();
+    }
+    applyCamera();
 
     const group = new THREE.Group();
     scene.add(group);
@@ -396,8 +429,6 @@
 
     /* ── 스크롤 상태 ── */
     const st = { s:0, ts:0, vs:0,  y:0, ty:0, vy:0 };  // s: 가로 스크롤(열 단위), y: 세로 오프셋
-    const clamp = (v,a,b)=> v<a?a : v>b?b : v;
-    const mod = (a,n)=> ((a%n)+n)%n;
 
     /* 모션 줄이기 환경 + 첫 인터랙션 후 드리프트 정지 */
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -439,7 +470,7 @@
           st.vy = dy*DRAG_Y;
         } else if(pointers.size===2){
           const [a,b]=[...pointers.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y);
-          if(pinch>0){ camera.fov = clamp(camera.fov * pinch/dd, 44, 86); camera.updateProjectionMatrix(); }
+          if(pinch>0){ zoom = clamp(zoom * dd/pinch, 0.7, 1.9); applyCamera(); }
           pinch=dd;
         }
       }
@@ -539,9 +570,10 @@
     }
 
     addEventListener('resize', ()=>{
-      camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
+      applyCamera();          // 회전/리사이즈 시 종횡비에 맞게 fov·거리 재계산 (zoom 보존)
     });
+    addEventListener('orientationchange', ()=> setTimeout(()=>{ renderer.setSize(innerWidth, innerHeight); applyCamera(); }, 120));
 
     /* ── 인트로 ── */
     document.getElementById('count').textContent = EXP.length;
