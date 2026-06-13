@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title data-i18n="pageTitle">Science Lab — Spherical Index</title>
+  <title data-i18n="pageTitle">Science Lab — Curved Index</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <style>
@@ -15,79 +15,75 @@
     #scene{position:fixed;inset:0;touch-action:none}
     canvas{display:block}
 
-    /* 비네트로 가장자리 살짝 죽여서 구 안쪽 느낌 강조 */
-    .vignette{position:fixed;inset:0;pointer-events:none;z-index:2;
-      background:radial-gradient(120% 120% at 50% 50%,rgba(0,0,0,0) 38%,rgba(0,0,0,.55) 78%,rgba(0,0,0,.92) 100%)}
+    /* ── 상단 바 (phantom 느낌) ── */
+    .topbar{position:fixed;z-index:5;top:0;left:0;right:0;display:flex;align-items:flex-start;
+      justify-content:space-between;gap:18px;padding:18px 24px;pointer-events:none;
+      font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace}
+    .topbar .col{display:flex;flex-direction:column;gap:5px}
+    .mark{font-size:13px;font-weight:700;letter-spacing:.2em}
+    .sub{font-size:9px;color:#8a8a93;letter-spacing:.22em;text-transform:uppercase}
+    .tagline{max-width:300px;font-size:10.5px;line-height:1.7;color:#cfccc3;letter-spacing:.05em;text-transform:uppercase}
+    .topbar .right{align-items:flex-end;text-align:right;pointer-events:auto}
+    .clock{font-size:9px;color:#8a8a93;letter-spacing:.16em;line-height:1.8}
+    .clock b{color:#f3f1ea;font-weight:600}
+    .links{display:flex;gap:12px;margin-top:8px}
+    .links a{color:#8a8a93;text-decoration:none;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;transition:color .2s}
+    .links a:hover{color:#f3f1ea}
 
-    /* ── HUD ── */
-    .hud{position:fixed;z-index:5;pointer-events:none;
-      font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;letter-spacing:.04em}
-    .hud.tl{top:calc(20px + env(safe-area-inset-top));left:24px}
-    .hud.tl .mark{font-size:13px;font-weight:600;letter-spacing:.18em}
-    .hud.tl .sub{font-size:10px;color:#8a8a93;margin-top:6px;text-transform:uppercase;letter-spacing:.22em}
-    .hud.tr{top:calc(20px + env(safe-area-inset-top));right:24px;text-align:right;
-      font-size:10px;color:#8a8a93;text-transform:uppercase;letter-spacing:.2em;line-height:1.9}
-    .hud.tr b{color:#f3f1ea;font-weight:600;margin-left:6px}
-    .hud.bc{bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
-      font-size:10.5px;color:#8a8a93;text-transform:uppercase;letter-spacing:.26em;
-      transition:opacity .6s ease;text-align:center;max-width:80vw}
-
-    /* 그리드 뷰 폴백 링크 — 작게, 잘 안 보이게 */
-    .grid-fallback{position:fixed;z-index:5;bottom:calc(22px + env(safe-area-inset-bottom));left:24px;
-      pointer-events:auto;display:flex;gap:14px;
-      font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase}
-    .grid-fallback a{color:#8a8a93;text-decoration:none;transition:color .2s}
-    .grid-fallback a:hover{color:#f3f1ea}
-
-    /* 언어 스위처 — 화면 우하단에 작게 */
-    .lang-switch{position:fixed;z-index:5;bottom:calc(22px + env(safe-area-inset-bottom));right:24px;
-      display:flex;gap:6px;pointer-events:auto}
-    .lang-btn{background:rgba(20,20,28,.7);color:#8a8a93;border:1px solid rgba(255,255,255,.08);
-      border-radius:999px;padding:7px 11px;font-family:ui-monospace,monospace;font-size:10px;
-      cursor:pointer;letter-spacing:.06em;transition:.2s;-webkit-tap-highlight-color:transparent}
+    /* 하단 힌트 + 언어 */
+    .hint{position:fixed;z-index:5;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);
+      font-family:ui-monospace,monospace;font-size:10px;color:#8a8a93;letter-spacing:.24em;text-transform:uppercase;
+      transition:opacity .5s;text-align:center;pointer-events:none}
+    .lang-switch{position:fixed;z-index:5;right:24px;bottom:calc(18px + env(safe-area-inset-bottom));display:flex;gap:6px}
+    .lang-btn{background:rgba(20,20,28,.7);color:#8a8a93;border:1px solid rgba(255,255,255,.08);border-radius:999px;
+      padding:7px 11px;font-family:ui-monospace,monospace;font-size:10px;cursor:pointer;letter-spacing:.06em;
+      transition:.2s;-webkit-tap-highlight-color:transparent}
     .lang-btn:hover{color:#f3f1ea}
     .lang-btn.active{background:#f3f1ea;color:#0a0a0d;border-color:transparent}
 
-    /* ── 커스텀 커서 ── */
-    .cursor{position:fixed;z-index:30;top:0;left:0;width:34px;height:34px;border:1px solid rgba(243,241,234,.7);
+    /* 커스텀 커서 */
+    .cursor{position:fixed;z-index:30;top:0;left:0;width:30px;height:30px;border:1px solid rgba(243,241,234,.7);
       border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;mix-blend-mode:difference;
-      transition:width .25s ease,height .25s ease,background .25s ease,border-color .25s ease;will-change:transform}
-    .cursor.hot{width:78px;height:78px;background:rgba(243,241,234,.12);border-color:transparent}
+      transition:width .25s,height .25s,background .25s,border-color .25s;will-change:transform}
+    .cursor.hot{width:76px;height:76px;background:rgba(243,241,234,.12);border-color:transparent}
     .cursor .lbl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-      opacity:0;transition:opacity .25s}
+      font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:0;transition:opacity .25s}
     .cursor.hot .lbl{opacity:1}
     @media (pointer:coarse){ .cursor{display:none} }
 
-    /* 클릭 → 페이지 전환 시 까매지는 오버레이 */
     .nav-fade{position:fixed;inset:0;z-index:35;background:#04060d;opacity:0;pointer-events:none}
 
-    /* ── 로딩 화면 ── */
     #loader{position:fixed;inset:0;z-index:40;background:#0a0a0d;display:flex;align-items:center;justify-content:center;
-      flex-direction:column;gap:18px;transition:opacity .8s ease}
+      flex-direction:column;gap:16px;transition:opacity .8s}
     #loader.gone{opacity:0;pointer-events:none}
-    #loader .num{font-family:ui-monospace,monospace;font-size:46px;font-weight:300;letter-spacing:.02em}
+    #loader .num{font-family:ui-monospace,monospace;font-size:42px;font-weight:300}
     #loader .cap{font-family:ui-monospace,monospace;font-size:10px;color:#8a8a93;letter-spacing:.3em;text-transform:uppercase}
   </style>
 </head>
 <body>
   <div id="scene"></div>
-  <div class="vignette"></div>
 
-  <header class="hud tl">
-    <div class="mark">&diams; SCIENCE LAB</div>
-    <div class="sub">Spherical Index</div>
+  <header class="topbar">
+    <div class="col">
+      <div class="mark">&diams; SCIENCE&nbsp;LAB</div>
+      <div class="sub">Interactive Index</div>
+    </div>
+    <div class="col" style="align-items:center">
+      <div class="tagline" data-i18n="indexTagline">Science Lab is a collection of hands-on physics &amp; chemistry simulations you can touch.</div>
+    </div>
+    <div class="col right">
+      <div class="clock">
+        <div>In view <b id="focus">—</b></div>
+        <div>Pieces <b id="count">—</b></div>
+      </div>
+      <nav class="links" aria-label="Grid views">
+        <a href="physics.html" data-i18n="categoryPhysics">Physics</a>
+        <a href="chemistry.html" data-i18n="categoryChemistry">Chemistry</a>
+      </nav>
+    </div>
   </header>
-  <div class="hud tr">
-    <div>Pieces<b id="count">—</b></div>
-    <div>In view<b id="focus">—</b></div>
-  </div>
-  <div class="hud bc" id="hint" data-i18n="indexHint">Drag to explore · Click a piece to enter</div>
 
-  <nav class="grid-fallback" aria-label="Grid views">
-    <a href="physics.html" data-i18n="categoryPhysics">Physics</a>
-    <a href="chemistry.html" data-i18n="categoryChemistry">Chemistry</a>
-  </nav>
+  <div class="hint" id="hint" data-i18n="indexHint">Drag to explore · Click a piece to enter</div>
 
   <div class="lang-switch" role="group" aria-label="Language">
     <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
@@ -100,7 +96,7 @@
 
   <div id="loader">
     <div class="num" id="ldNum">0%</div>
-    <div class="cap">Assembling the index</div>
+    <div class="cap">Building the wall</div>
   </div>
 
   <script src="i18n.js"></script>
@@ -110,118 +106,127 @@
     const gsap = window.gsap;
 
     /* ======================================================================
-       Spherical Index — 구 안쪽에서 실험을 고르는 셀렉터
-       - 12개 실험을 피보나치 나선으로 구면에 안쪽을 향하게 배치
-       - 카메라는 구 중심에 고정. 드래그로 둘러보고 클릭하면 그 실험으로 이동
-       - 각 카드는 캔버스로 그린 절차적 썸네일(그라데이션 + 노이즈 + 제목)
-       - 언어 전환 시 모든 썸네일을 새 언어로 다시 그린다
+       Curved Index — phantom.land 식 '휘어진 격자 벽'
+       - 카드를 줄(ROWS) × 열(COLS) 격자로 두되, 전체를 원통면에 매핑해
+         가운데는 정면, 양 끝은 안쪽으로 말려 들어가게 한다.
+       - 가로 드래그 → 열을 따라 무한 스크롤(열을 재활용해 끝없이 흐른다).
+       - 세로 드래그 → 행을 위/아래로 살짝 이동(클램프).
+       - 카드 클릭 → 그 실험 페이지로 시네마틱 전환.
        ====================================================================== */
 
     // ── 튜닝 ──
-    const R = 8.5;          // 구 반지름
-    const CARD_W = 2.85;    // 카드 가로 (월드)
-    const CARD_H = 3.75;    // 카드 세로 (4:3 비율의 세로형)
-    const DRAG_K = 0.0055;  // 드래그 → 회전 감도
-    const EASE = 0.10;
-    const FRICTION = 0.94;
-    const DRIFT = 0.00075;  // 손 떼면 천천히 흐른다
-    const PITCH_LIMIT = 0.92;
+    const Rc = 9.5;          // 원통 반지름 (벽의 휘는 정도)
+    const COLS = 6;          // 열 (가로로 재활용되는 단위)
+    const ROWS = 2;          // 행
+    const CARD_W = 3.0;      // 카드 가로(월드)
+    const CARD_H = 3.62;     // 카드 세로(월드)  — 캔버스 비율과 일치
+    const D_ANG = 0.40;      // 열 사이 각도(라디안) — 클수록 카드 간격 넓음
+    const ROW_Y = [ 2.0, -2.0 ]; // 두 행의 높이
+    const CAM_DIST = 7.2;    // 가운데 열까지의 카메라 거리
+    const DRAG_X = 0.0042;   // 가로 드래그 → 스크롤 감도
+    const DRAG_Y = 0.011;    // 세로 드래그 → 행 이동 감도
+    const EASE = 0.11;
+    const FRICTION = 0.93;
+    const DRIFT = 0.0016;    // 손 떼면 가로로 천천히 흐른다
+    const Y_LIMIT = 2.4;     // 세로 이동 한계
 
-    // ── 실험 카탈로그 (현재 사이트에 실린 12개) ──
+    // ── 실험 카탈로그 (열 우선으로 배치: 열 c, 행 r → index c*ROWS+r) ──
     const EXP = [
-      { id:'projectile',  cat:'Physics',   titleKey:'projectileTitle',  url:'experiments/projectile.html',  colors:['#1a2742','#f0a85e'] },
-      { id:'pendulum',    cat:'Physics',   titleKey:'pendulumTitle',    url:'experiments/pendulum.html',    colors:['#0c1a36','#5db0d6'] },
-      { id:'cannon',      cat:'Physics',   titleKey:'cannonTitle',      url:'experiments/cannon.html',      colors:['#102132','#5fa4b8'] },
-      { id:'orbit',       cat:'Physics',   titleKey:'orbitsTitle',      url:'experiments/orbit.html',       colors:['#070914','#d4c065'] },
-      { id:'impact',      cat:'Physics',   titleKey:'impactTitle',      url:'experiments/impact.html',      colors:['#1d1908','#e2a45a'] },
-      { id:'solar',       cat:'Physics',   titleKey:'solarTitle',       url:'experiments/solar.html',       colors:['#080a1e','#8095e6'] },
-      { id:'solarsystem', cat:'Physics',   titleKey:'solarSystemTitle', url:'experiments/solarsystem.html', colors:['#0a0e22','#7da3d4'] },
-      { id:'blackhole',   cat:'Physics',   titleKey:'bhTitle',          url:'experiments/blackhole.html',   colors:['#1a0a06','#e08a4a'] },
-      { id:'semi',        cat:'Physics',   titleKey:'semiTitle',        url:'experiments/semiconductor.html', colors:['#22153a','#a06fc8'] },
-      { id:'diode',       cat:'Physics',   titleKey:'diodeTitle',       url:'experiments/diode.html',       colors:['#2c0e22','#d65a8a'] },
-      { id:'molecule',    cat:'Chemistry', titleKey:'moleculeTitle',    url:'experiments/molecule.html',    colors:['#0a1f15','#6fbf8a'] },
-      { id:'crystal',     cat:'Chemistry', titleKey:'crystalTitle',     url:'experiments/crystal.html',     colors:['#0a1822','#6fc4d4'] },
+      { titleKey:'projectileTitle',  url:'experiments/projectile.html',  cat:'Physics',   tags:['MOTION','2D'],         colors:['#1a2742','#f0a85e'] },
+      { titleKey:'pendulumTitle',    url:'experiments/pendulum.html',    cat:'Physics',   tags:['MOTION','OSCILLATE'],  colors:['#0c1a36','#5db0d6'] },
+      { titleKey:'cannonTitle',      url:'experiments/cannon.html',      cat:'Physics',   tags:['GRAVITY','ORBIT'],     colors:['#102132','#5fa4b8'] },
+      { titleKey:'orbitsTitle',      url:'experiments/orbit.html',       cat:'Physics',   tags:['GRAVITY','N-BODY'],    colors:['#070914','#d4c065'] },
+      { titleKey:'impactTitle',      url:'experiments/impact.html',      cat:'Physics',   tags:['FORCE','GRAPH'],       colors:['#1d1908','#e2a45a'] },
+      { titleKey:'solarTitle',       url:'experiments/solar.html',       cat:'Physics',   tags:['GRAVITY','3D'],        colors:['#080a1e','#8095e6'] },
+      { titleKey:'solarSystemTitle', url:'experiments/solarsystem.html', cat:'Physics',   tags:['3D','TOUR'],           colors:['#0a0e22','#7da3d4'] },
+      { titleKey:'bhTitle',          url:'experiments/blackhole.html',   cat:'Physics',   tags:['RELATIVITY','WEBGL'],  colors:['#1a0a06','#e08a4a'] },
+      { titleKey:'semiTitle',        url:'experiments/semiconductor.html', cat:'Physics', tags:['QUANTUM','FIELD'],     colors:['#22153a','#a06fc8'] },
+      { titleKey:'diodeTitle',       url:'experiments/diode.html',       cat:'Physics',   tags:['QUANTUM','FIELD'],     colors:['#2c0e22','#d65a8a'] },
+      { titleKey:'moleculeTitle',    url:'experiments/molecule.html',    cat:'Chemistry', tags:['3D','MODEL'],          colors:['#0a1f15','#6fbf8a'] },
+      { titleKey:'crystalTitle',     url:'experiments/crystal.html',     cat:'Chemistry', tags:['LATTICE','3D'],        colors:['#0a1822','#6fc4d4'] },
     ];
 
-    /* ── 절차적 카드 썸네일 ── */
-    function tr(key, fb){ return (window.i18n && window.i18n.t(key)) || fb || key; }
+    const tr = (key, fb) => (window.i18n && window.i18n.t(key)) || fb || key;
 
-    function makeThumb(exp, index){
-      const W = 600, H = 800;
-      const c = document.createElement('canvas');
-      c.width = W; c.height = H;
-      const ctx = c.getContext('2d');
+    /* ── 절차적 카드 텍스처 ──
+       카드 평면 전체를 그린다: 어두운 여백(벽 배경과 동화) + 이미지 블록 +
+       라벨(상단 카테고리/번호, 하단 태그/OPEN) + 이미지 위 큰 제목. */
+    function makeCard(exp, index){
+      const W = 540, H = 652;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d');
 
-      // 1) 베이스 그라데이션 (실험마다 살짝 다른 각도)
-      const ang = ((exp.id.charCodeAt(0) * 13) % 90 - 45) * Math.PI / 180;
+      // 여백 = 페이지 배경색 → 라벨이 벽 위에 떠 있는 듯
+      x.fillStyle = '#0a0a0d'; x.fillRect(0, 0, W, H);
+
+      // 이미지 블록 영역
+      const ix = 14, iy = 64, iw = W - 28, ih = 470;
+
+      // 1) 대각 그라데이션
+      const ang = ((exp.cat.charCodeAt(0) + index*17) % 90 - 45) * Math.PI/180;
       const dx = Math.cos(ang), dy = Math.sin(ang);
-      const g = ctx.createLinearGradient(W/2 - dx*W, H/2 - dy*H, W/2 + dx*W, H/2 + dy*H);
+      const g = x.createLinearGradient(ix+iw/2 - dx*iw, iy+ih/2 - dy*ih, ix+iw/2 + dx*iw, iy+ih/2 + dy*ih);
       g.addColorStop(0, exp.colors[0]); g.addColorStop(1, exp.colors[1]);
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      roundRect(x, ix, iy, iw, ih, 6); x.fillStyle = g; x.fill();
 
-      // 2) 코너 비네팅
-      const rg = ctx.createRadialGradient(W/2, H*0.42, H*0.15, W/2, H/2, H*0.95);
-      rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,0.55)');
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-
-      // 3) 노이즈 그레인 (필름 느낌)
-      const im = ctx.getImageData(0, 0, W, H);
-      const d = im.data;
+      // 2) 비네트
+      x.save(); roundRect(x, ix, iy, iw, ih, 6); x.clip();
+      const rg = x.createRadialGradient(ix+iw/2, iy+ih*0.4, ih*0.1, ix+iw/2, iy+ih/2, ih*0.85);
+      rg.addColorStop(0, 'rgba(0,0,0,0)'); rg.addColorStop(1, 'rgba(0,0,0,0.6)');
+      x.fillStyle = rg; x.fillRect(ix, iy, iw, ih);
+      // 3) 그레인
+      const im = x.getImageData(ix, iy, iw, ih), d = im.data;
       for(let i = 0; i < d.length; i += 4){
-        const n = (Math.random() - 0.5) * 22;
-        d[i] = Math.max(0, Math.min(255, d[i] + n));
-        d[i+1] = Math.max(0, Math.min(255, d[i+1] + n));
-        d[i+2] = Math.max(0, Math.min(255, d[i+2] + n));
+        const n = (Math.random()-0.5)*20;
+        d[i]+=n; d[i+1]+=n; d[i+2]+=n;
       }
-      ctx.putImageData(im, 0, 0);
+      x.putImageData(im, ix, iy);
+      // 4) 제목 (이미지 하단)
+      x.fillStyle = '#fff'; x.textAlign = 'left';
+      x.font = '700 46px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+      wrapText(x, tr(exp.titleKey, ''), ix+22, iy+ih-30, iw-44, 50);
+      x.restore();
 
-      // 4) 안쪽 테두리
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(0.75, 0.75, W-1.5, H-1.5);
+      // 5) 이미지 테두리
+      x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 1;
+      roundRect(x, ix, iy, iw, ih, 6); x.stroke();
 
-      // 5) 카테고리 라벨 (좌상단) + 일련번호 (우상단)
-      const catLabel = tr(exp.cat === 'Physics' ? 'categoryPhysics' : 'categoryChemistry', exp.cat).toUpperCase();
-      ctx.fillStyle = 'rgba(255,255,255,0.82)';
-      ctx.font = '600 19px ui-monospace,"SF Mono",Consolas,monospace';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.fillText(catLabel, 42, 60);
-      ctx.textAlign = 'right';
-      const idx = String(index + 1).padStart(2, '0');
-      ctx.fillText(idx + ' / ' + String(EXP.length).padStart(2,'0'), W-42, 60);
+      // 6) 상단 라벨: 카테고리(좌) · 번호(우)
+      const cat = tr(exp.cat === 'Physics' ? 'categoryPhysics' : 'categoryChemistry', exp.cat).toUpperCase();
+      x.fillStyle = 'rgba(243,241,234,0.85)';
+      x.font = '600 17px ui-monospace,"SF Mono",Consolas,monospace';
+      x.textAlign = 'left';  x.fillText(cat, 16, 44);
+      x.textAlign = 'right'; x.fillStyle = 'rgba(138,138,147,0.9)';
+      x.fillText(String(index+1).padStart(2,'0') + ' / ' + String(EXP.length).padStart(2,'0'), W-16, 44);
 
-      // 6) 잔잔한 모티브 (좌상단 카테고리와 우하단 사이를 잇는 가느다란 선)
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(42, 78); ctx.lineTo(W*0.42, 78);
-      ctx.moveTo(W*0.58, H-46); ctx.lineTo(W-42, H-46);
-      ctx.stroke();
-
-      // 7) 제목 (좌하단, 큰 글자, 자동 줄바꿈)
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'left';
-      ctx.font = '700 56px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
-      const title = tr(exp.titleKey, exp.id);
-      wrapText(ctx, title, 42, H - 70, W - 84, 62);
+      // 7) 하단 라벨: 태그(좌) · OPEN(우)
+      x.textAlign = 'left'; x.fillStyle = 'rgba(138,138,147,0.95)';
+      x.font = '500 15px ui-monospace,"SF Mono",Consolas,monospace';
+      let tx = 16;
+      for(const t of exp.tags){
+        x.fillText(t, tx, H-22);
+        tx += x.measureText(t).width + 18;
+      }
+      x.textAlign = 'right'; x.fillStyle = 'rgba(243,241,234,0.85)';
+      x.fillText('OPEN →', W-16, H-22);
 
       return c;
     }
-
+    function roundRect(ctx, x, y, w, h, r){
+      ctx.beginPath();
+      ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+      ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+    }
     function wrapText(ctx, text, x, baselineY, maxW, lineH){
-      const words = (text || '').split(/\s+/);
-      const lines = [];
-      let line = '';
+      const words = (text||'').split(/\s+/); const lines = []; let line = '';
       for(const w of words){
-        const test = line ? line + ' ' + w : w;
+        const test = line ? line+' '+w : w;
         if(ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; }
         else line = test;
       }
       if(line) lines.push(line);
-      // 마지막 줄이 baselineY에 닿도록 위로 쌓는다
-      for(let i = lines.length - 1; i >= 0; i--){
-        ctx.fillText(lines[i], x, baselineY - (lines.length - 1 - i) * lineH);
-      }
+      for(let i = lines.length-1; i >= 0; i--)
+        ctx.fillText(lines[i], x, baselineY - (lines.length-1-i)*lineH);
     }
 
     /* ── 렌더러 / 씬 / 카메라 ── */
@@ -231,173 +236,154 @@
     document.getElementById('scene').appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0a0a0d, 0.018);
-    const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 0);     // 구의 중심
+    scene.fog = new THREE.FogExp2(0x0a0a0d, 0.026);
+    const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 100);
+    // 가운데 열은 z = -Rc 에 놓이므로, 카메라는 그 앞 CAM_DIST 지점에서 바라본다
+    camera.position.set(0, 0, -Rc + CAM_DIST);
+    camera.lookAt(0, 0, -Rc);
 
     const group = new THREE.Group();
-    group.rotation.order = 'YXZ';
     scene.add(group);
 
-    /* 피보나치 구면 분포: N개 점을 구면에 고르게 */
-    function fibSphere(n, radius){
-      const pts = [], phi = Math.PI * (3 - Math.sqrt(5));
-      for(let i = 0; i < n; i++){
-        const y = 1 - (i/(n-1)) * 2;
-        const rad = Math.sqrt(1 - y*y);
-        const th = phi * i;
-        pts.push(new THREE.Vector3(Math.cos(th)*rad, y, Math.sin(th)*rad).multiplyScalar(radius));
-      }
-      return pts;
-    }
-
-    /* 카드 생성 */
+    /* 카드 생성 (열·행 격자) */
     const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
     const cards = [];
-    const positions = fibSphere(EXP.length, R);
     const MAXANISO = renderer.capabilities.getMaxAnisotropy();
-
-    positions.forEach((p, i) => {
-      const exp = EXP[i];
-      const canvas = makeThumb(exp, i);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = MAXANISO;
-      const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity:1, fog:true });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(p);
-      mesh.lookAt(0, 0, 0);
-      mesh.userData = { exp, index:i, dir:p.clone().normalize() };
-      group.add(mesh);
-      cards.push(mesh);
-    });
-
-    /* 언어 바뀌면 모든 카드 텍스처 갱신 */
+    for(let cIdx = 0; cIdx < COLS; cIdx++){
+      for(let r = 0; r < ROWS; r++){
+        const index = cIdx*ROWS + r;
+        if(index >= EXP.length) continue;
+        const exp = EXP[index];
+        const tex = new THREE.CanvasTexture(makeCard(exp, index));
+        tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = MAXANISO;
+        const mat = new THREE.MeshBasicMaterial({ map:tex, side:THREE.DoubleSide, transparent:true, opacity:1, fog:true });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.userData = { exp, index, col:cIdx, row:r };
+        group.add(mesh);
+        cards.push(mesh);
+      }
+    }
     function repaint(){
-      cards.forEach((m, i) => {
-        const canvas = makeThumb(m.userData.exp, i);
-        m.material.map.image = canvas;
-        m.material.map.needsUpdate = true;
-      });
+      cards.forEach(m=>{ m.material.map.image = makeCard(m.userData.exp, m.userData.index); m.material.map.needsUpdate = true; });
     }
     document.addEventListener('langchange', repaint);
 
-    /* ── 회전 상태 ── */
-    const rot = { tRx:0, tRy:0, cRx:0, cRy:0, vRx:0, vRy:0 };
-    const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+    /* ── 스크롤 상태 ── */
+    const st = { s:0, ts:0, vs:0,  y:0, ty:0, vy:0 };  // s: 가로 스크롤(열 단위), y: 세로 오프셋
+    const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+    const mod = (a,n)=> ((a%n)+n)%n;
+
+    /* 각 카드 배치: 열을 무한 재활용하며 원통면에 매핑 */
+    function layout(){
+      for(const m of cards){
+        // 현재 스크롤 기준 상대 열 위치를 [-COLS/2, COLS/2) 로 wrap → 무한 스크롤
+        let rel = mod(m.userData.col - st.s + COLS/2, COLS) - COLS/2;
+        const th = rel * D_ANG;                       // 원통 둘레 각도
+        const yy = ROW_Y[m.userData.row] + st.y;      // 행 높이 + 세로 오프셋
+        m.position.set(Math.sin(th)*Rc, yy, -Math.cos(th)*Rc);
+        m.lookAt(0, yy, 0);                            // 원통 축(중심선)을 바라봄 → 안쪽을 향함
+        m.userData.theta = th; m.userData.rel = rel;
+      }
+    }
 
     /* ── 포인터 ── */
     const el = renderer.domElement;
     const pointers = new Map();
     let dragging=false, down=null, pinch=0, locked=false;
-
     el.addEventListener('pointerdown', e=>{
       if(locked) return;
       el.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
-      if(pointers.size === 1){ dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() }; }
-      if(pointers.size === 2){ const [a,b]=[...pointers.values()]; pinch = Math.hypot(a.x-b.x, a.y-b.y); }
+      if(pointers.size===1){ dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() }; }
+      if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y); }
     });
     el.addEventListener('pointermove', e=>{
       const pt = pointers.get(e.pointerId);
       if(pt){
-        const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
-        pt.x = e.clientX; pt.y = e.clientY;
-        if(pointers.size === 1 && dragging){
-          if(down) down.moved += Math.abs(dx) + Math.abs(dy);
-          rot.tRy += dx * DRAG_K;
-          rot.tRx = clamp(rot.tRx + dy * DRAG_K, -PITCH_LIMIT, PITCH_LIMIT);
-          rot.vRy = dx * DRAG_K; rot.vRx = dy * DRAG_K;
-        } else if(pointers.size === 2){
-          const [a,b] = [...pointers.values()]; const dist = Math.hypot(a.x-b.x, a.y-b.y);
-          if(pinch > 0){ camera.fov = clamp(camera.fov * pinch / dist, 42, 92); camera.updateProjectionMatrix(); }
-          pinch = dist;
+        const dx=e.clientX-pt.x, dy=e.clientY-pt.y; pt.x=e.clientX; pt.y=e.clientY;
+        if(pointers.size===1 && dragging){
+          if(down) down.moved += Math.abs(dx)+Math.abs(dy);
+          st.ts -= dx*DRAG_X;  st.vs = -dx*DRAG_X;           // 가로: 스크롤
+          st.ty = clamp(st.ty + dy*DRAG_Y, -Y_LIMIT, Y_LIMIT); // 세로: 행 이동
+          st.vy = dy*DRAG_Y;
+        } else if(pointers.size===2){
+          const [a,b]=[...pointers.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y);
+          if(pinch>0){ camera.fov = clamp(camera.fov * pinch/dd, 44, 86); camera.updateProjectionMatrix(); }
+          pinch=dd;
         }
       }
       cursor.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
-      cursorPos.x = e.clientX; cursorPos.y = e.clientY;
+      cursorPos.x=e.clientX; cursorPos.y=e.clientY;
     });
     function endPointer(e){
       pointers.delete(e.pointerId);
-      if(pointers.size < 2) pinch = 0;
-      if(pointers.size === 0) dragging = false;
-      if(down && !locked && down.moved < 6 && performance.now() - down.t < 500){ tryNav(down.x, down.y); }
-      down = null;
+      if(pointers.size<2) pinch=0;
+      if(pointers.size===0) dragging=false;
+      if(down && !locked && down.moved<6 && performance.now()-down.t<500){ tryNav(down.x, down.y); }
+      down=null;
     }
     el.addEventListener('pointerup', endPointer);
     el.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; down=null; });
     el.addEventListener('wheel', e=>{ e.preventDefault();
-      camera.fov = clamp(camera.fov + e.deltaY * 0.02, 42, 92); camera.updateProjectionMatrix();
+      st.ts += e.deltaX*DRAG_X*0.6;                         // 트랙패드 가로 스크롤
+      st.ty = clamp(st.ty - e.deltaY*DRAG_Y*0.4, -Y_LIMIT, Y_LIMIT);
     }, { passive:false });
 
     /* 레이캐스트 */
-    const ray = new THREE.Raycaster();
-    const ndc = new THREE.Vector2();
-    function pickAt(x, y){
-      ndc.set(x/innerWidth * 2 - 1, -(y/innerHeight) * 2 + 1);
+    const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    function pickAt(px,py){
+      ndc.set(px/innerWidth*2-1, -(py/innerHeight)*2+1);
       ray.setFromCamera(ndc, camera);
       return ray.intersectObjects(cards)[0]?.object || null;
     }
-
-    /* 커스텀 커서 */
     const cursor = document.getElementById('cursor');
     const cursorPos = { x:innerWidth/2, y:innerHeight/2 };
     let hovered = null;
 
-    /* ====================== 클릭 → 페이지 전환 ====================== */
-    function tryNav(x, y){
-      const mesh = pickAt(x, y); if(mesh) navigateTo(mesh);
-    }
+    /* ── 클릭 → 페이지 전환 ── */
+    function tryNav(px,py){ const m = pickAt(px,py); if(m) navigateTo(m); }
     function navigateTo(mesh){
-      if(locked) return;
-      locked = true;
+      if(locked) return; locked = true;
       const url = mesh.userData.exp.url;
-
-      // HUD/주변 카드 페이드, FOV 안쪽으로 줄이며 검정 오버레이로 덮는다
       document.getElementById('hint').style.opacity = 0;
-      gsap.to(['.hud', '.lang-switch', '.grid-fallback'], { opacity:0, duration:0.3, ease:'power2.out' });
-      cards.forEach(c => { if(c !== mesh) gsap.to(c.material, { opacity:0, duration:0.4, ease:'power2.out' }); });
-      gsap.to(camera, { fov:24, duration:0.7, ease:'expo.in',
-        onUpdate:()=> camera.updateProjectionMatrix() });
+      gsap.to(['.topbar', '.lang-switch'], { opacity:0, duration:0.3 });
+      cards.forEach(c=>{ if(c!==mesh) gsap.to(c.material, { opacity:0, duration:0.4 }); });
+      // 카메라를 선택 카드로 살짝 당겨 들어가며 암전
+      gsap.to(camera.position, { x:mesh.position.x*0.5, y:mesh.position.y*0.5,
+        z:(camera.position.z + mesh.position.z)/2, duration:0.7, ease:'expo.in' });
+      gsap.to(camera, { fov:34, duration:0.7, ease:'expo.in', onUpdate:()=>camera.updateProjectionMatrix() });
       gsap.to(cursor, { opacity:0, duration:0.3 });
-      gsap.to('#navFade', { opacity:1, duration:0.65, ease:'expo.in',
-        onComplete:()=>{ window.location.href = url; } });
+      gsap.to('#navFade', { opacity:1, duration:0.65, ease:'expo.in', onComplete:()=>{ location.href = url; } });
     }
 
-    /* ====================== 메인 루프 ====================== */
+    /* ── 메인 루프 ── */
     const focusEl = document.getElementById('focus');
-    let introDone = false, frame = 0;
+    let introDone = false, frame = 0, introS = 0;
 
     function tick(){
       requestAnimationFrame(tick);
 
-      // 회전 갱신은 잠금 안 됐을 때만 (잠금 시 GSAP가 화면을 다룬다)
       if(!locked){
         if(!dragging){
-          rot.tRy += rot.vRy;
-          rot.tRx = clamp(rot.tRx + rot.vRx, -PITCH_LIMIT, PITCH_LIMIT);
-          rot.vRy *= FRICTION; rot.vRx *= FRICTION;
-          rot.tRy += DRIFT;
+          st.ts += st.vs;  st.vs *= FRICTION;
+          st.ty = clamp(st.ty + st.vy, -Y_LIMIT, Y_LIMIT); st.vy *= FRICTION;
+          st.ts += DRIFT;                       // 가로 드리프트
         }
-        rot.cRx += (rot.tRx - rot.cRx) * EASE;
-        rot.cRy += (rot.tRy - rot.cRy) * EASE;
-        group.rotation.set(rot.cRx, rot.cRy, 0);
+        st.s += (st.ts - st.s)*EASE;
+        st.y += (st.ty - st.y)*EASE;
+        layout();
       }
 
-      // 시선 정렬도로 깊이감
-      let bestA = -1, best = null, visible = 0;
-      const q = group.quaternion;
+      // 시선 정렬도(=중앙 근접도)로 깊이감
+      let visible = 0;
       for(const m of cards){
-        if(!m.visible) continue;
-        const wdir = m.userData.dir.clone().applyQuaternion(q);
-        const align = -wdir.z;
-        if(!locked) m.material.opacity = clamp(align * 0.95 + 0.2, 0.1, 1);
+        const align = Math.cos(m.userData.theta || 0);    // 1=정면, 작아질수록 가장자리
+        m.material.opacity = clamp((align-0.35)/0.5, 0.06, 1);
         if(introDone && !locked){
-          const s = 1 + Math.max(0, align) * 0.10;
-          m.scale.x += (s - m.scale.x) * 0.12;
-          m.scale.y += (s - m.scale.y) * 0.12;
+          const s = 1 + Math.max(0, align-0.6)*0.16;       // 정면 카드 살짝 큼
+          m.scale.x += (s-m.scale.x)*0.12; m.scale.y += (s-m.scale.y)*0.12;
         }
-        if(align > 0.55) visible++;
-        if(align > bestA){ bestA = align; best = m; }
+        if(align > 0.78) visible++;
       }
       if(frame % 6 === 0) focusEl.textContent = visible;
 
@@ -415,20 +401,17 @@
       renderer.setSize(innerWidth, innerHeight);
     });
 
-    /* 인트로 — 카드 0 → 1 팝 */
+    /* ── 인트로 ── */
     document.getElementById('count').textContent = EXP.length;
     document.getElementById('ldNum').textContent = '100%';
-
-    cards.forEach(m => m.scale.set(0, 0, 0));
+    layout();
+    cards.forEach(m=> m.scale.set(0,0,0));
     const ld = document.getElementById('loader');
     requestAnimationFrame(()=>{
       gsap.to(ld, { opacity:0, duration:0.7, onComplete:()=> ld.classList.add('gone') });
-      gsap.to(cards.map(m => m.scale), {
-        x:1, y:1, z:1, duration:1.0, ease:'expo.out',
-        stagger:{ each:0.045, from:'random' },
-        onComplete:()=>{ introDone = true; }
-      });
-      rot.vRy = 0.018;   // 시작 토크
+      gsap.to(cards.map(m=>m.scale), { x:1, y:1, z:1, duration:0.9, ease:'expo.out',
+        stagger:{ each:0.04, from:'center' }, onComplete:()=>{ introDone = true; } });
+      st.vs = -0.05;   // 시작하자마자 살짝 흐른다
     });
 
     tick();
