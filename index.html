@@ -595,6 +595,25 @@
       });
     }
 
+    /* ── 뒤로 가기(bfcache 복원) 시 멈춤 방지 ──
+       navigateTo가 떠나기 직전에 locked=true, 검은 오버레이, 카드/HUD 페이드 0 상태로
+       페이지를 두고 가는데, 브라우저가 그 상태 그대로 bfcache에서 살려내면 화면이
+       '얼어붙은' 것처럼 보인다. pageshow의 persisted 플래그로 감지해 모든 시각/상태를
+       초기 위치로 되돌린다. */
+    addEventListener('pageshow', (e)=>{
+      if(!e.persisted) return;                     // 일반 로드는 무시
+      gsap.killTweensOf(['#navFade', '.topbar', '.lang-switch', '#hint', cursor, camera, camera.position]);
+      cards.forEach(c=> gsap.killTweensOf(c.material));
+      document.getElementById('navFade').style.opacity = 0;
+      document.querySelectorAll('.topbar, .lang-switch').forEach(el=>{ el.style.opacity = ''; });
+      const hint = document.getElementById('hint'); if(hint) hint.style.opacity = '';
+      cards.forEach(c=>{ c.material.opacity = 1; });
+      cursor.style.opacity = '';
+      zoom = 1; applyCamera();
+      locked = false;
+      interacted = false;                          // 드리프트 다시 살짝 흐르도록
+    });
+
     tick();
   </script>
 </body>
