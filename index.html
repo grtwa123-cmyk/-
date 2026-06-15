@@ -164,7 +164,7 @@
     const ROW_Y = [ 2.0, -2.0 ]; // 두 행의 높이
     const CAM_DIST = 7.2;    // 가운데 열까지의 카메라 거리
     const DRAG_X = 0.0042;   // 가로 드래그 → 스크롤 감도
-    const DRAG_Y = 0.011;    // 세로 드래그 → 행 이동 감도
+    const DRAG_Y = 0.0055;   // 세로 드래그 → 행 이동 감도 (낮춰서 의도치 않은 세로 움직임 줄임)
     const EASE = 0.11;
     const FRICTION = 0.93;
     const DRIFT = 0.0016;    // 손 떼면 가로로 천천히 흐른다
@@ -451,13 +451,44 @@
     const el = renderer.domElement;
     const pointers = new Map();
     let dragging=false, down=null, pinch=0, locked=false;
+    /* ── 길게 누르기로 진입 ──
+       탭만으로는 들어가지 않는다. 카드를 누른 채 유지하면 material.color가 흰색(=텍스처 원본)
+       에서 따뜻한 톤으로 차오르고, HOLD_MS를 넘기면 navigateTo. 도중에 이동 임계를 넘기거나
+       손을 떼면 색을 즉시 흰색으로 되돌리고 타이머를 취소한다. */
+    const HOLD_MS = 650;
+    const HOLD_MOVE_CANCEL = 8;
+    let pressMesh = null, pressTimer = 0;
+    function startPress(px, py){
+      const m = pickAt(px, py);
+      if(!m) return;
+      pressMesh = m;
+      gsap.killTweensOf(m.material.color);
+      // 흰색(1,1,1) → 따뜻한 호박색(1, 0.55, 0.22). MeshBasicMaterial은 color를 텍스처에 곱한다.
+      gsap.to(m.material.color, { r:1.0, g:0.55, b:0.22, duration:HOLD_MS/1000, ease:'power2.out' });
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(()=>{
+        if(pressMesh === m && !locked) navigateTo(m);
+        pressMesh = null;
+      }, HOLD_MS);
+    }
+    function cancelPress(){
+      if(!pressMesh) return;
+      clearTimeout(pressTimer); pressTimer = 0;
+      gsap.killTweensOf(pressMesh.material.color);
+      gsap.to(pressMesh.material.color, { r:1, g:1, b:1, duration:0.22, ease:'power2.out' });
+      pressMesh = null;
+    }
+
     el.addEventListener('pointerdown', e=>{
       if(locked) return;
       interacted = true;          // 첫 입력 후 자동 드리프트 정지
       el.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
-      if(pointers.size===1){ dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() }; }
-      if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y); }
+      if(pointers.size===1){
+        dragging=true; down={ x:e.clientX, y:e.clientY, moved:0, t:performance.now() };
+        startPress(e.clientX, e.clientY);
+      }
+      if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y); cancelPress(); }
     });
     el.addEventListener('pointermove', e=>{
       const pt = pointers.get(e.pointerId);
@@ -468,6 +499,7 @@
           st.ts -= dx*DRAG_X;  st.vs = -dx*DRAG_X;           // 가로: 스크롤
           st.ty = clamp(st.ty + dy*DRAG_Y, -Y_LIMIT, Y_LIMIT); // 세로: 행 이동
           st.vy = dy*DRAG_Y;
+          if(down && down.moved > HOLD_MOVE_CANCEL) cancelPress();  // 스크롤 의도면 누르기 취소
         } else if(pointers.size===2){
           const [a,b]=[...pointers.values()]; const dd=Math.hypot(a.x-b.x,a.y-b.y);
           if(pinch>0){ zoom = clamp(zoom * dd/pinch, 0.7, 1.9); applyCamera(); }
@@ -481,7 +513,7 @@
       pointers.delete(e.pointerId);
       if(pointers.size<2) pinch=0;
       if(pointers.size===0) dragging=false;
-      if(down && !locked && down.moved<6 && performance.now()-down.t<500){ tryNav(down.x, down.y); }
+      cancelPress();                          // 떼는 즉시 색 복구 & 진입 타이머 취소
       down=null;
     }
     el.addEventListener('pointerup', endPointer);
@@ -489,7 +521,7 @@
     el.addEventListener('wheel', e=>{ e.preventDefault();
       interacted = true;
       st.ts += e.deltaX*DRAG_X*0.6;                         // 트랙패드 가로 스크롤
-      st.ty = clamp(st.ty - e.deltaY*DRAG_Y*0.4, -Y_LIMIT, Y_LIMIT);
+      st.ty = clamp(st.ty - e.deltaY*DRAG_Y*0.25, -Y_LIMIT, Y_LIMIT); // 세로 휠 감도도 절반으로
     }, { passive:false });
 
     /* 레이캐스트 */
@@ -504,7 +536,6 @@
     let hovered = null;
 
     /* ── 클릭 → 페이지 전환 ── */
-    function tryNav(px,py){ const m = pickAt(px,py); if(m) navigateTo(m); }
     function navigateTo(mesh){
       if(locked) return; locked = true;
       const url = mesh.userData.exp.url;
@@ -603,7 +634,12 @@
     addEventListener('pageshow', (e)=>{
       if(!e.persisted) return;                     // 일반 로드는 무시
       gsap.killTweensOf(['#navFade', '.topbar', '.lang-switch', '#hint', cursor, camera, camera.position]);
-      cards.forEach(c=> gsap.killTweensOf(c.material));
+      cards.forEach(c=>{
+        gsap.killTweensOf(c.material);
+        gsap.killTweensOf(c.material.color);
+        c.material.color.setRGB(1,1,1);       // 누르고 있던 도중 떠난 카드 색 복구
+      });
+      clearTimeout(pressTimer); pressTimer = 0; pressMesh = null;
       document.getElementById('navFade').style.opacity = 0;
       document.querySelectorAll('.topbar, .lang-switch').forEach(el=>{ el.style.opacity = ''; });
       const hint = document.getElementById('hint'); if(hint) hint.style.opacity = '';
