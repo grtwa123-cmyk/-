@@ -517,10 +517,21 @@
       down=null;
     }
     el.addEventListener('pointerup', endPointer);
-    el.addEventListener('pointercancel', e=>{ pointers.delete(e.pointerId); dragging=false; down=null; });
+    el.addEventListener('pointercancel', e=>{
+      // OS가 취소한 터치(전화·브라우저 제스처 등)도 누르기를 풀어야 한다.
+      pointers.delete(e.pointerId);
+      if(pointers.size<2) pinch=0;
+      if(pointers.size===0) dragging=false;
+      cancelPress();
+      down=null;
+    });
+    // 탭을 떠나거나 창이 백그라운드로 가면 타이머가 살아있는 채로 돌아오는 걸 방지
+    addEventListener('visibilitychange', ()=>{ if(document.hidden) cancelPress(); });
+    addEventListener('blur', cancelPress);
     el.addEventListener('wheel', e=>{ e.preventDefault();
       interacted = true;
-      st.ts += e.deltaX*DRAG_X*0.6;                         // 트랙패드 가로 스크롤
+      cancelPress();                                         // 스크롤 의도면 누르기 취소
+      st.ts += e.deltaX*DRAG_X*0.6;                          // 트랙패드 가로 스크롤
       st.ty = clamp(st.ty - e.deltaY*DRAG_Y*0.25, -Y_LIMIT, Y_LIMIT); // 세로 휠 감도도 절반으로
     }, { passive:false });
 
