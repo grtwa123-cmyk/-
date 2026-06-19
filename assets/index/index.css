@@ -1,0 +1,257 @@
+/*
+ * Curved-index page styles.
+ *
+ * Only what is unique to the wall lives here — the editorial HUD and the
+ * custom cursor. Hub / experiment pages keep using /styles.css.
+ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a0d;
+  color: #f3f1ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", "Helvetica Neue", sans-serif;
+}
+body { cursor: none; }
+@media (pointer: coarse) {
+  body { cursor: auto; }
+}
+
+#scene { position: fixed; inset: 0; touch-action: none; }
+canvas { display: block; }
+
+/* Edge vignette — emphasises the depth of the curved wall. */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    120% 120% at 50% 50%,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 0.92) 100%
+  );
+}
+
+/* Hidden nav with real anchor links to every experiment — keeps screen
+   readers and search engines able to discover the catalogue when the
+   canvas is opaque to them. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Top bar (editorial HUD) */
+.topbar {
+  position: fixed;
+  z-index: 5;
+  inset: 0 0 auto 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 24px;
+  pointer-events: none;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+.topbar .col { display: flex; flex-direction: column; gap: 5px; }
+.mark { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; }
+.sub  { font-size: 9px; color: #8a8a93; letter-spacing: 0.22em; text-transform: uppercase; }
+.tagline {
+  max-width: 300px;
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: #cfccc3;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.topbar .right { align-items: flex-end; text-align: right; pointer-events: auto; }
+.clock {
+  font-size: 9px;
+  color: #8a8a93;
+  letter-spacing: 0.16em;
+  line-height: 1.8;
+}
+.clock b { color: #f3f1ea; font-weight: 600; }
+.links { display: flex; gap: 12px; margin-top: 8px; }
+.links a {
+  color: #8a8a93;
+  text-decoration: none;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.links a:hover,
+.links a:focus-visible { color: #f3f1ea; outline: none; }
+
+/* Bottom hint + language switcher */
+.hint {
+  position: fixed;
+  z-index: 5;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: #8a8a93;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  transition: opacity 0.5s;
+  text-align: center;
+  pointer-events: none;
+}
+.lang-switch {
+  position: fixed;
+  z-index: 5;
+  right: 24px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 6px;
+}
+.lang-btn {
+  background: rgba(20, 20, 28, 0.7);
+  color: #8a8a93;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.lang-btn:hover { color: #f3f1ea; }
+.lang-btn:focus-visible {
+  color: #f3f1ea;
+  outline: 2px solid #f3f1ea;
+  outline-offset: 2px;
+}
+.lang-btn.active {
+  background: #f3f1ea;
+  color: #0a0a0d;
+  border-color: transparent;
+}
+
+/* Custom cursor (pointer-fine only) */
+.cursor {
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(243, 241, 234, 0.7);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  mix-blend-mode: difference;
+  transition: width 0.25s, height 0.25s, background 0.25s, border-color 0.25s;
+  will-change: transform;
+}
+.cursor.hot {
+  width: 76px;
+  height: 76px;
+  background: rgba(243, 241, 234, 0.12);
+  border-color: transparent;
+}
+.cursor .lbl {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.cursor.hot .lbl { opacity: 1; }
+@media (pointer: coarse) {
+  .cursor { display: none; }
+}
+
+.nav-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: #04060d;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #0a0a0d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.8s;
+}
+#loader.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+#loader .num {
+  font-family: ui-monospace, monospace;
+  font-size: 42px;
+  font-weight: 300;
+}
+#loader .cap {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: #8a8a93;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Narrow viewport — declutter the HUD and tighten the bottom bar */
+@media (max-width: 720px) {
+  .topbar { padding: 14px 16px; gap: 10px; }
+  .tagline { display: none; }
+  .clock   { display: none; }
+  .mark { font-size: 12px; letter-spacing: 0.16em; }
+  .sub  { font-size: 8px; }
+  .links { margin-top: 0; }
+  .hint {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    white-space: nowrap;
+  }
+  .lang-switch {
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+  .lang-btn { padding: 8px 13px; }
+}
+
+/* Reduced motion: no transitions on the loader / cursor / hint */
+@media (prefers-reduced-motion: reduce) {
+  #loader,
+  .cursor,
+  .hint,
+  .lang-btn,
+  .links a { transition: none; }
+}

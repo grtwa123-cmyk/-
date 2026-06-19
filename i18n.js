@@ -652,6 +652,8 @@
     t,
     applyLang,
     getLang: () => current,
+    /** Languages that have a dictionary — useful for building UI. */
+    languages: () => Object.keys(translations),
   };
 
   function init() {
@@ -659,11 +661,9 @@
     document.querySelectorAll(".lang-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const lang = btn.dataset.lang;
-        if (translations[lang]) {
-          applyLang(lang);
-        } else {
-          alert("장광타이");
-        }
+        // Silently ignore unknown languages — buttons for them shouldn't
+        // have been rendered in the first place.
+        if (translations[lang]) applyLang(lang);
       });
     });
   }
