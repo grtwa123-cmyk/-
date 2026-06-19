@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title data-i18n="physicsHubTitle">Physics</title>
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Hands-on physics simulations — projectile motion, pendulums, gravity, orbits, semiconductors, and more." />
+  <title data-i18n="physicsHubTitle">Physics · Science Lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='18' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;circle cx='32' cy='32' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body data-theme="physics">
@@ -88,14 +92,14 @@
         <span class="tag" data-i18n="tagOpen">Open</span>
       </a>
 
-      <div class="card coming-soon" aria-disabled="true">
+      <a class="card" href="experiments/wave.html">
         <h2 data-i18n="waveTitle">Wave Interference</h2>
-        <p data-i18n="waveDesc">Two sources, adjustable frequency, visible interference pattern. Coming soon.</p>
-        <span class="tag" data-i18n="tagSoon">Coming soon</span>
-      </div>
+        <p data-i18n="waveDesc">Two coherent point sources radiate circular waves — adjust spacing, wavelength, and amplitudes to see constructive and destructive fringes shift across the field.</p>
+        <span class="tag" data-i18n="tagOpen">Open</span>
+      </a>
     </main>
   </div>
 
-  <script src="i18n.js"></script>
+  <script src="i18n.js" defer></script>
 </body>
 </html>

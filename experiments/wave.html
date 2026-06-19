@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Two coherent point sources radiate circular waves; watch the live amplitude map for constructive and destructive interference fringes." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='18' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;circle cx='32' cy='32' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="wavePageTitle">Wave Interference · Science Experiments</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="waveExperimentCount">Physics · Wave interference</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="waveTitle">Wave Interference</h1>
+      <p data-i18n="waveIntro">Two coherent point sources radiate circular waves. Adjust the spacing, wavelength, and amplitudes to watch constructive (bright) and destructive (dark) fringes shift across the field.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="spacing" data-i18n="waveSpacingLabel">Source spacing d</label>
+          <span class="value"><span id="spacing-value">140</span> px</span>
+          <input type="range" id="spacing" min="20" max="320" step="2" value="140" />
+        </div>
+
+        <div class="control">
+          <label for="wavelength" data-i18n="waveWavelengthLabel">Wavelength λ</label>
+          <span class="value"><span id="wavelength-value">48</span> px</span>
+          <input type="range" id="wavelength" min="14" max="160" step="1" value="48" />
+        </div>
+
+        <div class="control">
+          <label for="amp1" data-i18n="waveAmp1Label">Source 1 amplitude</label>
+          <span class="value"><span id="amp1-value">1.00</span></span>
+          <input type="range" id="amp1" min="0" max="1" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="amp2" data-i18n="waveAmp2Label">Source 2 amplitude</label>
+          <span class="value"><span id="amp2-value">1.00</span></span>
+          <input type="range" id="amp2" min="0" max="1" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="phase" data-i18n="wavePhaseLabel">Phase difference Δφ</label>
+          <span class="value"><span id="phase-value">0</span>°</span>
+          <input type="range" id="phase" min="-180" max="180" step="1" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="waveSpeedLabel">Animation speed</label>
+          <span class="value"><span id="speed-value">1.00</span>×</span>
+          <input type="range" id="speed" min="0" max="3" step="0.05" value="1" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="waveFormulaSuperposition">Superposition</span>: <code>ψ = A₁·cos(k·r₁ − ωt) + A₂·cos(k·r₂ − ωt + Δφ)</code></li>
+            <li><span data-i18n="waveFormulaK">Wave number</span>: <code>k = 2π / λ</code></li>
+            <li><span data-i18n="waveFormulaOmega">Angular frequency</span>: <code>ω = 2π · f = k · v</code></li>
+            <li><span data-i18n="waveFormulaFringe">Fringe spacing (far field)</span>: <code>Δy ≈ λ · L / d</code></li>
+            <li><span data-i18n="waveFormulaPath">Path difference</span>: <code>Δr = |r₂ − r₁|</code> · constructive when <code>Δr = n·λ</code>, destructive when <code>Δr = (n + ½)·λ</code></li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="400" aria-label="Wave amplitude field with two point sources"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="outWavelength">Wavelength</div>
+            <div class="num"><span id="out-wavelength">48</span> px</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outFrequency">Frequency</div>
+            <div class="num"><span id="out-frequency">2.50</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outK">Wave number k</div>
+            <div class="num"><span id="out-k">0.131</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outOmega">Angular ω</div>
+            <div class="num"><span id="out-omega">15.71</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outFringe">Far-field fringe Δy</div>
+            <div class="num"><span id="out-fringe">137</span> px</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outPhase">Δφ</div>
+            <div class="num"><span id="out-phase">0.00</span> rad</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="wave.js" defer></script>
+</body>
+</html>

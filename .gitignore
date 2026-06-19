@@ -1,0 +1,27 @@
+# OS detritus
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build / dependency dirs (none today, but keep ready)
+node_modules/
+dist/
+build/
+
+# Local environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Coverage
+coverage/

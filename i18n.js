@@ -2,7 +2,7 @@
   const translations = {
     en: {
       pageTitle: "Science Lab",
-      indexHint: "Drag to explore · Click a piece to enter",
+      indexHint: "Drag to explore · Press and hold a card to enter",
       indexTagline: "Science Lab is a collection of hands-on physics & chemistry simulations you can touch.",
       heroTitle: "Science Lab",
       heroSubtitle: "Pick a discipline to begin.",
@@ -25,7 +25,29 @@
       orbitsTitle: "Gravity & Orbits",
       orbitsDesc: "Drag on the canvas to place planets and set their initial velocity around a central star.",
       waveTitle: "Wave Interference",
-      waveDesc: "Two sources, adjustable frequency, visible interference pattern. Coming soon.",
+      waveDesc: "Two coherent point sources radiate circular waves — adjust spacing, wavelength, and amplitudes to see constructive and destructive fringes shift across the field.",
+      wavePageTitle: "Wave Interference · Physics",
+      waveExperimentCount: "Physics · Wave interference",
+      waveIntro: "Two coherent point sources radiate circular waves. Adjust the spacing, wavelength, and amplitudes to watch constructive (bright) and destructive (dark) fringes shift across the field.",
+      waveSpacingLabel: "Source spacing d",
+      waveWavelengthLabel: "Wavelength λ",
+      waveAmp1Label: "Source 1 amplitude",
+      waveAmp2Label: "Source 2 amplitude",
+      wavePhaseLabel: "Phase difference Δφ",
+      waveSpeedLabel: "Animation speed",
+      wavePauseBtn: "Pause",
+      waveResumeBtn: "Resume",
+      waveFormulaSuperposition: "Superposition",
+      waveFormulaK: "Wave number",
+      waveFormulaOmega: "Angular frequency",
+      waveFormulaFringe: "Fringe spacing (far field)",
+      waveFormulaPath: "Path difference",
+      outWavelength: "Wavelength",
+      outFrequency: "Frequency",
+      outK: "Wave number k",
+      outOmega: "Angular ω",
+      outFringe: "Far-field fringe Δy",
+      outPhase: "Δφ",
       impactTitle: "Impulse & Force (Egg Drop)",
       impactDesc: "Drop an egg onto floors of different cushioning and watch how peak force, average force and impulse compare on a live force-time graph.",
       solarTitle: "Solar System & Black Holes",
@@ -276,7 +298,7 @@
     },
     ko: {
       pageTitle: "과학 실험실",
-      indexHint: "드래그로 둘러보기 · 카드를 누르면 실험 시작",
+      indexHint: "드래그로 둘러보기 · 카드를 길게 누르면 실험 시작",
       indexTagline: "과학 실험실은 직접 만져 보는 물리·화학 시뮬레이션 모음입니다.",
       heroTitle: "과학 실험실",
       heroSubtitle: "관심 있는 분야를 골라 실험을 시작해 보세요.",
@@ -299,7 +321,29 @@
       orbitsTitle: "중력과 궤도",
       orbitsDesc: "캔버스를 드래그해 행성을 놓고 중심별 주위의 초기 속도를 직접 정해 보세요.",
       waveTitle: "파동 간섭",
-      waveDesc: "두 파원의 주파수를 조절하며 간섭 무늬를 관찰해 보세요. 준비 중입니다.",
+      waveDesc: "두 점파원이 원형 파동을 내보냅니다. 간격·파장·진폭을 바꾸며 보강(밝은 띠)·소멸(어두운 띠) 무늬가 어떻게 이동하는지 관찰하세요.",
+      wavePageTitle: "파동 간섭 · 물리",
+      waveExperimentCount: "물리 · 파동 간섭",
+      waveIntro: "두 점파원이 같은 파장으로 원형 파동을 내보냅니다. 두 파원 사이 간격, 파장, 진폭을 조절하며 보강·소멸 무늬가 어떻게 형성되고 이동하는지 관찰하세요.",
+      waveSpacingLabel: "파원 간격 d",
+      waveWavelengthLabel: "파장 λ",
+      waveAmp1Label: "파원 1 진폭",
+      waveAmp2Label: "파원 2 진폭",
+      wavePhaseLabel: "위상차 Δφ",
+      waveSpeedLabel: "재생 속도",
+      wavePauseBtn: "일시정지",
+      waveResumeBtn: "재생",
+      waveFormulaSuperposition: "중첩",
+      waveFormulaK: "파수",
+      waveFormulaOmega: "각진동수",
+      waveFormulaFringe: "원거리 무늬 간격",
+      waveFormulaPath: "경로차",
+      outWavelength: "파장",
+      outFrequency: "진동수",
+      outK: "파수 k",
+      outOmega: "각진동수 ω",
+      outFringe: "원거리 무늬 간격 Δy",
+      outPhase: "Δφ",
       impactTitle: "충격량과 힘 (계란 떨어뜨리기)",
       impactDesc: "푹신함이 다른 바닥에 계란을 떨어뜨려 최대 힘·평균 힘·충격량이 어떻게 달라지는지 힘-시간 그래프로 비교해 보세요.",
       solarTitle: "태양계와 블랙홀",
@@ -550,7 +594,7 @@
     },
     zh: {
       pageTitle: "科学实验室",
-      indexHint: "拖动浏览 · 点击进入实验",
+      indexHint: "拖动浏览 · 长按卡片进入实验",
       indexTagline: "科学实验室是一组可亲手操作的物理与化学模拟。",
       categoryPhysics: "物理",
       categoryChemistry: "化学",
@@ -584,8 +628,33 @@
       moleculeDesc: "选择一个分子并旋转它。注意杂化方式相同的分子共享同一几何模板。",
       crystalTitle: "晶格",
       crystalDesc: "查看立方、面心、体心、六方密堆等晶体结构。",
+      controls: "控制",
+      formulas: "公式",
+      resetBtn: "重置",
       waveTitle: "波的干涉",
-      waveDesc: "两个波源，可调频率，可见的干涉图案。即将推出。",
+      waveDesc: "两个相干点波源辐射圆形波 — 调节间距、波长和振幅，观察建设性（亮纹）与破坏性（暗纹）干涉条纹的移动。",
+      wavePageTitle: "波的干涉 · 物理",
+      waveExperimentCount: "物理 · 波的干涉",
+      waveIntro: "两个相干点波源辐射圆形波。调节间距、波长和振幅，观察建设性（亮）与破坏性（暗）干涉条纹如何形成与移动。",
+      waveSpacingLabel: "波源间距 d",
+      waveWavelengthLabel: "波长 λ",
+      waveAmp1Label: "波源 1 振幅",
+      waveAmp2Label: "波源 2 振幅",
+      wavePhaseLabel: "相位差 Δφ",
+      waveSpeedLabel: "动画速度",
+      wavePauseBtn: "暂停",
+      waveResumeBtn: "继续",
+      waveFormulaSuperposition: "叠加",
+      waveFormulaK: "波数",
+      waveFormulaOmega: "角频率",
+      waveFormulaFringe: "远场条纹间距",
+      waveFormulaPath: "路径差",
+      outWavelength: "波长",
+      outFrequency: "频率",
+      outK: "波数 k",
+      outOmega: "角频率 ω",
+      outFringe: "远场条纹 Δy",
+      outPhase: "Δφ",
       physicsHubTitle: "物理",
       physicsHubSubtitle: "运动、力与波的动手模拟。",
       chemistryHubTitle: "化学",
@@ -652,6 +721,8 @@
     t,
     applyLang,
     getLang: () => current,
+    /** Languages that have a dictionary — useful for building UI. */
+    languages: () => Object.keys(translations),
   };
 
   function init() {
@@ -659,11 +730,9 @@
     document.querySelectorAll(".lang-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const lang = btn.dataset.lang;
-        if (translations[lang]) {
-          applyLang(lang);
-        } else {
-          alert("장광타이");
-        }
+        // Silently ignore unknown languages — buttons for them shouldn't
+        // have been rendered in the first place.
+        if (translations[lang]) applyLang(lang);
       });
     });
   }
