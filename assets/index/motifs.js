@@ -30,21 +30,55 @@ const RENDERERS = {
     p.dot(-s * 1.1, s * 0.7, 4); p.dot(s * 1.1, s * 0.7, 4);
   },
   wave(p, s, ctx) {
-    // Two point sources radiating circular wavefronts. Dashed strokes so
-    // the rings read like phase contours rather than solid shells.
+    // Two point sources radiating circular wavefronts that meet in the
+    // middle — denser rings + solid strokes so the eye registers the
+    // overlap as interference, not just two icons placed side by side.
     const left  = { x: -s * 0.95, y: 0 };
     const right = { x:  s * 0.95, y: 0 };
     ctx.save();
-    ctx.setLineDash([3, 4]);
-    for (let k = 1; k <= 3; k++) {
-      ctx.strokeStyle = `rgba(255,255,255,${0.62 - k * 0.12})`;
-      p.circ(left.x,  left.y,  s * 0.45 * k);
-      p.circ(right.x, right.y, s * 0.45 * k);
+    ctx.lineWidth = 1.4;
+    for (let k = 1; k <= 5; k++) {
+      const a = 0.72 - k * 0.11;
+      ctx.strokeStyle = `rgba(180, 224, 255, ${a})`;
+      p.circ(left.x,  left.y,  s * 0.32 * k);
+      p.circ(right.x, right.y, s * 0.32 * k);
     }
+    // Two short central fringe segments — the visual signature of
+    // constructive interference where wavefronts coincide.
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+    ctx.lineWidth = 2.2;
+    p.line(0, -s * 0.18, 0, s * 0.18);
     ctx.restore();
     // Source dots
     p.dot(left.x,  left.y,  5);
     p.dot(right.x, right.y, 5);
+  },
+
+  doppler(p, s, ctx) {
+    // Moving source: rings centred at past emission points along the
+    // motion axis. Spacing compresses to the right (direction of motion)
+    // and stretches to the left — the Doppler signature at a glance.
+    const cx = s * 0.55;          // current source position (heading right)
+    ctx.save();
+    ctx.lineWidth = 1.4;
+    // Past emission points, regular emission rate but shifted by motion
+    const v = 0.55;               // Mach-like fraction
+    const T = s * 0.32;           // base radius increment
+    for (let k = 1; k <= 4; k++) {
+      const a = 0.75 - k * 0.13;
+      ctx.strokeStyle = `rgba(255, 200, 160, ${a})`;
+      // Each ring's centre = cx − v · k · T (where the source was)
+      p.circ(cx - v * k * T, 0, T * k);
+    }
+    // Motion arrow ahead of the source
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.lineWidth = 1.8;
+    p.line(cx,  0, cx + s * 0.45, 0);
+    p.line(cx + s * 0.45, 0, cx + s * 0.30, -s * 0.10);
+    p.line(cx + s * 0.45, 0, cx + s * 0.30,  s * 0.10);
+    ctx.restore();
+    // Source dot
+    p.dot(cx, 0, 6);
   },
   pendulum(p, s, ctx) {
     p.line(-s * 0.95, -s * 0.85, s * 0.95, -s * 0.85);

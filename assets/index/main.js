@@ -21,8 +21,8 @@ const i18n = window.i18n;
 // ── Tuning ─────────────────────────────────────────────────────────────────
 const Rc = 9.5;              // Cylinder radius (how much the wall curves)
 const COLS = 7;              // Number of columns (recycled horizontally)
-const ROWS = 2;              // Number of rows. 7 × 2 = 14 slots, holds the
-                             // 13-experiment catalogue with one filler slot.
+const ROWS = 2;              // 7 × 2 = 14 slots, exactly fills the
+                             // 14-experiment catalogue.
 const CARD_W = 3.0;          // Card width in world units
 const CARD_H = 3.62;         // Card height in world units (matches canvas ratio)
 const D_ANG = 0.40;          // Angular gap between columns (radians)

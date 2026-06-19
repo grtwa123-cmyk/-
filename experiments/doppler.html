@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="A moving source emits circular wavefronts. Watch them compress ahead and stretch behind for classic Doppler shift, and form a Mach cone past the sound barrier." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='18' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;circle cx='32' cy='32' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="dopplerPageTitle">Doppler Effect · Science Experiments</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="dopplerExperimentCount">Physics · Doppler effect</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="dopplerTitle">Doppler Effect</h1>
+      <p data-i18n="dopplerIntro">A moving source emits circular wavefronts. As the source speeds up the rings compress in the direction of motion and stretch behind it. Past the wave speed (Mach 1) the wavefronts merge into a Mach cone.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="velocity" data-i18n="dopplerVelocityLabel">Source velocity (Mach)</label>
+          <span class="value"><span id="velocity-value">0.60</span></span>
+          <input type="range" id="velocity" min="0" max="2" step="0.01" value="0.6" />
+        </div>
+
+        <div class="control">
+          <label for="frequency" data-i18n="dopplerFrequencyLabel">Source frequency</label>
+          <span class="value"><span id="frequency-value">2.0</span> Hz</span>
+          <input type="range" id="frequency" min="0.5" max="6" step="0.1" value="2" />
+        </div>
+
+        <div class="control">
+          <label for="wavespeed" data-i18n="dopplerWaveSpeedLabel">Wave speed c</label>
+          <span class="value"><span id="wavespeed-value">220</span> px/s</span>
+          <input type="range" id="wavespeed" min="80" max="380" step="10" value="220" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="dopplerFormulaShift">Observed frequency</span>: <code>f' = f · c / (c − v · cosθ)</code></li>
+            <li><span data-i18n="dopplerFormulaForward">Approaching (θ=0)</span>: <code>f_+ = f · c / (c − v)</code></li>
+            <li><span data-i18n="dopplerFormulaBackward">Receding (θ=π)</span>: <code>f_− = f · c / (c + v)</code></li>
+            <li><span data-i18n="dopplerFormulaMach">Mach cone half-angle</span> (when v &gt; c): <code>sin α = c / v</code></li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="400" aria-label="Doppler-shifted wavefronts emitted by a moving source"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="dopplerOutForward">f forward</div>
+            <div class="num"><span id="out-forward">5.00</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dopplerOutBackward">f backward</div>
+            <div class="num"><span id="out-backward">1.25</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dopplerOutMach">Mach number</div>
+            <div class="num"><span id="out-mach">0.60</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dopplerOutCone">Mach cone α</div>
+            <div class="num"><span id="out-cone">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outWavelength">Wavelength λ</div>
+            <div class="num"><span id="out-wavelength">110</span> px</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dopplerOutRegime">Regime</div>
+            <div class="num"><span id="out-regime">Subsonic</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="doppler.js" defer></script>
+</body>
+</html>
