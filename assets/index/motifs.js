@@ -29,6 +29,23 @@ const RENDERERS = {
     p.para(s * 2.2, s * 0.7, -1);
     p.dot(-s * 1.1, s * 0.7, 4); p.dot(s * 1.1, s * 0.7, 4);
   },
+  wave(p, s, ctx) {
+    // Two point sources radiating circular wavefronts. Dashed strokes so
+    // the rings read like phase contours rather than solid shells.
+    const left  = { x: -s * 0.95, y: 0 };
+    const right = { x:  s * 0.95, y: 0 };
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    for (let k = 1; k <= 3; k++) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.62 - k * 0.12})`;
+      p.circ(left.x,  left.y,  s * 0.45 * k);
+      p.circ(right.x, right.y, s * 0.45 * k);
+    }
+    ctx.restore();
+    // Source dots
+    p.dot(left.x,  left.y,  5);
+    p.dot(right.x, right.y, 5);
+  },
   pendulum(p, s, ctx) {
     p.line(-s * 0.95, -s * 0.85, s * 0.95, -s * 0.85);
     const a = 0.42;
