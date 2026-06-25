@@ -2,7 +2,7 @@
   const translations = {
     en: {
       pageTitle: "Science Lab",
-      indexHint: "Drag to explore · Press and hold a card to enter",
+      indexHint: "Drag to explore · Hover to reveal · Tap a card to enter",
       indexTagline: "Science Lab is a collection of hands-on physics & chemistry simulations you can touch.",
       heroTitle: "Science Lab",
       heroSubtitle: "Pick a discipline to begin.",
@@ -320,7 +320,7 @@
     },
     ko: {
       pageTitle: "과학 실험실",
-      indexHint: "드래그로 둘러보기 · 카드를 길게 누르면 실험 시작",
+      indexHint: "드래그로 둘러보기 · 마우스를 올리면 색이 살아나고 · 카드를 누르면 실험 시작",
       indexTagline: "과학 실험실은 직접 만져 보는 물리·화학 시뮬레이션 모음입니다.",
       heroTitle: "과학 실험실",
       heroSubtitle: "관심 있는 분야를 골라 실험을 시작해 보세요.",
@@ -638,7 +638,7 @@
     },
     zh: {
       pageTitle: "科学实验室",
-      indexHint: "拖动浏览 · 长按卡片进入实验",
+      indexHint: "拖动浏览 · 悬停焕彩 · 点按卡片进入实验",
       indexTagline: "科学实验室是一组可亲手操作的物理与化学模拟。",
       categoryPhysics: "物理",
       categoryChemistry: "化学",

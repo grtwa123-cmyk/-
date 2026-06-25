@@ -3,7 +3,13 @@
  *
  * Builds a cylindrical wall of cards from the experiment catalogue, drives
  * horizontal-infinite + vertical-clamped scroll, and animates a cinematic
- * navigation away from the wall when the user presses-and-holds a card.
+ * navigation away from the wall when the user taps a card. A drag past
+ * TAP_MOVE_THRESHOLD downgrades the gesture to scroll, so the wall never
+ * fires navigation mid-flick.
+ *
+ * Cards are desaturated and translucent at rest; hover (on fine-pointer
+ * devices) re-saturates and re-opacifies the picked card via a shader
+ * uniform tweened by gsap. Touch devices stay fully colored.
  *
  * Public globals expected on window:
  *   - THREE  (loaded as ES module, see HTML)
@@ -36,8 +42,18 @@ const FRICTION = 0.93;
 const DRIFT = 0.0016;        // Slow horizontal drift while idle
 const Y_LIMIT = 2.4;         // Vertical scroll clamp
 
-const HOLD_MS = 650;         // Press duration to navigate
-const HOLD_MOVE_CANCEL = 8;  // Cancel hold once total movement passes this
+// Tap = short, mostly-stationary pointer press. Anything more becomes scroll.
+const TAP_MOVE_THRESHOLD = 10;   // px of accumulated motion before the tap is downgraded
+const TAP_TIME_THRESHOLD = 600;  // ms — longer than this it stops being a tap
+
+// Rest vs. hover look. Each card material runs an onBeforeCompile patch that
+// blends between grayscale (uSat=0) and the colored texture (uSat=1); the
+// opacity multiplier below is applied on top of the depth-cue opacity each
+// frame. Touch devices skip the rest state entirely (no pointer → no hover).
+const REST_SATURATION = 0.0;
+const REST_OPACITY    = 0.45;
+const HOVER_TWEEN_MS  = 320;
+const hasFineHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -87,9 +103,35 @@ const group = new THREE.Group();
 scene.add(group);
 
 // ── Cards ─────────────────────────────────────────────────────────────────
+// Each card material gets a small shader patch that desaturates the texture
+// by a uniform `uSat` (0 = grayscale, 1 = original colour). The hover state
+// is stored on material.userData.hover and tweened by gsap; tick() copies
+// it onto the uniform and also scales the depth-cue opacity so the rest
+// state ends up both desaturated AND translucent in a single read.
 const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
 const cards = [];
 const MAXANISO = renderer.capabilities.getMaxAnisotropy();
+
+function patchDesaturate(mat) {
+  // Touch devices never hover, so they get a permanently-coloured baseline.
+  mat.userData.hover = hasFineHover ? 0 : 1;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uSat = { value: mat.userData.hover };
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        "#include <common>\nuniform float uSat;"
+      )
+      .replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+         float _lum = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+         diffuseColor.rgb = mix(vec3(_lum), diffuseColor.rgb, uSat);`
+      );
+    mat.userData.shader = shader;
+  };
+}
+
 for (let cIdx = 0; cIdx < COLS; cIdx++) {
   for (let r = 0; r < ROWS; r++) {
     const index = cIdx * ROWS + r;
@@ -101,6 +143,7 @@ for (let cIdx = 0; cIdx < COLS; cIdx++) {
     const mat = new THREE.MeshBasicMaterial({
       map: tex, side: THREE.DoubleSide, transparent: true, opacity: 1, fog: true,
     });
+    patchDesaturate(mat);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.userData = { exp, index, col: cIdx, row: r };
     group.add(mesh);
@@ -157,40 +200,19 @@ const hint = document.getElementById("hint");
 const loader = document.getElementById("loader");
 let hovered = null;
 
-// ── Press-and-hold to navigate ────────────────────────────────────────────
-// Tap alone never enters; only a sustained press over a card tints it warm
-// and, past HOLD_MS, fires navigateTo. Any drag intent / pointer cancel /
-// tab blur restores the colour and clears the timer.
-let pressMesh = null;
-let pressTimer = 0;
+// ── Tap to navigate ───────────────────────────────────────────────────────
+// A single-pointer press that stays within TAP_MOVE_THRESHOLD of its origin
+// and releases inside TAP_TIME_THRESHOLD navigates to the picked card. A
+// second pointer (pinch zoom) or any drag past the threshold downgrades
+// the gesture and the release does nothing — so flicking the wall never
+// fires a navigation by accident.
+let tap = null;  // { mesh, t, moved } | null
 
-function startPress(px, py) {
-  const m = pickAt(px, py);
-  if (!m) return;
-  pressMesh = m;
-  gsap.killTweensOf(m.material.color);
-  // MeshBasicMaterial.color is multiplied with the texture — white means
-  // "no tint". Lerp toward warm amber for unambiguous activation feedback.
-  gsap.to(m.material.color, { r: 1.0, g: 0.55, b: 0.22, duration: HOLD_MS / 1000, ease: "power2.out" });
-  clearTimeout(pressTimer);
-  pressTimer = setTimeout(() => {
-    if (pressMesh === m && !locked) navigateTo(m);
-    pressMesh = null;
-  }, HOLD_MS);
-}
-
-function cancelPress() {
-  if (!pressMesh) return;
-  clearTimeout(pressTimer);
-  pressTimer = 0;
-  gsap.killTweensOf(pressMesh.material.color);
-  gsap.to(pressMesh.material.color, { r: 1, g: 1, b: 1, duration: 0.22, ease: "power2.out" });
-  pressMesh = null;
-}
+function cancelTap() { tap = null; }
 
 // ── Pointers ──────────────────────────────────────────────────────────────
 const pointers = new Map();
-let dragging = false, down = null, pinch = 0, locked = false;
+let dragging = false, pinch = 0, locked = false;
 
 el.addEventListener("pointerdown", (e) => {
   if (locked) return;
@@ -199,13 +221,12 @@ el.addEventListener("pointerdown", (e) => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (pointers.size === 1) {
     dragging = true;
-    down = { x: e.clientX, y: e.clientY, moved: 0, t: performance.now() };
-    startPress(e.clientX, e.clientY);
+    tap = { mesh: pickAt(e.clientX, e.clientY), t: performance.now(), moved: 0 };
   }
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
     pinch = Math.hypot(a.x - b.x, a.y - b.y);
-    cancelPress();
+    cancelTap();
   }
 });
 
@@ -215,11 +236,13 @@ el.addEventListener("pointermove", (e) => {
     const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
     pt.x = e.clientX; pt.y = e.clientY;
     if (pointers.size === 1 && dragging) {
-      if (down) down.moved += Math.abs(dx) + Math.abs(dy);
+      if (tap) {
+        tap.moved += Math.abs(dx) + Math.abs(dy);
+        if (tap.moved > TAP_MOVE_THRESHOLD) cancelTap();
+      }
       st.ts -= dx * DRAG_X; st.vs = -dx * DRAG_X;
       st.ty = clamp(st.ty + dy * DRAG_Y, -Y_LIMIT, Y_LIMIT);
       st.vy = dy * DRAG_Y;
-      if (down && down.moved > HOLD_MOVE_CANCEL) cancelPress();
     } else if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const dd = Math.hypot(a.x - b.x, a.y - b.y);
@@ -234,22 +257,27 @@ el.addEventListener("pointermove", (e) => {
 function endPointer(e) {
   pointers.delete(e.pointerId);
   if (pointers.size < 2) pinch = 0;
-  if (pointers.size === 0) dragging = false;
-  cancelPress();
-  down = null;
+  if (pointers.size === 0) {
+    dragging = false;
+    if (tap && tap.mesh && !locked &&
+        performance.now() - tap.t < TAP_TIME_THRESHOLD) {
+      navigateTo(tap.mesh);
+    }
+    cancelTap();
+  }
 }
 el.addEventListener("pointerup", endPointer);
 el.addEventListener("pointercancel", endPointer);
 
-// OS-level interruptions (tab switch, backgrounded window) must also clear
-// the press timer so navigation does not fire after we return to focus.
-addEventListener("visibilitychange", () => { if (document.hidden) cancelPress(); });
-addEventListener("blur", cancelPress);
+// OS-level interruptions must also drop any pending tap so navigation does
+// not fire after we return to focus.
+addEventListener("visibilitychange", () => { if (document.hidden) cancelTap(); });
+addEventListener("blur", cancelTap);
 
 el.addEventListener("wheel", (e) => {
   e.preventDefault();
   interacted = true;
-  cancelPress();
+  cancelTap();
   st.ts += e.deltaX * DRAG_X * 0.6;
   st.ty = clamp(st.ty - e.deltaY * DRAG_Y * 0.25, -Y_LIMIT, Y_LIMIT);
 }, { passive: false });
@@ -298,11 +326,19 @@ function tick() {
     layout();
   }
 
-  // Depth cue: alignment with view centre → opacity + scale.
+  // Depth cue: alignment with view centre → opacity + scale. The card-level
+  // hover state (0..1) then multiplies opacity toward 1 and the saturation
+  // uniform toward 1, so hovering re-saturates and re-opacifies in one shot.
   let visible = 0;
   for (const m of cards) {
     const align = Math.cos(m.userData.theta || 0);
-    m.material.opacity = clamp((align - 0.35) / 0.5, 0.06, 1);
+    const baseAlpha = clamp((align - 0.35) / 0.5, 0.06, 1);
+    const mat = m.material;
+    const h = mat.userData.hover;
+    mat.opacity = baseAlpha * (REST_OPACITY + (1 - REST_OPACITY) * h);
+    if (mat.userData.shader) {
+      mat.userData.shader.uniforms.uSat.value = REST_SATURATION + (1 - REST_SATURATION) * h;
+    }
     if (introDone && !locked) {
       const s = 1 + Math.max(0, align - 0.6) * 0.16;
       m.scale.x += (s - m.scale.x) * 0.12;
@@ -312,10 +348,18 @@ function tick() {
   }
   if (frame % 6 === 0) focusEl.textContent = visible;
 
-  if (!locked && matchMedia("(pointer:fine)").matches) {
+  if (!locked && hasFineHover) {
     const m = pickAt(cursorPos.x, cursorPos.y);
     if (m !== hovered) {
+      if (hovered) {
+        gsap.killTweensOf(hovered.material.userData);
+        gsap.to(hovered.material.userData, { hover: 0, duration: HOVER_TWEEN_MS / 1000, ease: "power2.out" });
+      }
       hovered = m;
+      if (m) {
+        gsap.killTweensOf(m.material.userData);
+        gsap.to(m.material.userData, { hover: 1, duration: HOVER_TWEEN_MS / 1000, ease: "power2.out" });
+      }
       cursor.classList.toggle("hot", !!m);
     }
   }
@@ -365,11 +409,13 @@ addEventListener("pageshow", (e) => {
   gsap.killTweensOf([navFade, ".topbar", ".lang-switch", hint, cursor, camera, camera.position]);
   cards.forEach((c) => {
     gsap.killTweensOf(c.material);
-    gsap.killTweensOf(c.material.color);
+    gsap.killTweensOf(c.material.userData);
     c.material.color.setRGB(1, 1, 1);
     c.material.opacity = 1;
+    c.material.userData.hover = hasFineHover ? 0 : 1;
   });
-  clearTimeout(pressTimer); pressTimer = 0; pressMesh = null;
+  hovered = null;
+  cancelTap();
   navFade.style.opacity = 0;
   document.querySelectorAll(".topbar, .lang-switch").forEach((node) => { node.style.opacity = ""; });
   if (hint) hint.style.opacity = "";
