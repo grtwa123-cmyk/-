@@ -320,7 +320,10 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    if (running) drawScene(pendulums.length, activeParams.L);
+    // If the swing is mid-flight or paused with state, just redraw at
+    // the new size — renderStatic() would re-initialise every pendulum
+    // to θ₀ and zero the elapsed clock, throwing away in-flight swing.
+    if (pendulums.length > 0) drawScene(pendulums.length, activeParams.L);
     else renderStatic();
   }
 

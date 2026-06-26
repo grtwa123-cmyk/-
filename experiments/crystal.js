@@ -438,6 +438,10 @@
   rotateSpeedValue.textContent = parseFloat(rotateSpeed.value).toFixed(2);
   wireEvents();
   window.addEventListener('resize', resizeCanvas);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopRotation();
+    else if (rotateToggle.checked) startRotation();
+  });
   resizeCanvas();
   startRotation();
 })();

@@ -430,6 +430,12 @@
   speedValue.textContent = parseFloat(speedInput.value).toFixed(2);
   wireEvents();
   window.addEventListener('resize', resizeCanvas);
+  // Pause the 3D rotation loop while the tab is hidden so the WebGL
+  // context isn't redrawn from a background tab.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopRotation();
+    else if (rotateToggle.checked) startRotation();
+  });
   resizeCanvas();
   startRotation();
 })();

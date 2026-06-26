@@ -288,6 +288,12 @@ function navigateTo(mesh) {
   locked = true;
   const url = mesh.userData.exp.url;
   hint.style.opacity = 0;
+  // Hover tweens were re-saturating cards while they faded out. Kill
+  // every card's hover tween and snap the picked card to fully
+  // saturated so it doesn't desaturate mid-zoom.
+  cards.forEach((c) => gsap.killTweensOf(c.material.userData));
+  mesh.material.userData.hover = 1;
+  hovered = null;
   if (reduced) {
     gsap.to(navFade, { opacity: 1, duration: 0.25, onComplete: () => { location.href = url; } });
     return;
@@ -416,6 +422,12 @@ addEventListener("pageshow", (e) => {
   });
   hovered = null;
   cancelTap();
+  // Zero scroll velocity + pointer state so the wall doesn't jolt
+  // forward on bfcache restore with whatever momentum was in flight.
+  st.vs = 0; st.vy = 0;
+  st.ts = st.s; st.ty = st.y;
+  pointers.clear();
+  dragging = false; pinch = 0;
   navFade.style.opacity = 0;
   document.querySelectorAll(".topbar, .lang-switch").forEach((node) => { node.style.opacity = ""; });
   if (hint) hint.style.opacity = "";

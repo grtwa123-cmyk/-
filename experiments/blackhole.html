@@ -545,9 +545,16 @@
         $("ui-fps").textContent = Math.round(fpsFrames / fpsTime);
         fpsFrames = 0; fpsTime = 0;
       }
-      requestAnimationFrame(frame);
+      rafId = requestAnimationFrame(frame);
     }
-    requestAnimationFrame(frame);
+    let rafId = requestAnimationFrame(frame);
+
+    // Pause the photon-geodesic integration when the tab is hidden —
+    // every pixel runs an ODE step per frame, which keeps any device hot.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { cancelAnimationFrame(rafId); rafId = 0; }
+      else if (!rafId) { prev = performance.now(); rafId = requestAnimationFrame(frame); }
+    });
   </script>
 </body>
 </html>

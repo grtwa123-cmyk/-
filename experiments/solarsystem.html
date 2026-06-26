@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
@@ -1006,8 +1006,9 @@ let simDays = 0, tAnim = 0;
 const DAYS_PER_SEC = 12;
 const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
+let rafId = 0;
 function animate(){
-  requestAnimationFrame(animate);
+  rafId = requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), .05);
   if(!paused){ simDays += dt * DAYS_PER_SEC * mult; tAnim += dt; }
   sunMat.uniforms.uTime.value = tAnim;
@@ -1065,6 +1066,13 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+});
+
+// Pause the heavy WebGL loop when the tab is hidden — every per-pixel
+// star-field + procedural planet shader stays cool in the background.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(rafId); rafId = 0; }
+  else if (!rafId) { rafId = requestAnimationFrame(animate); }
 });
 
 /* 로딩 화면이 먼저 그려지도록 두 프레임 뒤에 생성 시작 */

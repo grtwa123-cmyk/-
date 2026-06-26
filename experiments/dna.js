@@ -334,18 +334,24 @@
     // DNA strands are antiparallel:
     //   strand A — 5' at top, 3' at bottom
     //   strand B — 3' at top, 5' at bottom
-    const A0 = strandPoint(0, "A");
-    const Bn = strandPoint(seq.length - 1, "B");
-    const pA0 = project(A0.x, A0.z);
-    const pBn = project(Bn.x, Bn.z);
+    // Top of the helix uses index 0's x for both strands; bottom uses
+    // index N-1's x. Previously this drew strand A's bottom label at
+    // index 0's x and strand B's top label at index N-1's x, putting
+    // both bottom-strand labels in line with whichever strand happened
+    // to be in front at i=0 — anatomically wrong.
+    const N = seq.length;
+    const A0 = strandPoint(0,     "A"); const pA0 = project(A0.x, A0.z);
+    const An = strandPoint(N - 1, "A"); const pAn = project(An.x, An.z);
+    const B0 = strandPoint(0,     "B"); const pB0 = project(B0.x, B0.z);
+    const Bn = strandPoint(N - 1, "B"); const pBn = project(Bn.x, Bn.z);
 
     ctx.fillStyle = "rgba(240, 230, 255, 0.70)";
     ctx.font = "600 11px ui-monospace, monospace";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.fillText("5'",  pA0.sx, yTop - 14);
-    ctx.fillText("3'",  pA0.sx, yTop + totalH + 14);
-    ctx.fillText("3'",  pBn.sx, yTop - 14);
+    ctx.fillText("3'",  pAn.sx, yTop + totalH + 14);
+    ctx.fillText("3'",  pB0.sx, yTop - 14);
     ctx.fillText("5'",  pBn.sx, yTop + totalH + 14);
     ctx.textAlign = "left";
   }
