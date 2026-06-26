@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="DNA Double Helix Studio — type a 5'→3' sequence and watch the antiparallel complement, hydrogen bonds, and a rotating B-form helix snap into place. GC content, melting temperature, and an mRNA transcript update live." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M20 8 Q44 32 20 56 M44 8 Q20 32 44 56' stroke='%23e58fff' stroke-width='3' fill='none' stroke-linecap='round'/&gt;&lt;circle cx='32' cy='20' r='3' fill='%23e58fff'/&gt;&lt;circle cx='32' cy='32' r='3' fill='%23e58fff'/&gt;&lt;circle cx='32' cy='44' r='3' fill='%23e58fff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="dnaPageTitle">DNA Double Helix · Biology Experiments</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="dnaExperimentCount">Biology · DNA double helix</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="dnaTitle">DNA Double Helix</h1>
+      <p data-i18n="dnaIntro">Type a 5'→3' DNA sequence. The complementary 3'→5' strand snaps into place by base-pairing rules — A·T held by two hydrogen bonds, G·C by three — and the whole double helix winds itself into B-form geometry. Drag the helix to spin it by hand.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="grid-template-columns: 1fr;">
+          <label for="seq" data-i18n="dnaSeqLabel">Sequence (5'→3')</label>
+          <input type="text" id="seq" inputmode="latin" autocomplete="off" spellcheck="false"
+                 pattern="[ACGTacgt]*" maxlength="30"
+                 value="ATGGCATCTGAACGTTAACGT"
+                 style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.55rem 0.7rem; background: rgba(20, 14, 32, 0.7); border: 1px solid rgba(229, 143, 255, 0.28); color: var(--ink); border-radius: 0.5rem;" />
+        </div>
+
+        <div class="control">
+          <label for="length" data-i18n="dnaLengthLabel">Randomise length</label>
+          <span class="value"><span id="length-value">21</span> bp</span>
+          <input type="range" id="length" min="8" max="30" step="1" value="21" />
+        </div>
+
+        <div class="control">
+          <label for="spin" data-i18n="dnaSpinLabel">Rotation speed</label>
+          <span class="value"><span id="spin-value">18</span> °/s</span>
+          <input type="range" id="spin" min="0" max="60" step="1" value="18" />
+        </div>
+
+        <div class="buttons">
+          <button id="random-btn" type="button" data-i18n="dnaRandomBtn">Randomise</button>
+          <button id="pause-btn" type="button" class="secondary" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="dnaFormulaPair">Base pairing</span>: <code>A↔T (2 H-bonds), G↔C (3 H-bonds)</code></li>
+            <li><span data-i18n="dnaFormulaGeometry">B-form geometry</span>: <code>10.5 bp / turn, 34 Å / turn, 36° / bp</code></li>
+            <li><span data-i18n="dnaFormulaGC">GC content</span>: <code>%GC = (G + C) / N · 100</code></li>
+            <li><span data-i18n="dnaFormulaTmShort">Wallace rule (N ≤ 14)</span>: <code>T_m = 2(A + T) + 4(G + C)  °C</code></li>
+            <li><span data-i18n="dnaFormulaTmLong">Salt-adjusted (N &gt; 14)</span>: <code>T_m = 64.9 + 41 · (G + C − 16.4) / N</code></li>
+            <li><span data-i18n="dnaFormulaTranscription">Transcription</span>: <code>mRNA = 5'-strand with T → U</code></li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="440" aria-label="Rotating B-form DNA double helix with base pairs"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutLength">Length</div>
+            <div class="num"><span id="out-length">21</span> bp</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutGC">GC content</div>
+            <div class="num"><span id="out-gc">42.9</span> %</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutAT">A·T pairs</div>
+            <div class="num"><span id="out-at">12</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutGCpairs">G·C pairs</div>
+            <div class="num"><span id="out-gcpairs">9</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutTm">Melting T<sub>m</sub></div>
+            <div class="num"><span id="out-tm">60</span> °C</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dnaOutTurns">Helical turns</div>
+            <div class="num"><span id="out-turns">2.0</span></div>
+          </div>
+        </div>
+
+        <div class="readouts" style="margin-top: 0.4rem;">
+          <div class="readout" style="grid-column: span 3;">
+            <div class="label"><span data-i18n="dnaOutCompStrand">Complementary strand (3'→5')</span></div>
+            <div class="num" style="font-family: ui-monospace, monospace; letter-spacing: 0.18em; font-size: 1.05rem;"><span id="out-comp">TACCGTAGACTTGCAATTGCA</span></div>
+          </div>
+          <div class="readout" style="grid-column: span 3;">
+            <div class="label"><span data-i18n="dnaOutmRNA">mRNA transcript (5'→3')</span></div>
+            <div class="num" style="font-family: ui-monospace, monospace; letter-spacing: 0.18em; font-size: 1.05rem;"><span id="out-mrna">AUGGCAUCUGAACGUUAACGU</span></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="dna.js" defer></script>
+</body>
+</html>

@@ -39,6 +39,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Pendulum** | Single or coupled wave-pendulum; tune length, gravity, initial angle, and damping. |
 | **Wave Interference** | Two coherent point sources radiate circular waves; adjust spacing, wavelength, amplitudes, and phase to watch fringes form and shift. |
 | **Doppler Effect** | A moving source emits circular wavefronts that compress ahead and stretch behind; cross the wave speed and the rings collapse into a Mach cone. |
+| **DNA Double Helix** | Type a 5'→3' sequence and watch the antiparallel complement, hydrogen bonds, and B-form rotation snap into place; GC content, melting temperature, and an mRNA transcript update live. |
 | **Newton's Cannon** | Fire a cannonball horizontally and find the speed where falling turns into orbiting. |
 | **Gravity & Orbits** | Drag on the canvas to place planets around a central star, with collision effects. |
 | **Impulse & Force (Egg Drop)** | Drop an egg onto three cushions and compare peak / average force and impulse on a live F–t graph. |
@@ -102,6 +103,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── pendulum.{html,js}
     ├── wave.{html,js}
     ├── doppler.{html,js}
+    ├── dna.{html,js}
     ├── cannon.{html,js}
     ├── orbit.{html,js}
     ├── impact.{html,js}

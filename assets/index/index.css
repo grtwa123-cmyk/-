@@ -1,30 +1,31 @@
 /*
- * Curved-index page styles.
+ * Curved-index page styles — Liquid Glass HUD.
  *
- * Only what is unique to the wall lives here — the editorial HUD and the
- * custom cursor. Hub / experiment pages keep using /styles.css.
+ * Only what is unique to the wall lives here. Every interactive HUD
+ * surface (clock, links, hint, language switcher, cursor badge, loader)
+ * is a translucent pane that samples the WebGL scene through
+ * backdrop-filter, gets an inset specular highlight, and floats on a
+ * soft layered shadow — the same Liquid Glass language used on the
+ * hub / experiment pages.
  */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html,
-body {
+html, body {
   height: 100%;
   overflow: hidden;
-  background: #0a0a0d;
+  background: #08080d;
   color: #f3f1ea;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Apple SD Gothic Neo", "Noto Sans KR", "Helvetica Neue", sans-serif;
 }
+
 body { cursor: none; }
-@media (pointer: coarse) {
-  body { cursor: auto; }
-}
+@media (pointer: coarse) { body { cursor: auto; } }
 
 #scene { position: fixed; inset: 0; touch-action: none; }
 canvas { display: block; }
 
-/* Edge vignette — emphasises the depth of the curved wall. */
 .vignette {
   position: fixed;
   inset: 0;
@@ -38,22 +39,30 @@ canvas { display: block; }
   );
 }
 
-/* Hidden nav with real anchor links to every experiment — keeps screen
-   readers and search engines able to discover the catalogue when the
-   canvas is opaque to them. */
 .sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
 }
 
-/* Top bar (editorial HUD) */
+/* ── Liquid Glass tokens (page-local copies, so the HUD doesn't need
+   to depend on styles.css being loaded) ──────────────────────────── */
+:root {
+  --glass-tint: rgba(255, 255, 255, 0.06);
+  --glass-tint-2: rgba(255, 255, 255, 0.11);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.14);
+  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.32),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glass-shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.40);
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────── */
+
 .topbar {
   position: fixed;
   z-index: 5;
@@ -66,38 +75,83 @@ canvas { display: block; }
   pointer-events: none;
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 }
-.topbar .col { display: flex; flex-direction: column; gap: 5px; }
-.mark { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; }
-.sub  { font-size: 9px; color: #8a8a93; letter-spacing: 0.22em; text-transform: uppercase; }
+
+.topbar .col { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+/* The brand mark stays as plain editorial text (no chrome), so the
+   wall feels like the hero. */
+.mark { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; color: #f3f1ea; }
+.sub  { font-size: 9px; color: #8a8a93; letter-spacing: 0.24em; text-transform: uppercase; }
+
+/* Tagline gets a faint glass strip — readable above busy parts of the
+   scene without competing with the brand. */
 .tagline {
-  max-width: 300px;
+  max-width: 320px;
   font-size: 10.5px;
   line-height: 1.7;
-  color: #cfccc3;
-  letter-spacing: 0.05em;
+  color: #d9d6cc;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  padding: 9px 14px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(20px) saturate(1.55);
+  backdrop-filter: blur(20px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-spec-soft);
+  pointer-events: auto;
 }
-.topbar .right { align-items: flex-end; text-align: right; pointer-events: auto; }
+
+.topbar .right { align-items: flex-end; text-align: right; pointer-events: auto; gap: 10px; }
+
 .clock {
   font-size: 9px;
-  color: #8a8a93;
-  letter-spacing: 0.16em;
+  color: #b9b8c0;
+  letter-spacing: 0.18em;
   line-height: 1.8;
+  padding: 7px 12px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(20px) saturate(1.55);
+  backdrop-filter: blur(20px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--glass-spec-soft);
 }
-.clock b { color: #f3f1ea; font-weight: 600; }
-.links { display: flex; gap: 12px; margin-top: 8px; }
+
+.clock b { color: #f3f1ea; font-weight: 700; }
+
+.links {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
+}
+
 .links a {
-  color: #8a8a93;
+  color: #b9b8c0;
   text-decoration: none;
   font-size: 9.5px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  transition: color 0.2s;
+  padding: 6px 11px;
+  border-radius: 999px;
+  transition: color 0.2s, background 0.2s;
 }
-.links a:hover,
-.links a:focus-visible { color: #f3f1ea; outline: none; }
 
-/* Bottom hint + language switcher */
+.links a:hover,
+.links a:focus-visible {
+  color: #f3f1ea;
+  background: var(--glass-tint-2);
+  outline: none;
+}
+
+/* ── Bottom hint ─────────────────────────────────────────────────── */
+
 .hint {
   position: fixed;
   z-index: 5;
@@ -106,85 +160,112 @@ canvas { display: block; }
   transform: translateX(-50%);
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: #8a8a93;
+  color: #d9d6cc;
   letter-spacing: 0.24em;
   text-transform: uppercase;
+  padding: 10px 18px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
   transition: opacity 0.5s;
   text-align: center;
   pointer-events: none;
 }
+
+/* ── Language switcher ───────────────────────────────────────────── */
+
 .lang-switch {
   position: fixed;
   z-index: 5;
   right: 24px;
   bottom: calc(18px + env(safe-area-inset-bottom));
   display: flex;
-  gap: 6px;
-}
-.lang-btn {
-  background: rgba(20, 20, 28, 0.7);
-  color: #8a8a93;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 4px;
+  padding: 4px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  border: var(--glass-border);
   border-radius: 999px;
-  padding: 7px 11px;
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
+}
+
+.lang-btn {
+  background: transparent;
+  color: #b9b8c0;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 13px;
   font-family: ui-monospace, monospace;
   font-size: 10px;
   cursor: pointer;
-  letter-spacing: 0.06em;
-  transition: 0.2s;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
-.lang-btn:hover { color: #f3f1ea; }
+
+.lang-btn:hover { color: #f3f1ea; background: var(--glass-tint-2); }
+
 .lang-btn:focus-visible {
   color: #f3f1ea;
   outline: 2px solid #f3f1ea;
   outline-offset: 2px;
 }
+
 .lang-btn.active {
-  background: #f3f1ea;
+  background: linear-gradient(180deg, #ffffff 0%, #e6e3d8 100%);
   color: #0a0a0d;
-  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 12px rgba(255, 255, 255, 0.18);
 }
 
-/* Custom cursor (pointer-fine only) */
+/* ── Custom cursor — glass disc when hot ──────────────────────────── */
+
 .cursor {
   position: fixed;
   z-index: 30;
-  top: 0;
-  left: 0;
-  width: 30px;
-  height: 30px;
+  top: 0; left: 0;
+  width: 30px; height: 30px;
   border: 1px solid rgba(243, 241, 234, 0.7);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   mix-blend-mode: difference;
-  transition: width 0.25s, height 0.25s, background 0.25s, border-color 0.25s;
+  transition: width 0.25s, height 0.25s, background 0.25s, border-color 0.25s,
+              backdrop-filter 0.25s, box-shadow 0.25s, mix-blend-mode 0.25s;
   will-change: transform;
 }
+
 .cursor.hot {
-  width: 76px;
-  height: 76px;
-  background: rgba(243, 241, 234, 0.12);
-  border-color: transparent;
+  width: 78px; height: 78px;
+  background: rgba(243, 241, 234, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+  box-shadow: var(--glass-spec), 0 12px 28px rgba(0, 0, 0, 0.40);
+  mix-blend-mode: normal;
 }
+
 .cursor .lbl {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-family: ui-monospace, monospace;
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 700;
+  color: #f3f1ea;
   opacity: 0;
   transition: opacity 0.25s;
 }
+
 .cursor.hot .lbl { opacity: 1; }
-@media (pointer: coarse) {
-  .cursor { display: none; }
-}
+
+@media (pointer: coarse) { .cursor { display: none; } }
 
 .nav-fade {
   position: fixed;
@@ -195,41 +276,55 @@ canvas { display: block; }
   pointer-events: none;
 }
 
+/* ── Loader — glass card centered ────────────────────────────────── */
+
 #loader {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: #0a0a0d;
+  background: radial-gradient(60% 50% at 50% 50%, rgba(110, 168, 255, 0.08) 0%, transparent 70%), #08080d;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   transition: opacity 0.8s;
 }
-#loader.gone {
-  opacity: 0;
-  pointer-events: none;
+
+#loader.gone { opacity: 0; pointer-events: none; }
+
+#loader > * {
+  padding: 14px 28px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(24px) saturate(1.55);
+  backdrop-filter: blur(24px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
 }
+
 #loader .num {
   font-family: ui-monospace, monospace;
   font-size: 42px;
   font-weight: 300;
+  letter-spacing: 0.04em;
 }
+
 #loader .cap {
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: #8a8a93;
-  letter-spacing: 0.3em;
+  color: #b9b8c0;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
 }
 
-/* Narrow viewport — declutter the HUD and tighten the bottom bar */
+/* ── Narrow viewport ─────────────────────────────────────────────── */
+
 @media (max-width: 720px) {
   .topbar { padding: 14px 16px; gap: 10px; }
   .tagline { display: none; }
   .clock   { display: none; }
-  .mark { font-size: 12px; letter-spacing: 0.16em; }
+  .mark { font-size: 12px; letter-spacing: 0.18em; }
   .sub  { font-size: 8px; }
   .links { margin-top: 0; }
   .hint {
@@ -237,6 +332,7 @@ canvas { display: block; }
     letter-spacing: 0.18em;
     bottom: calc(64px + env(safe-area-inset-bottom));
     white-space: nowrap;
+    padding: 8px 14px;
   }
   .lang-switch {
     bottom: calc(18px + env(safe-area-inset-bottom));
@@ -247,11 +343,14 @@ canvas { display: block; }
   .lang-btn { padding: 8px 13px; }
 }
 
-/* Reduced motion: no transitions on the loader / cursor / hint */
 @media (prefers-reduced-motion: reduce) {
-  #loader,
-  .cursor,
-  .hint,
-  .lang-btn,
-  .links a { transition: none; }
+  #loader, .cursor, .hint, .lang-btn, .links a { transition: none; }
+}
+
+/* Fallback for browsers without backdrop-filter — bump background
+   opacity so chrome stays legible. */
+@supports not ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+  .tagline, .clock, .links, .hint, .lang-switch, .cursor.hot, #loader > * {
+    background: rgba(20, 20, 28, 0.85);
+  }
 }
