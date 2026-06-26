@@ -36,19 +36,22 @@
   --border: rgba(255, 255, 255, 0.10);
   --max-width: 1040px;
 
-  /* — Liquid Glass tokens — */
-  --glass-blur: 22px;
-  --glass-saturate: 1.55;
-  --glass-tint: rgba(255, 255, 255, 0.05);
-  --glass-tint-2: rgba(255, 255, 255, 0.09);
-  --glass-tint-3: rgba(255, 255, 255, 0.14);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.14);
-  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.22);
-  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.32),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-                inset 1px 0 0 rgba(255, 255, 255, 0.05),
-                inset -1px 0 0 rgba(255, 255, 255, 0.03);
-  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  /* — Liquid Glass tokens —
+     Tints dialled lower than the first pass (5/9/14 % → 3.5/6.5/10.5 %)
+     so the layer behind reads through more clearly, matching Apple's
+     own glass on iOS 26. */
+  --glass-blur: 24px;
+  --glass-saturate: 1.6;
+  --glass-tint: rgba(255, 255, 255, 0.035);
+  --glass-tint-2: rgba(255, 255, 255, 0.065);
+  --glass-tint-3: rgba(255, 255, 255, 0.105);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.18);
+  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.24),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+                inset 1px 0 0 rgba(255, 255, 255, 0.04),
+                inset -1px 0 0 rgba(255, 255, 255, 0.02);
+  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 18px 42px rgba(0, 0, 0, 0.45),
                   0 2px 8px rgba(0, 0, 0, 0.30);
   --glass-shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.28);
@@ -504,10 +507,10 @@ body:not([data-theme]) header.site-header p {
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(180deg,
-    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.07) 0%,
     rgba(255, 255, 255, 0.00) 24%,
     rgba(255, 255, 255, 0.00) 80%,
-    rgba(0, 0, 0, 0.18) 100%);
+    rgba(0, 0, 0, 0.14) 100%);
   z-index: -1;
 }
 
@@ -670,10 +673,10 @@ body:not([data-theme]) header.site-header p {
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(180deg,
-    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.06) 0%,
     rgba(255, 255, 255, 0.00) 22%,
     rgba(255, 255, 255, 0.00) 78%,
-    rgba(0, 0, 0, 0.16) 100%);
+    rgba(0, 0, 0, 0.12) 100%);
   z-index: -1;
 }
 
@@ -762,7 +765,7 @@ body:not([data-theme]) header.site-header p {
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(180deg,
-    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.05) 0%,
     rgba(255, 255, 255, 0.00) 28%);
   z-index: -1;
 }

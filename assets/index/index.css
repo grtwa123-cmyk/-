@@ -52,12 +52,12 @@ canvas { display: block; }
 /* ── Liquid Glass tokens (page-local copies, so the HUD doesn't need
    to depend on styles.css being loaded) ──────────────────────────── */
 :root {
-  --glass-tint: rgba(255, 255, 255, 0.06);
-  --glass-tint-2: rgba(255, 255, 255, 0.11);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.14);
-  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.32),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --glass-tint: rgba(255, 255, 255, 0.04);
+  --glass-tint-2: rgba(255, 255, 255, 0.08);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.12);
+  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.24),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.40);
 }
 

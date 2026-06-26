@@ -2,45 +2,41 @@
  * Procedural Liquid-Glass card texture used as a Three.js CanvasTexture
  * on the wall.
  *
- * Each card is a single off-screen <canvas> built up in layers:
- *   1. Page-coloured frame so the labels float on the wall
- *   2. Per-card diagonal colour gradient (the tinted "wall behind glass")
- *   3. Soft radial vignette + faint grain (light noise — the "frost")
- *   4. NEW Liquid-Glass panel inset into the image block:
- *        – translucent white pane (≈10% alpha)
- *        – inset specular highlight at the top edge
- *        – inset shade band at the bottom edge
- *        – two-tone hairline ring (brighter top half, darker bottom)
- *        – soft drop shadow beneath the pane for "lift"
- *   5. Motif drawn on the glass pane with a gentle glow under it
- *   6. Title wrapped onto the bottom of the glass pane
- *   7. Editorial header (CATEGORY · NN / TT) and footer (TAGS · OPEN →)
+ * The entire card is ONE liquid-glass surface — no dark page frame, no
+ * inset image block. The canvas starts fully transparent so the corners
+ * of the rounded card fade into the scene; everything inside the rounded
+ * shape is the glass.
  *
- * Every painted highlight is greyscale-safe — white@α stays white when
- * desaturated by the rest-state shader on main.js, so the icy frost look
- * survives the grayscale-at-rest treatment and only re-tints on hover.
+ * Layer order (back → front):
+ *   1. Per-card diagonal colour gradient — the tinted "wall" behind glass
+ *   2. Soft radial vignette (subtle — lets the colour show through)
+ *   3. Faint grain ("frost" microtexture)
+ *   4. Translucent white pane (≈7% white) for the milky frosted look
+ *   5. Inset specular at the top edge
+ *   6. Inset shade at the bottom edge
+ *   7. Motif with a soft white aura behind it
+ *   8. Title at the lower portion
+ *   9. Header (CATEGORY · NN / TT) at the top edge
+ *  10. Footer (TAGS · OPEN →) at the bottom edge
+ *  11. Two-tone hairline ring (brighter top, dimmer bottom)
+ *
+ * Every highlight is white-only — when the rest-state shader on main.js
+ * desaturates the texture, the icy frost survives and the only thing
+ * that re-tints on hover is the per-card colour gradient underneath.
  */
 
 import { drawMotif } from "./motifs.js";
 
 const CARD_W = 540;
 const CARD_H = 652;
-const IMG_X = 14, IMG_Y = 64;
-const IMG_W = CARD_W - 28;
-const IMG_H = 470;
-const IMG_R = 18;                         // rounded image-block corners
+const CARD_R = 28;                        // soft iOS-style corner
 
-// Inset for the inner glass pane — leaves a thin halo of tinted gradient
-// visible around the pane so the eye reads a layered glass surface
-// floating over coloured backdrop.
-const PANE_PAD = 18;
-const PANE_R   = 16;
-const PANE_X = IMG_X + PANE_PAD;
-const PANE_Y = IMG_Y + PANE_PAD;
-const PANE_W = IMG_W - PANE_PAD * 2;
-const PANE_H = IMG_H - PANE_PAD * 2;
+// Padding from the card edge for header / motif / title / footer rows
+const EDGE   = 22;                        // text safe-area from the rounded edge
+const HEADER_Y = 44;                      // baseline for CATEGORY row
+const FOOTER_Y = CARD_H - 26;             // baseline for TAGS row
 
-const TITLE_FONT = '700 44px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+const TITLE_FONT = '700 50px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
 const META_FONT  = '600 17px ui-monospace,"SF Mono",Consolas,monospace';
 const TAG_FONT   = '500 15px ui-monospace,"SF Mono",Consolas,monospace';
 
@@ -87,135 +83,98 @@ export function makeCard(exp, index, total, t) {
   c.width = CARD_W; c.height = CARD_H;
   const x = c.getContext("2d");
 
-  // 0) Page-coloured frame
-  x.fillStyle = "#0a0a0d";
-  x.fillRect(0, 0, CARD_W, CARD_H);
+  // 0) Canvas starts fully transparent. The rounded card shape is the
+  //    only opaque region — corners outside the round fade into the wall.
+  x.clearRect(0, 0, CARD_W, CARD_H);
 
-  // 1) Diagonal colour gradient inside the image block — the tinted wall
-  //    that sits behind the glass pane.
+  // 1) Diagonal colour gradient filling the entire rounded card —
+  //    the tinted backdrop behind the glass.
   const ang = ((exp.cat.charCodeAt(0) + index * 17) % 90 - 45) * Math.PI / 180;
   const dx = Math.cos(ang), dy = Math.sin(ang);
   const g = x.createLinearGradient(
-    IMG_X + IMG_W / 2 - dx * IMG_W, IMG_Y + IMG_H / 2 - dy * IMG_H,
-    IMG_X + IMG_W / 2 + dx * IMG_W, IMG_Y + IMG_H / 2 + dy * IMG_H,
+    CARD_W / 2 - dx * CARD_W, CARD_H / 2 - dy * CARD_H,
+    CARD_W / 2 + dx * CARD_W, CARD_H / 2 + dy * CARD_H,
   );
   g.addColorStop(0, exp.colors[0]);
   g.addColorStop(1, exp.colors[1]);
-  roundRect(x, IMG_X, IMG_Y, IMG_W, IMG_H, IMG_R);
-  x.fillStyle = g; x.fill();
 
-  // 2) Vignette + grain — clipped to the image block.
+  // Clip everything that follows to the rounded card shape.
   x.save();
-  roundRect(x, IMG_X, IMG_Y, IMG_W, IMG_H, IMG_R);
+  roundRect(x, 0, 0, CARD_W, CARD_H, CARD_R);
   x.clip();
 
-  // Soft radial vignette — pushes attention into the centre of the pane.
+  x.fillStyle = g;
+  x.fillRect(0, 0, CARD_W, CARD_H);
+
+  // 2) Subtle radial vignette — pushes attention to the centre without
+  //    overpowering the colour (lower α than before).
   const rg = x.createRadialGradient(
-    IMG_X + IMG_W / 2, IMG_Y + IMG_H * 0.4, IMG_H * 0.1,
-    IMG_X + IMG_W / 2, IMG_Y + IMG_H / 2,   IMG_H * 0.85,
+    CARD_W / 2, CARD_H * 0.40, CARD_H * 0.10,
+    CARD_W / 2, CARD_H * 0.50, CARD_H * 0.85,
   );
   rg.addColorStop(0, "rgba(0,0,0,0)");
-  rg.addColorStop(1, "rgba(0,0,0,0.55)");
+  rg.addColorStop(1, "rgba(0,0,0,0.38)");
   x.fillStyle = rg;
-  x.fillRect(IMG_X, IMG_Y, IMG_W, IMG_H);
+  x.fillRect(0, 0, CARD_W, CARD_H);
 
-  // Frost grain — slightly subtler than before so the glass reads cleaner.
-  const im = x.getImageData(IMG_X, IMG_Y, IMG_W, IMG_H);
+  // 3) Frost grain — slight microtexture so the glass doesn't look
+  //    plastic.
+  const im = x.getImageData(0, 0, CARD_W, CARD_H);
   const d  = im.data;
   for (let i = 0; i < d.length; i += 4) {
-    const n = (Math.random() - 0.5) * 14;
+    const n = (Math.random() - 0.5) * 12;
     d[i] += n; d[i + 1] += n; d[i + 2] += n;
   }
-  x.putImageData(im, IMG_X, IMG_Y);
+  x.putImageData(im, 0, 0);
 
-  // 3) Liquid-Glass pane — inset translucent white panel + specular +
-  //    inset shade + two-tone hairline. Drawn while still clipped to the
-  //    image block so the pane shadow doesn't bleed into the frame.
+  // 4) Translucent white pane — the milky frosted-glass layer. Dialled
+  //    down from 0.10 to 0.07 so the colour reads through more clearly.
+  x.fillStyle = "rgba(255,255,255,0.07)";
+  x.fillRect(0, 0, CARD_W, CARD_H);
 
-  // Soft drop shadow under the pane for visual lift.
-  x.save();
-  x.shadowColor = "rgba(0,0,0,0.45)";
-  x.shadowBlur  = 22;
-  x.shadowOffsetY = 6;
-  roundRect(x, PANE_X, PANE_Y, PANE_W, PANE_H, PANE_R);
-  x.fillStyle = "rgba(0,0,0,0.001)"; // shadow needs *something* filled
-  x.fill();
-  x.restore();
-
-  // Translucent pane body — white@α. Compositing over the tinted
-  // gradient gives the milky frosted-glass appearance, and stays white
-  // when desaturated (rest state) so the glass look survives grayscale.
-  roundRect(x, PANE_X, PANE_Y, PANE_W, PANE_H, PANE_R);
-  x.fillStyle = "rgba(255,255,255,0.10)";
-  x.fill();
-
-  // Inset specular at the top edge — a horizon line of light. Clipped to
-  // the pane so the highlight curls into the rounded corners.
-  x.save();
-  roundRect(x, PANE_X, PANE_Y, PANE_W, PANE_H, PANE_R);
-  x.clip();
-
-  const spec = x.createLinearGradient(0, PANE_Y, 0, PANE_Y + PANE_H * 0.32);
-  spec.addColorStop(0,    "rgba(255,255,255,0.34)");
-  spec.addColorStop(0.45, "rgba(255,255,255,0.08)");
+  // 5) Inset specular at the top edge — a horizon line of light.
+  const spec = x.createLinearGradient(0, 0, 0, CARD_H * 0.30);
+  spec.addColorStop(0,    "rgba(255,255,255,0.26)");
+  spec.addColorStop(0.45, "rgba(255,255,255,0.06)");
   spec.addColorStop(1,    "rgba(255,255,255,0)");
   x.fillStyle = spec;
-  x.fillRect(PANE_X, PANE_Y, PANE_W, PANE_H * 0.32);
+  x.fillRect(0, 0, CARD_W, CARD_H * 0.30);
 
-  // Inset shade at the bottom edge — gives the pane weight.
-  const shade = x.createLinearGradient(0, PANE_Y + PANE_H * 0.78, 0, PANE_Y + PANE_H);
+  // 6) Inset shade at the bottom edge — gives the surface weight.
+  const shade = x.createLinearGradient(0, CARD_H * 0.78, 0, CARD_H);
   shade.addColorStop(0, "rgba(0,0,0,0)");
-  shade.addColorStop(1, "rgba(0,0,0,0.22)");
+  shade.addColorStop(1, "rgba(0,0,0,0.20)");
   x.fillStyle = shade;
-  x.fillRect(PANE_X, PANE_Y + PANE_H * 0.78, PANE_W, PANE_H * 0.22);
+  x.fillRect(0, CARD_H * 0.78, CARD_W, CARD_H * 0.22);
 
-  // 4) Motif — drawn inside the clipped pane so it always sits on glass.
-  //    A soft white aura behind it lifts the strokes off the surface.
+  // 7) Motif — drawn on the glass with a soft aura behind for lift.
   if (exp.motif) {
-    const mx = PANE_X + PANE_W / 2;
-    const my = PANE_Y + PANE_H * 0.34;
-    const ms = PANE_H * 0.20;
-    const aura = x.createRadialGradient(mx, my, ms * 0.2, mx, my, ms * 2.2);
-    aura.addColorStop(0, "rgba(255,255,255,0.12)");
+    const mx = CARD_W / 2;
+    const my = CARD_H * 0.36;
+    const ms = CARD_H * 0.16;
+    const aura = x.createRadialGradient(mx, my, ms * 0.2, mx, my, ms * 2.4);
+    aura.addColorStop(0, "rgba(255,255,255,0.10)");
     aura.addColorStop(1, "rgba(255,255,255,0)");
     x.fillStyle = aura;
     x.beginPath();
-    x.arc(mx, my, ms * 2.2, 0, Math.PI * 2);
+    x.arc(mx, my, ms * 2.4, 0, Math.PI * 2);
     x.fill();
     drawMotif(x, exp.motif, mx, my, ms);
   }
 
-  // 5) Title — bottom of the pane, white with a hair of warmth so it
-  //    reads as printed ink rather than glow.
-  x.fillStyle = "#fff";
+  // 8) Title — large, low-contrast white with a soft shadow for
+  //    legibility over the gradient.
+  x.save();
+  x.shadowColor = "rgba(0,0,0,0.55)";
+  x.shadowBlur = 8;
+  x.fillStyle = "rgba(255,255,255,0.96)";
   x.textAlign = "left";
   x.font = TITLE_FONT;
-  wrapText(x, t(exp.titleKey), PANE_X + 18, PANE_Y + PANE_H - 24, PANE_W - 36, 50);
-
-  x.restore(); // end pane clip
-
-  // 6) Pane hairline — brighter top half, dimmer bottom — completes the
-  //    "catching light from above" cue.
-  x.save();
-  x.lineWidth = 1.2;
-  const ring = x.createLinearGradient(0, PANE_Y, 0, PANE_Y + PANE_H);
-  ring.addColorStop(0,   "rgba(255,255,255,0.55)");
-  ring.addColorStop(0.5, "rgba(255,255,255,0.16)");
-  ring.addColorStop(1,   "rgba(0,0,0,0.30)");
-  x.strokeStyle = ring;
-  roundRect(x, PANE_X + 0.5, PANE_Y + 0.5, PANE_W - 1, PANE_H - 1, PANE_R - 0.5);
-  x.stroke();
+  wrapText(x, t(exp.titleKey), EDGE, CARD_H * 0.80, CARD_W - EDGE * 2, 54);
   x.restore();
 
-  x.restore(); // end image-block clip
-
-  // 7) Outer image-block hairline — slim, dim, just to seal the frame.
-  x.strokeStyle = "rgba(255,255,255,0.08)";
-  x.lineWidth = 1;
-  roundRect(x, IMG_X + 0.5, IMG_Y + 0.5, IMG_W - 1, IMG_H - 1, IMG_R);
-  x.stroke();
-
-  // 8) Header: CATEGORY · NN / TT
+  // 9) Header: CATEGORY · NN / TT — drawn ON the glass with a thin
+  //    text-shadow so it stays legible against any backdrop colour.
   const catKey = exp.cat === "Physics"
     ? "categoryPhysics"
     : exp.cat === "Chemistry"
@@ -224,29 +183,53 @@ export function makeCard(exp, index, total, t) {
         ? "categoryBiology"
         : "categoryPhysics";
   const cat = (t(catKey) || exp.cat).toUpperCase();
+
+  x.save();
+  x.shadowColor = "rgba(0,0,0,0.45)";
+  x.shadowBlur = 4;
   x.font = META_FONT;
-  x.fillStyle = "rgba(243,241,234,0.88)";
+  x.fillStyle = "rgba(255,255,255,0.92)";
   x.textAlign = "left";
-  x.fillText(cat, 16, 44);
+  x.fillText(cat, EDGE, HEADER_Y);
   x.textAlign = "right";
-  x.fillStyle = "rgba(138,138,147,0.92)";
+  x.fillStyle = "rgba(255,255,255,0.78)";
   x.fillText(
     String(index + 1).padStart(2, "0") + " / " + String(total).padStart(2, "0"),
-    CARD_W - 16, 44,
+    CARD_W - EDGE, HEADER_Y,
   );
+  x.restore();
 
-  // 9) Footer: TAGS · OPEN →
+  // 10) Footer: TAGS · OPEN →
+  x.save();
+  x.shadowColor = "rgba(0,0,0,0.45)";
+  x.shadowBlur = 4;
   x.textAlign = "left";
-  x.fillStyle = "rgba(138,138,147,0.95)";
+  x.fillStyle = "rgba(255,255,255,0.82)";
   x.font = TAG_FONT;
-  let tx = 16;
+  let tx = EDGE;
   for (const tag of exp.tags) {
-    x.fillText(tag, tx, CARD_H - 22);
+    x.fillText(tag, tx, FOOTER_Y);
     tx += x.measureText(tag).width + 18;
   }
   x.textAlign = "right";
-  x.fillStyle = "rgba(243,241,234,0.88)";
-  x.fillText("OPEN →", CARD_W - 16, CARD_H - 22);
+  x.fillStyle = "rgba(255,255,255,0.92)";
+  x.fillText("OPEN →", CARD_W - EDGE, FOOTER_Y);
+  x.restore();
+
+  x.restore(); // end card clip
+
+  // 11) Two-tone hairline ring — bright top, dim bottom — completes
+  //     the "catching light from above" cue.
+  x.save();
+  x.lineWidth = 1.4;
+  const ring = x.createLinearGradient(0, 0, 0, CARD_H);
+  ring.addColorStop(0,    "rgba(255,255,255,0.52)");
+  ring.addColorStop(0.45, "rgba(255,255,255,0.14)");
+  ring.addColorStop(1,    "rgba(0,0,0,0.32)");
+  x.strokeStyle = ring;
+  roundRect(x, 0.7, 0.7, CARD_W - 1.4, CARD_H - 1.4, CARD_R - 0.7);
+  x.stroke();
+  x.restore();
 
   return c;
 }
