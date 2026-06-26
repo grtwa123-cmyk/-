@@ -458,6 +458,12 @@
   wireEvents();
   updateReadouts();
   window.addEventListener('resize', resizeCanvas);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (animId !== null) cancelAnimationFrame(animId);
+      animId = null;
+    } else { start(); }
+  });
   resizeCanvas();
   start();
 })();

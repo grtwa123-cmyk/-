@@ -606,6 +606,12 @@
   tempValue.textContent = temperature.toFixed(2);
   wireEvents();
   window.addEventListener('resize', resizeCanvas);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (animId !== null) cancelAnimationFrame(animId);
+      animId = null;
+    } else { start(); }
+  });
   resizeCanvas();
   updateReadouts();
   start();

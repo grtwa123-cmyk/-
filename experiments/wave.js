@@ -223,12 +223,15 @@
 
   // ── Main loop ──────────────────────────────────────────────────────────
   function frame(ts) {
-    raf = requestAnimationFrame(frame);
     const dt = Math.min((ts - lastTs) / 1000, 0.05);  // cap big jumps
     lastTs = ts;
     const p = readParams();
     if (!paused) t += dt * p.sp;
     render(p);
+    // Schedule the next frame AFTER work, and only while the tab is
+    // visible. Scheduling at the top would leave a stray raf in flight
+    // whose cancellation by visibilitychange could be missed.
+    if (!document.hidden) raf = requestAnimationFrame(frame);
   }
 
   function start() {
