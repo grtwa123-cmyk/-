@@ -8,7 +8,7 @@
  * Schema:
  *   titleKey  – i18n key for the card title
  *   url       – relative URL from the project root
- *   cat       – "Physics" | "Chemistry"
+ *   cat       – "Physics" | "Chemistry" | "Biology"
  *   tags      – short uppercase tokens shown on the bottom row
  *   colors    – [from, to] gradient stops for the card's image block
  *   motif     – key handled by motifs.js (line-art glyph)
@@ -21,7 +21,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "cannonTitle",      url: "experiments/cannon.html",        cat: "Physics",   tags: ["GRAVITY", "ORBIT"],     colors: ["#102132", "#5fa4b8"], motif: "cannon" },
   { titleKey: "orbitsTitle",      url: "experiments/orbit.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#070914", "#d4c065"], motif: "orbit" },
   { titleKey: "impactTitle",      url: "experiments/impact.html",        cat: "Physics",   tags: ["FORCE", "GRAPH"],       colors: ["#1d1908", "#e2a45a"], motif: "impact" },
-  { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "3D"],        colors: ["#080a1e", "#8095e6"], motif: "solar" },
+  { titleKey: "dnaTitle",         url: "experiments/dna.html",           cat: "Biology",   tags: ["DNA", "HELIX"],         colors: ["#150828", "#e58fff"], motif: "dna" },
   { titleKey: "solarSystemTitle", url: "experiments/solarsystem.html",   cat: "Physics",   tags: ["3D", "TOUR"],           colors: ["#0a0e22", "#7da3d4"], motif: "solarsystem" },
   { titleKey: "bhTitle",          url: "experiments/blackhole.html",     cat: "Physics",   tags: ["RELATIVITY", "WEBGL"],  colors: ["#1a0a06", "#e08a4a"], motif: "blackhole" },
   { titleKey: "semiTitle",        url: "experiments/semiconductor.html", cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#22153a", "#a06fc8"], motif: "semi" },

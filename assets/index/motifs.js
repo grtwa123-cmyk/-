@@ -179,6 +179,60 @@ const RENDERERS = {
     p.line(A.x, A.y, B.x, B.y); p.line(A.x, A.y, C.x, C.y); p.line(A.x, A.y, D.x, D.y);
     p.circ(A.x, A.y, r * 1.3); p.circ(B.x, B.y, r); p.circ(C.x, C.y, r); p.circ(D.x, D.y, r);
   },
+  dna(p, s, ctx) {
+    // Two intertwined sinusoidal strands + colored base discs at each
+    // crossing. Tuned so the helix fills the card without crowding the
+    // title — three full turns left-to-right, sampled densely so the
+    // strands read as ribbon curves rather than polylines.
+    const span = s * 1.8;
+    const amp  = s * 0.36;
+    const turns = 3;
+    const segs = 64;
+    const x0 = -span / 2;
+    ctx.save();
+
+    // Strand A
+    ctx.strokeStyle = "rgba(232, 200, 255, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const x = x0 + span * t;
+      const y = Math.sin(t * Math.PI * turns) * amp;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+
+    // Strand B (antiparallel offset by π)
+    ctx.strokeStyle = "rgba(255, 200, 240, 0.85)";
+    ctx.beginPath();
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const x = x0 + span * t;
+      const y = Math.sin(t * Math.PI * turns + Math.PI) * amp;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+
+    // Rungs + colored base discs at peaks/troughs
+    const baseColors = ["#ff8aa3", "#ffcf6e", "#7be0d0", "#c79bff"];
+    const pairs = 6;
+    ctx.lineWidth = 1.2;
+    for (let k = 0; k < pairs; k++) {
+      const t = (k + 0.5) / pairs;
+      const x = x0 + span * t;
+      const yA = Math.sin(t * Math.PI * turns) * amp;
+      const yB = Math.sin(t * Math.PI * turns + Math.PI) * amp;
+      ctx.strokeStyle = "rgba(255, 240, 255, 0.45)";
+      p.line(x, yA, x, yB);
+      ctx.fillStyle = baseColors[k % 4];
+      p.dot(x, yA, 3.6);
+      ctx.fillStyle = baseColors[(k + 2) % 4];
+      p.dot(x, yB, 3.6);
+    }
+    ctx.restore();
+  },
+
   crystal(p, s) {
     for (let i = -1; i <= 1; i++) {
       for (let j = -1; j <= 1; j++) {
