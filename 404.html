@@ -8,6 +8,20 @@
   <meta name="description" content="Page not found — Science Lab." />
   <title>Not found · Science Lab</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;text x='32' y='44' font-size='32' text-anchor='middle' fill='%236ea8ff' font-family='monospace'&gt;404&lt;/text&gt;&lt;/svg&gt;" />
+  <script>
+    // GitHub Pages serves this page for ANY missing path — including nested
+    // ones like /repo/experiments/nope.html — where relative URLs would
+    // resolve against the wrong directory (broken stylesheet + links).
+    // Anchor every relative URL to the site root instead. On a project
+    // page the first path segment is the repo name; on a user/org page
+    // (or a local server at the root) the site root is "/".
+    (function () {
+      var seg = location.pathname.split("/")[1];
+      var base = document.createElement("base");
+      base.href = (seg && seg.indexOf(".") === -1) ? "/" + seg + "/" : "/";
+      document.head.appendChild(base);
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -17,7 +31,7 @@
       <p>That page does not exist (yet).</p>
     </header>
     <main class="card-grid" aria-label="Where to go next">
-      <a class="card" href="/">
+      <a class="card" href="index.html">
         <h2>Index</h2>
         <p>The curved wall of all experiments.</p>
         <span class="tag">Home</span>
@@ -30,6 +44,11 @@
       <a class="card" href="chemistry.html">
         <h2>Chemistry</h2>
         <p>Molecules and crystal lattices.</p>
+        <span class="tag">Hub</span>
+      </a>
+      <a class="card" href="biology.html">
+        <h2>Biology</h2>
+        <p>DNA double-helix studio.</p>
         <span class="tag">Hub</span>
       </a>
     </main>
