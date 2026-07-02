@@ -119,6 +119,14 @@ body {
 .card-grid > *:nth-child(4) { animation-delay: 0.18s; }
 .card-grid > *:nth-child(5) { animation-delay: 0.24s; }
 .card-grid > *:nth-child(6) { animation-delay: 0.30s; }
+/* The physics hub holds 12 cards — without these, cards 7+ pop in at 0 s,
+   BEFORE cards 3–6, breaking the stagger. */
+.card-grid > *:nth-child(7)  { animation-delay: 0.36s; }
+.card-grid > *:nth-child(8)  { animation-delay: 0.42s; }
+.card-grid > *:nth-child(9)  { animation-delay: 0.48s; }
+.card-grid > *:nth-child(10) { animation-delay: 0.54s; }
+.card-grid > *:nth-child(11) { animation-delay: 0.60s; }
+.card-grid > *:nth-child(n + 12) { animation-delay: 0.66s; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

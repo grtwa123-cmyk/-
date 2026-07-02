@@ -41,6 +41,7 @@
       <li><a href="experiments/impact.html" data-i18n="impactTitle">Impulse &amp; Force</a></li>
       <li><a href="experiments/dna.html" data-i18n="dnaTitle">DNA Double Helix</a></li>
       <li><a href="experiments/solarsystem.html" data-i18n="solarSystemTitle">Solar System Tour (3D)</a></li>
+      <li><a href="experiments/solar.html" data-i18n="solarTitle">Solar System &amp; Black Holes</a></li>
       <li><a href="experiments/blackhole.html" data-i18n="bhTitle">Black Hole Lensing (WebGL)</a></li>
       <li><a href="experiments/semiconductor.html" data-i18n="semiTitle">Semiconductors &amp; Battery</a></li>
       <li><a href="experiments/diode.html" data-i18n="diodeTitle">PN Junction Diode</a></li>
@@ -86,6 +87,25 @@
     <div class="cap">Building the wall</div>
   </div>
 
+  <script>
+    // The wall needs three.js + gsap from CDNs. If either fails (offline,
+    // strict firewall), the loader would sit at "Building the wall"
+    // forever. After 8 s without boot, swap the loader for plain links so
+    // the site stays navigable. If the wall finishes late anyway, its own
+    // fade-out still runs and removes this fallback with it.
+    setTimeout(function () {
+      var loader = document.getElementById("loader");
+      if (!loader || loader.classList.contains("gone")) return;
+      loader.innerHTML =
+        '<div class="cap">The 3D wall could not load</div>' +
+        '<nav aria-label="Category hubs" style="display:flex;gap:14px;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:0.12em;text-transform:uppercase">' +
+        '<a href="physics.html" style="color:#8cbaff">Physics</a>' +
+        '<a href="chemistry.html" style="color:#c47bff">Chemistry</a>' +
+        '<a href="biology.html" style="color:#e58fff">Biology</a>' +
+        "</nav>";
+    }, 8000);
+  </script>
+
   <noscript>
     <style>
       #loader, .vignette, .topbar, .hint, .lang-switch, .cursor, .nav-fade { display: none !important; }
@@ -107,6 +127,7 @@
         <li><a href="experiments/impact.html">Impulse &amp; Force</a></li>
         <li><a href="experiments/dna.html">DNA Double Helix</a></li>
         <li><a href="experiments/solarsystem.html">Solar System Tour (3D)</a></li>
+        <li><a href="experiments/solar.html">Solar System &amp; Black Holes</a></li>
         <li><a href="experiments/blackhole.html">Black Hole Lensing (WebGL)</a></li>
         <li><a href="experiments/semiconductor.html">Semiconductors &amp; Battery</a></li>
         <li><a href="experiments/diode.html">PN Junction Diode</a></li>
