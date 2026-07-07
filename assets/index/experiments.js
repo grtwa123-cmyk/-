@@ -28,4 +28,6 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "diodeTitle",       url: "experiments/diode.html",         cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#2c0e22", "#d65a8a"], motif: "diode" },
   { titleKey: "moleculeTitle",    url: "experiments/molecule.html",      cat: "Chemistry", tags: ["3D", "MODEL"],          colors: ["#0a1f15", "#6fbf8a"], motif: "molecule" },
   { titleKey: "crystalTitle",     url: "experiments/crystal.html",       cat: "Chemistry", tags: ["LATTICE", "3D"],        colors: ["#0a1822", "#6fc4d4"], motif: "crystal" },
+  { titleKey: "titrationTitle",   url: "experiments/titration.html",     cat: "Chemistry", tags: ["ACID", "PH"],           colors: ["#200a1c", "#f06ac0"], motif: "titration" },
+  { titleKey: "gasTitle",         url: "experiments/gas.html",           cat: "Chemistry", tags: ["GAS", "KINETIC"],       colors: ["#231407", "#f0b060"], motif: "gas" },
 ]);

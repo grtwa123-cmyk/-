@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Gas particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT, and compressing the piston rides the isotherm." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M12 16 h30 M12 48 h30 M12 16 v32' fill='none' stroke='%23c47bff' stroke-width='3' stroke-linecap='round'/&gt;&lt;path d='M42 20 v24 M42 32 h12' stroke='%23f0b060' stroke-width='4' stroke-linecap='round'/&gt;&lt;circle cx='22' cy='26' r='3' fill='%23f0b060'/&gt;&lt;circle cx='30' cy='40' r='3' fill='%23f0b060'/&gt;&lt;circle cx='19' cy='40' r='3' fill='%23f0b060'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="gasPageTitle">Ideal Gas · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount12">Chemistry · Ideal gas</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="gasTitle">Ideal Gas &amp; Kinetic Theory</h1>
+      <p data-i18n="gasIntro">Gas particles rattle around a chamber sealed by a piston. The pressure gauge is honest — it sums real momentum kicks on the walls — and sits right on the ideal-gas isotherm. Drag the piston (or the sliders) and watch P, V, T negotiate.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="temp" data-i18n="gasTempLabel">Temperature T</label>
+          <span class="value"><span id="temp-value">300</span> u</span>
+          <input type="range" id="temp" min="50" max="600" step="10" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="volume" data-i18n="gasVolumeLabel">Volume (piston)</label>
+          <span class="value"><span id="volume-value">70</span> %</span>
+          <input type="range" id="volume" min="30" max="100" step="1" value="70" />
+        </div>
+
+        <div class="control">
+          <label for="count" data-i18n="gasCountLabel">Particles N</label>
+          <span class="value"><span id="count-value">80</span></span>
+          <input type="range" id="count" min="20" max="240" step="5" value="80" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="gasFormulaState">Equation of state (2D)</span>: <code>P&middot;A = N&middot;k&middot;T</code></li>
+            <li><span data-i18n="gasFormulaVrms">RMS speed</span>: <code>v&#7523;&#8344;&#8347; = &radic;(2kT/m)</code></li>
+            <li><span data-i18n="gasFormulaPressure">Pressure from impacts</span>: <code>P = &Sigma; 2m|v&#8869;| / (&Delta;t &middot; L)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="gasNotes">Notes</summary>
+          <ul>
+            <li data-i18n="gasNote1">Pressure is nothing but wall collisions: the measured value (impulse per time per wall length) fluctuates around NkT/V, and the fluctuations shrink as N grows.</li>
+            <li data-i18n="gasNote2">At constant temperature P &prop; 1/V (Boyle's law). Push the piston in and the dot climbs the hyperbolic isotherm.</li>
+            <li data-i18n="gasNote3">An ideal gas has no interactions — particles never collide with each other here, only with the walls. A thermostat rescales speeds so T stays where you set it (isothermal compression).</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="520" style="touch-action: none;" aria-label="Gas particles bouncing in a piston chamber beside a live pressure-volume diagram"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="outPressureMeas">P (measured)</div>
+            <div class="num"><span id="out-pmeas">—</span> u</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outPressureIdeal">P (ideal law)</div>
+            <div class="num"><span id="out-pideal">—</span> u</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outTemp">Temperature</div>
+            <div class="num"><span id="out-temp">300</span> u</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outVolume">Volume</div>
+            <div class="num"><span id="out-volume">70</span> %</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outVrms">v&#7523;&#8344;&#8347;</div>
+            <div class="num"><span id="out-vrms">—</span> u</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outParticles">Particles</div>
+            <div class="num" id="out-n">80</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="gas.js" defer></script>
+</body>
+</html>

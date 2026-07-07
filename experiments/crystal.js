@@ -418,6 +418,11 @@
   });
 
   function resizeCanvas() {
+    // Un-pin the inline size from the previous pass before measuring —
+    // otherwise the canvas can never grow back when the window widens
+    // (it would keep re-measuring its own pinned width forever).
+    canvas.style.removeProperty('width');
+    canvas.style.removeProperty('height');
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     CW = Math.max(Math.round(rect.width), 320);

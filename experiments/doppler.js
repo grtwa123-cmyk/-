@@ -19,11 +19,13 @@
 (() => {
   const stage = document.getElementById("stage");
   const ctx = stage.getContext("2d");
-  const W = stage.width;
-  const H = stage.height;
-  const SY = H * 0.5;                       // source y (horizontal motion)
+  // Sized by resizeCanvas(): logical (CSS-pixel) coordinates, with the
+  // backing store scaled by devicePixelRatio for crisp rings on hiDPI.
+  let W = stage.width;
+  let H = stage.height;
+  let SY = H * 0.5;                         // source y (horizontal motion)
   const MARGIN_X = 60;                      // bounce range
-  const MAX_RING_RADIUS = Math.hypot(W, H); // off-screen → drop
+  let maxRingRadius = Math.hypot(W, H);     // off-screen → drop
 
   const inputs = {
     velocity:  document.getElementById("velocity"),
@@ -120,8 +122,8 @@
     for (const ring of rings) {
       const age = t - ring.tEmit;
       const r = p.c * age;
-      if (r > MAX_RING_RADIUS) continue;
-      const a = Math.max(0, 1 - age / (MAX_RING_RADIUS / p.c));
+      if (r > maxRingRadius) continue;
+      const a = Math.max(0, 1 - age / (maxRingRadius / p.c));
       ctx.strokeStyle = `rgba(150, 200, 255, ${0.18 + 0.6 * a})`;
       ctx.beginPath();
       ctx.arc(ring.x, SY, r, 0, Math.PI * 2);
@@ -136,7 +138,7 @@
       // The cone trails the source: from (sourceX, SY) backward along −dirX
       ctx.strokeStyle = "rgba(255, 180, 120, 0.45)";
       ctx.lineWidth = 1.6;
-      const L = MAX_RING_RADIUS;
+      const L = maxRingRadius;
       ctx.beginPath();
       ctx.moveTo(sourceX, SY);
       ctx.lineTo(sourceX - dirX * L * cosA, SY - L * sinA);
@@ -197,7 +199,7 @@
     // Prune off-canvas rings
     for (let i = rings.length - 1; i >= 0; i--) {
       const age = t - rings[i].tEmit;
-      if (p.c * age > MAX_RING_RADIUS) rings.splice(i, 1);
+      if (p.c * age > maxRingRadius) rings.splice(i, 1);
     }
   }
 
@@ -261,6 +263,21 @@
     else start();
   });
 
+  function resizeCanvas() {
+    const rect = stage.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    W = Math.max(Math.round(rect.width), 300);
+    H = Math.max(Math.round(rect.height), 240);
+    stage.width = Math.round(W * dpr);
+    stage.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    SY = H * 0.5;
+    maxRingRadius = Math.hypot(W, H);
+    sourceX = Math.min(Math.max(sourceX, MARGIN_X), W - MARGIN_X);
+  }
+  window.addEventListener("resize", resizeCanvas);
+
+  resizeCanvas();
   handleInput();
   start();
 })();
