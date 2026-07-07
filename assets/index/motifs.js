@@ -245,6 +245,50 @@ const RENDERERS = {
       for (let j = -1; j <= 1; j++) p.dot(i * s * 0.72, j * s * 0.72, 4.5);
     }
   },
+
+  titration(p, s, ctx) {
+    // Burette tip above, one falling drop, Erlenmeyer flask below with a
+    // liquid line — the whole titration story in a glance.
+    p.line(-s * 0.12, -s * 1.55, -s * 0.12, -s * 0.85);
+    p.line( s * 0.12, -s * 1.55,  s * 0.12, -s * 0.85);
+    p.line(-s * 0.12, -s * 0.85, 0, -s * 0.62);
+    p.line( s * 0.12, -s * 0.85, 0, -s * 0.62);
+    p.dot(0, -s * 0.38, 3.6);                     // the drop
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.26, -s * 0.10);
+    ctx.lineTo( s * 0.26, -s * 0.10);
+    ctx.lineTo( s * 0.26,  s * 0.30);
+    ctx.lineTo( s * 0.92,  s * 1.30);
+    ctx.lineTo(-s * 0.92,  s * 1.30);
+    ctx.lineTo(-s * 0.26,  s * 0.30);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255, 170, 220, 0.85)";
+    p.line(-s * 0.60, s * 0.86, s * 0.60, s * 0.86);   // pink liquid line
+  },
+
+  gas(p, s, ctx) {
+    // Piston chamber (open right) with a plate + rod, particles inside.
+    const w = s * 1.9, h = s * 1.5;
+    const x0 = -s * 1.15, y0 = -h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x0 + w, y0);
+    ctx.lineTo(x0, y0);
+    ctx.lineTo(x0, y0 + h);
+    ctx.lineTo(x0 + w, y0 + h);
+    ctx.stroke();
+    const px = x0 + w * 0.74;                     // piston plate
+    ctx.lineWidth = 3.4;
+    p.line(px, y0 + 3, px, y0 + h - 3);
+    ctx.lineWidth = 1.8;
+    p.line(px, 0, x0 + w + s * 0.45, 0);          // rod
+    p.line(x0 + w + s * 0.45, -s * 0.20, x0 + w + s * 0.45, s * 0.20);
+    p.dot(x0 + w * 0.16, -h * 0.22, 3.4);         // particles
+    p.dot(x0 + w * 0.42,  h * 0.05, 3.4);
+    p.dot(x0 + w * 0.24,  h * 0.28, 3.4);
+    p.dot(x0 + w * 0.58, -h * 0.26, 3.4);
+    p.dot(x0 + w * 0.60,  h * 0.24, 3.4);
+  },
 };
 
 export function drawMotif(ctx, kind, cx, cy, s) {
