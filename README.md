@@ -55,6 +55,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | --- | --- |
 | **Molecule Viewer** | Rotate common molecules (H₂O, CH₄, NH₃, C₆H₆, …) in 3D with CPK colors, bond orders, and hybridization info. |
 | **Crystal Lattice** | Browse SC, BCC, FCC, NaCl, CsCl, and diamond structures with optional 2×2×2 expansion. |
+| **Acid–Base Titration** | Drip NaOH into HCl or acetic acid: exact charge-balance pH solver, live pH–V curve, buffer region, equivalence point, phenolphthalein colour change. |
 
 ---
 
@@ -113,7 +114,8 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── semiconductor.{html,js}
     ├── diode.{html,js}
     ├── molecule.{html,js}
-    └── crystal.{html,js}
+    ├── crystal.{html,js}
+    └── titration.{html,js}
 ```
 
 ---

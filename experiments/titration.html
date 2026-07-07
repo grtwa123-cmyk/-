@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Drip NaOH into a strong or weak acid and watch the live pH curve — buffer region, equivalence jump, and the phenolphthalein colour change." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M32 10 v14 M24 24 h16 L44 50 a6 6 0 0 1 -6 6 H26 a6 6 0 0 1 -6 -6 Z' fill='none' stroke='%23c47bff' stroke-width='3' stroke-linejoin='round'/&gt;&lt;path d='M23 44 h18' stroke='%23ff7ac8' stroke-width='3'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="titrationPageTitle">Acid–Base Titration · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount11">Chemistry · Titration</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="titrationTitle">Acid&ndash;Base Titration</h1>
+      <p data-i18n="titrationIntro">Sodium hydroxide drips from the burette into the acid below. Watch the live pH curve: strong acid stays flat then jumps; weak acid climbs through a buffer region and reaches equivalence above pH 7. Drag on the graph to scrub the titration by hand.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="selectAcid">Acid in the flask</h2>
+
+        <div class="molecule-list" id="acid-list" style="grid-template-columns: 1fr 1fr;">
+          <button type="button" class="mol-btn active" data-key="hcl"><span data-i18n="acidHCl">Hydrochloric acid</span><small>HCl</small></button>
+          <button type="button" class="mol-btn" data-key="acetic"><span data-i18n="acidAcetic">Acetic acid</span><small>CH&#8323;COOH</small></button>
+        </div>
+
+        <div class="control" style="margin-top: 1rem;">
+          <label for="acid-conc" data-i18n="acidConcLabel">Acid concentration C&#8336;</label>
+          <span class="value"><span id="acid-conc-value">0.10</span> M</span>
+          <input type="range" id="acid-conc" min="0.05" max="0.20" step="0.01" value="0.10" />
+        </div>
+
+        <div class="control">
+          <label for="acid-vol" data-i18n="acidVolLabel">Sample volume V&#8336;</label>
+          <span class="value"><span id="acid-vol-value">25</span> mL</span>
+          <input type="range" id="acid-vol" min="10" max="40" step="1" value="25" />
+        </div>
+
+        <div class="control">
+          <label for="base-conc" data-i18n="baseConcLabel">NaOH concentration</label>
+          <span class="value"><span id="base-conc-value">0.10</span> M</span>
+          <input type="range" id="base-conc" min="0.05" max="0.20" step="0.01" value="0.10" />
+        </div>
+
+        <div class="control">
+          <label for="rate" data-i18n="dripRateLabel">Titration rate</label>
+          <span class="value"><span id="rate-value">1.0</span> mL/s</span>
+          <input type="range" id="rate" min="0.2" max="3" step="0.1" value="1.0" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="titrationFormulaBalance">Charge balance</span>: <code>[H&#8314;] + [Na&#8314;] = [OH&#8315;] + [A&#8315;]</code></li>
+            <li><span data-i18n="titrationFormulaHH">Buffer (Henderson&ndash;Hasselbalch)</span>: <code>pH = pK&#8336; + log([A&#8315;]/[HA])</code></li>
+            <li><span data-i18n="titrationFormulaVeq">Equivalence volume</span>: <code>V&#8337;q = C&#8336;&middot;V&#8336; / C&#8338;</code></li>
+            <li><span data-i18n="titrationFormulaKw">Ion product of water</span>: <code>[H&#8314;][OH&#8315;] = 10&#8315;&sup1;&#8308;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="titrationNotes">Notes</summary>
+          <ul>
+            <li data-i18n="titrationNote1">A strong acid&ndash;strong base curve hugs low pH, then leaps ~6 pH units within a fraction of a millilitre around the equivalence point, passing pH 7 exactly at equivalence.</li>
+            <li data-i18n="titrationNote2">A weak acid resists in the buffer region: at half-equivalence pH = pK&#8336; (4.74 for acetic acid). Its equivalence point sits above 7 because the conjugate base hydrolyses.</li>
+            <li data-i18n="titrationNote3">Phenolphthalein turns pink between pH 8.2 and 10 &mdash; inside the vertical jump for both acids here, which is exactly what makes it a good indicator for these titrations.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="520" style="touch-action: none;" aria-label="Burette dripping NaOH into an acid flask beside a live pH-versus-volume curve"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="outPH">pH</div>
+            <div class="num" id="out-ph">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outVb">Volume added</div>
+            <div class="num"><span id="out-vb">0.0</span> mL</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outVeq">Equivalence volume</div>
+            <div class="num"><span id="out-veq">25.0</span> mL</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outHplus">[H&#8314;]</div>
+            <div class="num" id="out-h">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outPct">Progress</div>
+            <div class="num"><span id="out-pct">0</span> %</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outRegion">Region</div>
+            <div class="num" id="out-region">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="titration.js" defer></script>
+</body>
+</html>
