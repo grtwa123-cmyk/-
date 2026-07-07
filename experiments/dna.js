@@ -23,9 +23,11 @@
   // ── Canvas ─────────────────────────────────────────────────────────────
   const stage = document.getElementById("stage");
   const ctx = stage.getContext("2d");
-  const W = stage.width;
-  const H = stage.height;
-  const CX = W / 2;
+  // Sized by resizeCanvas(): logical (CSS-pixel) coordinates, with the
+  // backing store scaled by devicePixelRatio for crisp discs on hiDPI.
+  let W = stage.width;
+  let H = stage.height;
+  let CX = W / 2;
 
   // ── B-form geometry, screen units ──────────────────────────────────────
   // 10.5 bp/turn → 360 / 10.5 ≈ 34.286° per bp. Rise / radius tuned so a
@@ -381,7 +383,7 @@
   // tuned so a full canvas-width drag is roughly two turns.
   let dragging = false;
   let dragLastX = 0;
-  const DRAG_SENS = (Math.PI * 4) / W;
+  let dragSens = (Math.PI * 4) / W;
 
   stage.addEventListener("pointerdown", (e) => {
     dragging = true;
@@ -391,7 +393,7 @@
   });
   stage.addEventListener("pointermove", (e) => {
     if (!dragging) return;
-    phi += (e.clientX - dragLastX) * DRAG_SENS;
+    phi += (e.clientX - dragLastX) * dragSens;
     dragLastX = e.clientX;
   });
   const endDrag = (e) => {
@@ -455,6 +457,20 @@
     else start();
   });
 
+  function resizeCanvas() {
+    const rect = stage.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    W = Math.max(Math.round(rect.width), 300);
+    H = Math.max(Math.round(rect.height), 300);
+    stage.width = Math.round(W * dpr);
+    stage.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    CX = W / 2;
+    dragSens = (Math.PI * 4) / W;
+  }
+  window.addEventListener("resize", resizeCanvas);
+
+  resizeCanvas();
   syncLabels();
   syncReadouts();
   start();

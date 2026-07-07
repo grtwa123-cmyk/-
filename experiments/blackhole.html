@@ -19,7 +19,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
     body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); }
-    canvas { display: block; width: 100%; height: 100%; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
     .overlay { position: fixed; z-index: 10; }
 
@@ -99,7 +99,7 @@
 
   <div class="overlay top-left">
     <a href="../physics.html">&larr; Back</a>
-    <span class="version-tag">v1.1.0</span>
+    <span class="version-tag">v1.2.0</span>
   </div>
 
   <div class="overlay controls">
@@ -114,6 +114,7 @@
         <option value="low">Low</option>
         <option value="medium" selected>Medium</option>
         <option value="high">High</option>
+        <option value="ultra">Ultra</option>
       </select></span>
   </div>
 
@@ -122,7 +123,7 @@
     <div><div class="label">FPS</div><div class="num" id="ui-fps">—</div></div>
   </div>
 
-  <div class="overlay hint">Drag to orbit · Scroll to zoom</div>
+  <div class="overlay hint">Drag to orbit · Scroll / pinch to zoom</div>
 
   <!-- ════════════ 프래그먼트 셰이더: 모든 물리 계산 ════════════ -->
   <script id="frag" type="x-shader/x-fragment">
@@ -357,6 +358,9 @@
 
       // 톤매핑 + 감마: 빔잉으로 강도 범위가 넓으므로 soft clip이 필수.
       col = pow(1.0 - exp(-col), vec3(0.4545));
+      // 디더링: 8비트 양자화로 성운/원반 글로우의 어두운 그라데이션에
+      // 생기는 밴딩(등고선)을 ±0.5 LSB 노이즈로 흩어 없앤다.
+      col += (hash12(gl_FragCoord.xy) - 0.5) / 255.0;
       gl_FragColor = vec4(col, 1.0);
     }
   </script>
@@ -374,16 +378,21 @@
     import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
     import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
     import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+    import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+    import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 
     // ════════ 성능 프리셋 ════════
     // steps     : 광선당 최대 적분 스텝
     // stepScale : 스텝 크기 배율 (커지면 빨라지지만 광자구 근처가 거칠어짐)
     // pixel     : 렌더 해상도 배율 (devicePixelRatio에 곱함)
+    // fxaa      : 광자 링·원반 가장자리 계단 현상을 다듬는 후처리 AA
     // 60fps가 안 나오면 Quality를 Low로 — GPU에 따라 Medium이 기본 타협점.
+    // Ultra는 슈퍼샘플링(1.25×)까지 더한 스크린샷용 프리셋.
     const PRESETS = {
-      low:    { steps: 140, stepScale: 1.55, pixel: 0.55, bloom: false },
-      medium: { steps: 240, stepScale: 1.0,  pixel: 0.8,  bloom: true  },
-      high:   { steps: 400, stepScale: 0.7,  pixel: 1.0,  bloom: true  },
+      low:    { steps: 140, stepScale: 1.55, pixel: 0.55, bloom: false, fxaa: false },
+      medium: { steps: 240, stepScale: 1.0,  pixel: 0.8,  bloom: true,  fxaa: true  },
+      high:   { steps: 400, stepScale: 0.7,  pixel: 1.0,  bloom: true,  fxaa: true  },
+      ultra:  { steps: 560, stepScale: 0.55, pixel: 1.25, bloom: true,  fxaa: true  },
     };
 
     const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -428,6 +437,11 @@
     composer.addPass(bloomPass);
     let bloomAllowed = true;   // 품질 프리셋이 끄면 false
 
+    // ── FXAA: 마지막 패스. 레이마칭은 MSAA를 못 쓰므로(픽셀당 1광선)
+    // 광자 링과 원반 실루엣의 계단 현상은 후처리로만 다듬을 수 있다.
+    const fxaaPass = new ShaderPass(FXAAShader);
+    composer.addPass(fxaaPass);
+
     // ════════ 궤도 카메라 (yaw/pitch/dist, 관성 포함) ════════
     const cam = { yaw: -1.6, pitch: 0.12, dist: 30, vyaw: 0, vpitch: 0 };
     const distLimits = () => ({ min: 3.5 * uniforms.uM.value, max: 150 * uniforms.uM.value });
@@ -448,16 +462,42 @@
       uniforms.uCamUp.value.copy(up);
     }
 
-    let dragging = false, lastX = 0, lastY = 0;
+    // 멀티포인터: 1개 = 궤도 드래그, 2개 = 핀치 줌.
+    // 이전 구현은 단일 포인터만 알아서 터치에서 줌이 불가능했고, 두 손가락을
+    // 대면 두 move 스트림이 카메라를 동시에 흔들었다. pointercancel(OS 제스처
+    // 가로채기)도 드래그 상태를 정리해 카메라가 손에 붙어버리지 않게 한다.
+    const pointers = new Map();
+    let pinchDist = 0;
     const cv = renderer.domElement;
-    cv.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; cv.setPointerCapture(e.pointerId); });
-    cv.addEventListener("pointerup",   () => { dragging = false; });
+    const isDragging = () => pointers.size > 0;
+    cv.addEventListener("pointerdown", (e) => {
+      cv.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    });
+    function endPointer(e) {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinchDist = 0;
+    }
+    cv.addEventListener("pointerup", endPointer);
+    cv.addEventListener("pointercancel", endPointer);
     cv.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      cam.yaw   += dx * 0.005;  cam.vyaw   = dx * 0.005;
-      cam.pitch += dy * 0.005;  cam.vpitch = dy * 0.005;
+      const pt = pointers.get(e.pointerId);
+      if (!pt) return;
+      const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
+      pt.x = e.clientX; pt.y = e.clientY;
+      if (pointers.size === 1) {
+        cam.yaw   += dx * 0.005;  cam.vyaw   = dx * 0.005;
+        cam.pitch += dy * 0.005;  cam.vpitch = dy * 0.005;
+      } else if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinchDist > 0 && d > 0) cam.dist *= pinchDist / d;
+        pinchDist = d;
+      }
     });
     cv.addEventListener("wheel", (e) => {
       e.preventDefault();
@@ -506,6 +546,7 @@
       renderer.setPixelRatio(ratio);
       composer.setPixelRatio(ratio);
       bloomAllowed = p.bloom;                 // Low에서는 블룸도 꺼서 fps 확보
+      fxaaPass.enabled = p.fxaa;
       syncBloom();
       onResize();
     }
@@ -515,6 +556,8 @@
       composer.setSize(window.innerWidth, window.innerHeight);
       const dpr = renderer.getPixelRatio();
       uniforms.uRes.value.set(window.innerWidth * dpr, window.innerHeight * dpr);
+      fxaaPass.material.uniforms.resolution.value.set(
+        1 / (window.innerWidth * dpr), 1 / (window.innerHeight * dpr));
     }
     window.addEventListener("resize", onResize);
     applyPreset("medium");
@@ -531,7 +574,7 @@
       uniforms.uPhase.value += uniforms.uSpin.value * dt;
 
       // 드래그 관성
-      if (!dragging) {
+      if (!isDragging()) {
         cam.yaw += cam.vyaw; cam.pitch += cam.vpitch;
         cam.vyaw *= 0.92; cam.vpitch *= 0.92;
       }

@@ -22,15 +22,36 @@
   const sctx = stage.getContext("2d");
 
   // Half-res render target — the GPU upscales for free with smoothing on.
+  // The field buffer tracks the element's CSS size (÷ HR_DIV) so the
+  // interference pattern keeps a 1:1 aspect at any layout width, while
+  // the stage backing store is scaled by devicePixelRatio so the source
+  // markers and labels stay crisp on hiDPI. Sized by resizeCanvas().
   const HR_DIV = 2;
-  const offW = stage.width / HR_DIV;
-  const offH = stage.height / HR_DIV;
+  let W = stage.width;
+  let H = stage.height;
+  let offW = W / HR_DIV;
+  let offH = H / HR_DIV;
   const off = document.createElement("canvas");
-  off.width = offW; off.height = offH;
   const octx = off.getContext("2d");
-  const imageData = octx.createImageData(offW, offH);
-  const px = imageData.data;
-  sctx.imageSmoothingEnabled = true;
+  let imageData, px;
+
+  function resizeCanvas() {
+    const rect = stage.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    W = Math.max(Math.round(rect.width), 300);
+    H = Math.max(Math.round(rect.height), 240);
+    stage.width = Math.round(W * dpr);
+    stage.height = Math.round(H * dpr);
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.imageSmoothingEnabled = true;
+    offW = Math.max(Math.round(W / HR_DIV), 150);
+    offH = Math.max(Math.round(H / HR_DIV), 120);
+    off.width = offW;
+    off.height = offH;
+    imageData = octx.createImageData(offW, offH);
+    px = imageData.data;
+  }
+  resizeCanvas();
 
   // ── Inputs / outputs ───────────────────────────────────────────────────
   const inputs = {
@@ -131,7 +152,7 @@
     const f = omega / (2 * Math.PI);
     // L is the perpendicular distance from the source line to the right
     // edge of the canvas (where the far-field fringe spacing reads off).
-    const L = stage.width * 0.5;
+    const L = W * 0.5;
     const fringe = (p.lam * L) / Math.max(p.d, 1);
     out.wavelength.textContent = String(Math.round(p.lam));
     out.frequency.textContent  = fmt(f);
@@ -193,12 +214,13 @@
     }
     octx.putImageData(imageData, 0, 0);
 
-    // Upscale off-screen → stage with smoothing.
-    sctx.drawImage(off, 0, 0, stage.width, stage.height);
+    // Upscale off-screen → stage with smoothing (logical CSS-pixel space;
+    // the dpr transform maps it onto the full backing store).
+    sctx.drawImage(off, 0, 0, W, H);
 
     // Overlay: source markers (full resolution).
-    const fullCx = stage.width / 2;
-    const fullCy = stage.height / 2;
+    const fullCx = W / 2;
+    const fullCy = H / 2;
     const halfDFull = p.d / 2;
     drawSource(fullCx, fullCy - halfDFull, "S₁");
     drawSource(fullCx, fullCy + halfDFull, "S₂");
@@ -278,6 +300,11 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) cancelAnimationFrame(raf);
     else start();
+  });
+
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    updateReadouts(readParams());   // far-field Δy depends on canvas width
   });
 
   handleInput();
