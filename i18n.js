@@ -323,7 +323,7 @@
 
       solarPageTitle: "Solar System · Physics",
       experimentCount10: "Physics · Solar system",
-      solarIntro: "The eight planets orbit a Sun-scale star with realistic relative periods. Tap anywhere on the canvas to drop a black hole at that point and watch it warp every orbit.",
+      solarIntro: "The eight planets orbit the Sun under real Newtonian gravity — distances are compressed so all eight orbits fit, and the periods follow Kepler's third law for those compressed distances. Tap anywhere on the canvas to drop a black hole at that point and watch it warp every orbit.",
       planetMercury: "Mercury",
       planetVenus: "Venus",
       planetEarth: "Earth",
@@ -723,7 +723,7 @@
 
       solarPageTitle: "태양계 · 물리",
       experimentCount10: "물리 · 태양계",
-      solarIntro: "여덟 행성이 실제 비율의 공전 주기로 태양 주위를 돕니다. 캔버스를 누르면 그 자리에 블랙홀이 생성되며 모든 궤도가 흔들립니다.",
+      solarIntro: "여덟 행성이 실제 뉴턴 중력 아래에서 태양 주위를 돕니다 — 여덟 궤도가 모두 화면에 들어오도록 거리를 압축했고, 공전 주기는 그 압축된 거리에 대한 케플러 제3법칙을 따릅니다. 캔버스를 누르면 그 자리에 블랙홀이 생성되며 모든 궤도가 흔들립니다.",
       planetMercury: "수성",
       planetVenus: "금성",
       planetEarth: "지구",
@@ -1123,7 +1123,7 @@
 
       solarPageTitle: "太阳系 · 物理",
       experimentCount10: "物理 · 太阳系",
-      solarIntro: "八大行星以真实的相对周期绕太阳运行。点击画布任意位置放置一个黑洞，看它如何扰动每条轨道。",
+      solarIntro: "八大行星在真实的牛顿引力下绕太阳运行——距离经过压缩以容纳全部八条轨道，公转周期遵循压缩距离下的开普勒第三定律。点击画布任意位置放置一个黑洞，看它如何扰动每条轨道。",
       planetMercury: "水星",
       planetVenus: "金星",
       planetEarth: "地球",

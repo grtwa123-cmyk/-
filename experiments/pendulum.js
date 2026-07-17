@@ -328,8 +328,13 @@
     // If the swing is mid-flight or paused with state, just redraw at
     // the new size — renderStatic() would re-initialise every pendulum
     // to θ₀ and zero the elapsed clock, throwing away in-flight swing.
-    if (pendulums.length > 0) drawScene(pendulums.length, activeParams.L);
-    else renderStatic();
+    // Before the first Start, activeParams is still null — fall back to
+    // the current slider value instead of crashing on resize.
+    if (pendulums.length > 0) {
+      drawScene(pendulums.length, activeParams ? activeParams.L : readParams().L);
+    } else {
+      renderStatic();
+    }
   }
 
   window.addEventListener('resize', resizeCanvas);

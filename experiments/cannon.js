@@ -27,6 +27,11 @@
   const LAUNCH_R = EARTH_R + MOUNTAIN_H;
   const V_CIRC = Math.sqrt(GM / LAUNCH_R);
   const V_ESC = Math.sqrt(2 * GM / LAUNCH_R);
+  // Exact orbit-insertion threshold for a horizontal launch: the launch
+  // point is an apsis, so the periapsis r_p = r0·u/(2−u) with
+  // u = v0²·r0/GM. r_p ≥ EARTH_R  ⇔  v0 ≥ √(2·GM·R_E / (r0·(r0+R_E)))
+  // ≈ 0.93·V_CIRC — below this the ellipse intersects the surface.
+  const V_GRAZE = Math.sqrt((2 * GM * EARTH_R) / (LAUNCH_R * (LAUNCH_R + EARTH_R)));
   const PALETTE = ['#ffb86b', '#6effc6', '#ff6b8a', '#c47bff', '#6ea8ff', '#ffe14a'];
 
   function formatScale(s) {
@@ -90,10 +95,16 @@
   function classify(ball, v0) {
     if (ball.escaped || v0 >= V_ESC * 0.999) return 'outcomeEscapes';
     if (!ball.alive) {
-      // Landed: a slow lob falling back is the expected outcome, not a crash.
-      return v0 < V_CIRC * 0.7 ? 'outcomeFalls' : 'outcomeCrashed';
+      // Landed. Below V_GRAZE the ellipse was always going to intersect
+      // the surface — that is the expected "falls back" outcome. At or
+      // above it, hitting the ground means the trajectory clipped the
+      // mountain / numerical graze: report it as a crash.
+      return v0 < V_GRAZE ? 'outcomeFalls' : 'outcomeCrashed';
     }
-    if (v0 >= V_CIRC * 0.7) return 'outcomeOrbits';
+    // Airborne: the launch speed decides the geometry exactly — at or
+    // above V_GRAZE the ellipse's periapsis clears the surface (orbit);
+    // below it the trajectory must intersect the ground (falls back).
+    if (v0 >= V_GRAZE) return 'outcomeOrbits';
     return 'outcomeFalls';
   }
 
@@ -136,8 +147,15 @@
     const r = Math.sqrt(dx * dx + dy * dy);
     ball.maxAltitude = Math.max(ball.maxAltitude, r - EARTH_R);
     if (r > Math.max(CW, CH) * 1.2) {
-      ball.escaped = true;
-      ball.alive = false;
+      // Leaving the view only counts as escape if the orbit is actually
+      // unbound (specific energy E = v²/2 − GM/r ≥ 0). A bound ellipse
+      // whose apoapsis lies beyond the screen keeps integrating and
+      // comes back — Newton's cannon must not "escape" below v_esc.
+      const v2 = ball.vx * ball.vx + ball.vy * ball.vy;
+      if (v2 / 2 - GM / r >= 0) {
+        ball.escaped = true;
+        ball.alive = false;
+      }
     }
   }
 
