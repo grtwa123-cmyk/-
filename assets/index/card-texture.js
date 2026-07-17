@@ -53,7 +53,26 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function wrapText(ctx, text, x, baselineY, maxW, lineH) {
-  const words = (text || "").split(/\s+/);
+  // Split on spaces first; any single token wider than the card (CJK
+  // titles contain no spaces at all) falls back to character-level
+  // wrapping so e.g. "理想气体与分子运动论" can't overflow the edge.
+  const words = [];
+  for (const w of (text || "").split(/\s+/)) {
+    if (ctx.measureText(w).width <= maxW) {
+      words.push(w);
+      continue;
+    }
+    let chunk = "";
+    for (const ch of w) {
+      if (chunk && ctx.measureText(chunk + ch).width > maxW) {
+        words.push(chunk);
+        chunk = ch;
+      } else {
+        chunk += ch;
+      }
+    }
+    if (chunk) words.push(chunk);
+  }
   const lines = [];
   let line = "";
   for (const w of words) {
