@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Electrolyse water above 1.23 V and collect H₂ and O₂ in exactly the 2:1 ratio dictated by Faraday's laws — every mole on screen comes from Q = nzF." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M12 26 v24 h40 V26' fill='none' stroke='%23c47bff' stroke-width='3'/&gt;&lt;path d='M24 30 v14 M40 30 v14' stroke='%238cdcff' stroke-width='4'/&gt;&lt;circle cx='24' cy='22' r='2.5' fill='%238cdcff'/&gt;&lt;circle cx='40' cy='24' r='2' fill='%23ffc88c'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="elPageTitle">Electrolysis of Water · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount16">Chemistry · Electrolysis</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="elTitle">Electrolysis of Water</h1>
+      <p data-i18n="elIntro">Push current through water and it splits: hydrogen bubbles off the cathode, oxygen off the anode, in exactly a 2:1 volume ratio. Below the decomposition voltage of 1.23 V nothing happens at all — raise the voltage and watch Faraday's laws fill the tubes.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="voltage" data-i18n="voltageLabel">Voltage</label>
+          <span class="value"><span id="voltage-value">2.50</span> V</span>
+          <input type="range" id="voltage" min="0" max="5" step="0.05" value="2.5" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="elFormulaOverall">Overall</span>: <code>2 H₂O → 2 H₂ + O₂</code></li>
+            <li><span data-i18n="elFormulaCathode">Cathode (−)</span>: <code>2 H₂O + 2 e⁻ → H₂ + 2 OH⁻</code></li>
+            <li><span data-i18n="elFormulaAnode">Anode (+)</span>: <code>2 H₂O → O₂ + 4 H⁺ + 4 e⁻</code></li>
+            <li><span data-i18n="elFormulaFaraday">Faraday</span>: <code>n(H₂) = Q/2F, n(O₂) = Q/4F</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="elNotes">Notes</summary>
+          <ul>
+            <li data-i18n="elNote1">Water only decomposes above E° = 1.23 V — below that the cell passes no current, no matter how long you wait. (Real cells need extra overpotential on top.)</li>
+            <li data-i18n="elNote2">The 2:1 volume ratio is pure stoichiometry: every four electrons make two H₂ at the cathode but only one O₂ at the anode. The gas columns here are computed from Q = ∫I dt, not animated by hand.</li>
+            <li data-i18n="elNote3">Pure water is a poor conductor — real demonstrations dissolve a little electrolyte (e.g. Na₂SO₄) so ions can carry the current between the electrodes.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="470" aria-label="An electrolysis cell with two electrodes collecting hydrogen and oxygen in inverted tubes"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="elOutCurrent">Current</div>
+            <div class="num"><span id="out-current">0.00</span> A</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="elOutCharge">Charge passed Q</div>
+            <div class="num"><span id="out-charge">0.0</span> C</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="elOutH2">n(H₂)</div>
+            <div class="num"><span id="out-h2">0.000</span> mmol</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="elOutO2">n(O₂)</div>
+            <div class="num"><span id="out-o2">0.000</span> mmol</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="elOutRatio">Volume ratio H₂:O₂</div>
+            <div class="num" id="out-ratio">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="elOutState">State</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="electrolysis.js" defer></script>
+</body>
+</html>

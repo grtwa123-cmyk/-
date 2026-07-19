@@ -393,7 +393,10 @@
 
   function frame(ts) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min((ts - lastTs) / 1000, 0.05);
+    // Clamp below at 0 too — a first rAF timestamp can precede the
+    // performance.now() captured in start(), and a negative dt would
+    // run accumulators (charge, time, volume) backwards.
+    const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.05));
     lastTs = ts;
     const p = readParams();
     step(dt, p);

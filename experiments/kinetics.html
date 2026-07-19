@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Collision theory live: A and B particles react only when their collision energy beats the activation barrier, and the measured success rate converges to the Boltzmann factor e^(−Ea/kT)." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='22' cy='32' r='7' fill='%23ff8aa3'/&gt;&lt;circle cx='42' cy='32' r='7' fill='%237ab8ff'/&gt;&lt;path d='M14 18 L26 27 M50 18 L38 27' stroke='%23ecf0fb' stroke-width='2.5' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="kinPageTitle">Reaction Rates · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount17">Chemistry · Reaction rates</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="kinTitle">Reaction Rates &amp; Collision Theory</h1>
+      <p data-i18n="kinIntro">A (red) and B (blue) particles collide constantly, but colliding isn't enough — a reaction needs the collision energy to beat the activation barrier Ea. Heat the mixture or lower the barrier and watch the purple product appear faster, with the measured success rate landing on the Boltzmann factor e^(−Ea/kT).</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="temp" data-i18n="gasTempLabel">Temperature T</label>
+          <span class="value"><span id="temp-value">300</span> u</span>
+          <input type="range" id="temp" min="100" max="900" step="10" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="ea" data-i18n="kinEaLabel">Activation energy Ea</label>
+          <span class="value"><span id="ea-value">400</span> u</span>
+          <input type="range" id="ea" min="50" max="1500" step="25" value="400" />
+        </div>
+
+        <div class="control">
+          <label for="count" data-i18n="kinCountLabel">Particles per reactant</label>
+          <span class="value"><span id="count-value">60</span></span>
+          <input type="range" id="count" min="20" max="120" step="5" value="60" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="kinFormulaReaction">Reaction</span>: <code>A + B → C</code></li>
+            <li><span data-i18n="kinFormulaBoltzmann">Success per collision</span>: <code>P = e^(−Ea/kT)</code></li>
+            <li><span data-i18n="kinFormulaArrhenius">Arrhenius</span>: <code>k = A·e^(−Ea/RT)</code></li>
+            <li><span data-i18n="kinFormulaCondition">Condition (line of centres)</span>: <code>E&#10178; = ½μ(v_rel·n&#770;)² ≥ Ea</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="kinNotes">Notes</summary>
+          <ul>
+            <li data-i18n="kinNote1">Most collisions fail. Only the rare, energetic ones — the exponential tail of the Maxwell–Boltzmann distribution — clear the activation barrier.</li>
+            <li data-i18n="kinNote2">Temperature is exponential leverage: e^(−Ea/kT) means a modest warming can multiply the reaction rate many times over — the essence of Arrhenius behaviour.</li>
+            <li data-i18n="kinNote3">The energy criterion is measured along the line of centres at contact; for hard disks that makes the energetic-collision fraction exactly e^(−Ea/kT) — watch the two bars meet as collisions accumulate. Of those energetic collisions, only a fraction (the steric factor behind Arrhenius' A) actually react, so the mixture burns at a realistic pace.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="460" aria-label="Red and blue particles colliding and reacting into purple products beside a measured-versus-theory bar chart"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="kinOutA">A remaining</div>
+            <div class="num" id="out-a">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="kinOutB">B remaining</div>
+            <div class="num" id="out-b">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="kinOutC">Product C</div>
+            <div class="num" id="out-c">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="kinOutCollisions">A·B collisions</div>
+            <div class="num" id="out-collisions">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="kinOutMeasured">Energetic fraction (measured)</div>
+            <div class="num" id="out-measured">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="kinOutTheory">Boltzmann e^(−Ea/kT)</div>
+            <div class="num" id="out-theory">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="kinetics.js" defer></script>
+</body>
+</html>

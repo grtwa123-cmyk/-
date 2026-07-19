@@ -332,6 +332,62 @@ const RENDERERS = {
     ctx.restore();
   },
 
+  electrolysis(p, s, ctx) {
+    // Beaker with two electrodes and rising bubbles (H₂ side busier).
+    const w = s * 1.8, h = s * 1.4;
+    const x0 = -w / 2, y0 = -s * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0 - s * 0.35);
+    ctx.lineTo(x0, y0 + h);
+    ctx.lineTo(x0 + w, y0 + h);
+    ctx.lineTo(x0 + w, y0 - s * 0.35);
+    ctx.stroke();
+    // Water line
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    p.line(x0, y0, x0 + w, y0);
+    ctx.restore();
+    // Electrodes
+    ctx.lineWidth = 3.2;
+    p.line(x0 + w * 0.3, y0 + s * 0.15, x0 + w * 0.3, y0 + h - s * 0.15);
+    p.line(x0 + w * 0.7, y0 + s * 0.15, x0 + w * 0.7, y0 + h - s * 0.15);
+    ctx.lineWidth = 1.8;
+    // Bubbles: cathode (left) twice as many
+    p.dot(x0 + w * 0.30, y0 + s * 0.35, 2.4);
+    p.dot(x0 + w * 0.25, y0 + s * 0.62, 2.0);
+    p.dot(x0 + w * 0.34, y0 + s * 0.85, 2.2);
+    p.dot(x0 + w * 0.36, y0 + s * 0.15, 1.8);
+    p.dot(x0 + w * 0.70, y0 + s * 0.45, 2.2);
+    p.dot(x0 + w * 0.66, y0 + s * 0.80, 1.9);
+    // Wires up to a source
+    p.line(x0 + w * 0.3, y0 + s * 0.15, x0 + w * 0.3, y0 - s * 0.85);
+    p.line(x0 + w * 0.7, y0 + s * 0.15, x0 + w * 0.7, y0 - s * 0.85);
+    p.line(x0 + w * 0.3, y0 - s * 0.85, x0 + w * 0.7, y0 - s * 0.85);
+  },
+
+  kinetics(p, s, ctx) {
+    // Two particles on a collision course + an energy barrier hump the
+    // pair must clear — collision theory in one glyph.
+    ctx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const x = (-0.5 + t) * s * 2.4;
+      const y = s * 0.9 - Math.exp(-Math.pow((t - 0.5) * 3.4, 2)) * s * 1.5;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    // Reactant pair (left) and product (right)
+    p.dot(-s * 1.05, s * 0.55, 5.5);
+    p.dot(-s * 0.78, s * 0.72, 5.5);
+    p.dot(s * 0.95, s * 0.62, 7);
+    // Arrow over the barrier
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.setLineDash([3, 4]);
+    p.line(-s * 0.75, s * 0.35, -s * 0.15, -s * 0.42);
+    ctx.restore();
+  },
+
   lotka(p, s, ctx) {
     // Two out-of-phase population waves (prey leading, predator trailing).
     const span = s * 2.4, x0 = -span / 2, amp = s * 0.5;

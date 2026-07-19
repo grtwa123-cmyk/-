@@ -33,5 +33,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "titrationTitle",   url: "experiments/titration.html",     cat: "Chemistry", tags: ["ACID", "PH"],           colors: ["#200a1c", "#f06ac0"], motif: "titration" },
   { titleKey: "gasTitle",         url: "experiments/gas.html",           cat: "Chemistry", tags: ["GAS", "KINETIC"],       colors: ["#231407", "#f0b060"], motif: "gas" },
   { titleKey: "decayTitle",       url: "experiments/decay.html",         cat: "Chemistry", tags: ["NUCLEAR", "HALF-LIFE"], colors: ["#0a1e14", "#6effc6"], motif: "decay" },
+  { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], motif: "electrolysis" },
+  { titleKey: "kinTitle",         url: "experiments/kinetics.html",      cat: "Chemistry", tags: ["ARRHENIUS", "RATE"],    colors: ["#22091a", "#ff8aa3"], motif: "kinetics" },
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], motif: "lotka" },
 ]);

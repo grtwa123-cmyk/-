@@ -58,6 +58,8 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Acid–Base Titration** | Drip NaOH into HCl or acetic acid: exact charge-balance pH solver, live pH–V curve, buffer region, equivalence point, phenolphthalein colour change. |
 | **Ideal Gas & Kinetic Theory** | Particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT; drag the piston and ride the isotherm. |
 | **Radioactive Decay** | A grid of nuclei decays by pure per-nucleus chance and traces the exact exponential half-life curve N = N₀·2^(−t/T½); live activity and half-life markers. |
+| **Electrolysis of Water** | Above 1.23 V the cell runs and Faraday's laws fill the tubes: n(H₂)=Q/2F, n(O₂)=Q/4F — a live 2:1 volume ratio. |
+| **Reaction Rates & Collision Theory** | A+B→C only when the line-of-centres collision energy beats Ea; the measured per-collision success converges exactly to e^(−Ea/kT). |
 
 ### Biology
 
@@ -106,7 +108,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
-│       ├── motifs.js           20 line-art glyphs, one per experiment
+│       ├── motifs.js           22 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
     ├── projectile.{html,js}
@@ -128,6 +130,8 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── titration.{html,js}
     ├── gas.{html,js}
     ├── decay.{html,js}
+    ├── electrolysis.{html,js}
+    ├── kinetics.{html,js}
     └── lotka.{html,js}
 ```
 
@@ -136,7 +140,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (20 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (22 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
@@ -158,7 +162,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 20 experiments, so screen readers and search engines can discover the catalogue.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 22 experiments, so screen readers and search engines can discover the catalogue.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift; CSS animations are short-circuited via a media query in `styles.css`.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.
