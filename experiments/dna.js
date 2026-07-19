@@ -218,12 +218,13 @@
         });
       }
 
-      // Rung
+      // Rung — keep each base's own z so the disc pass can occlude
+      // the farther one behind the nearer one.
       items.push({
         kind: "rung",
         z: (A.z + B.z) / 2,
-        A: { sx: pA.sx, sy: y, sc: pA.scale, base: baseA },
-        B: { sx: pB.sx, sy: y, sc: pB.scale, base: baseB },
+        A: { sx: pA.sx, sy: y, sc: pA.scale, base: baseA, z: A.z },
+        B: { sx: pB.sx, sy: y, sc: pB.scale, base: baseB, z: B.z },
       });
     }
 
@@ -237,8 +238,13 @@
     }
     for (const it of items) {
       if (it.kind === "rung") {
-        drawBaseDisc(it.A);
-        drawBaseDisc(it.B);
+        // Draw the farther base first so the nearer one paints over it.
+        // A fixed A-then-B order put the BACK disc on top whenever the
+        // rotation carried strand A in front — exactly at the edge-on
+        // moments where the two discs overlap on screen.
+        const aNear = it.A.z >= it.B.z;
+        drawBaseDisc(aNear ? it.B : it.A);
+        drawBaseDisc(aNear ? it.A : it.B);
       }
     }
 
@@ -347,14 +353,28 @@
     const B0 = strandPoint(0,     "B"); const pB0 = project(B0.x, B0.z);
     const Bn = strandPoint(N - 1, "B"); const pBn = project(Bn.x, Bn.z);
 
+    // When the rotation brings both strand ends to nearly the same
+    // screen x (edge-on), the two labels land on top of each other —
+    // push the pair apart symmetrically to a minimum separation.
+    const MIN_GAP = 18;
+    function spread(xa, xb) {
+      const d = xb - xa;
+      if (Math.abs(d) >= MIN_GAP) return [xa, xb];
+      const mid = (xa + xb) / 2;
+      const s = (d >= 0 ? 1 : -1) * MIN_GAP / 2;
+      return [mid - s, mid + s];
+    }
+    const [topA, topB] = spread(pA0.sx, pB0.sx);
+    const [botA, botB] = spread(pAn.sx, pBn.sx);
+
     ctx.fillStyle = "rgba(240, 230, 255, 0.70)";
     ctx.font = "600 11px ui-monospace, monospace";
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
-    ctx.fillText("5'",  pA0.sx, yTop - 14);
-    ctx.fillText("3'",  pAn.sx, yTop + totalH + 14);
-    ctx.fillText("3'",  pB0.sx, yTop - 14);
-    ctx.fillText("5'",  pBn.sx, yTop + totalH + 14);
+    ctx.fillText("5'",  topA, yTop - 14);
+    ctx.fillText("3'",  botA, yTop + totalH + 14);
+    ctx.fillText("3'",  topB, yTop - 14);
+    ctx.fillText("5'",  botB, yTop + totalH + 14);
     ctx.textAlign = "left";
   }
 

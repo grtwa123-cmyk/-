@@ -289,6 +289,67 @@ const RENDERERS = {
     p.dot(x0 + w * 0.58, -h * 0.26, 3.4);
     p.dot(x0 + w * 0.60,  h * 0.24, 3.4);
   },
+
+  refraction(p, s, ctx) {
+    // Interface (horizontal) + dashed normal + incident/refracted ray
+    // bending toward the normal, as air → glass.
+    p.line(-s * 1.3, 0, s * 1.3, 0);
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.setLineDash([3, 4]);
+    p.line(0, -s * 1.15, 0, s * 1.15);
+    ctx.restore();
+    // Incident ray from upper-left to origin (steep), refracted ray
+    // continues into lower medium at a smaller angle from the normal.
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    p.line(-s * 0.95, -s * 1.0, 0, 0);
+    p.line(0, 0, s * 0.42, s * 1.05);
+    // Faint reflected ray
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    p.line(0, 0, s * 0.95, -s * 1.0);
+    ctx.restore();
+  },
+
+  decay(p, s, ctx) {
+    // A falling exponential curve with a few nuclei dropping off it.
+    ctx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const x = (-0.5 + t) * s * 2.4;
+      const y = (0.85 - Math.pow(0.5, t * 3.2) * 1.7) * s;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+    p.dot(-s * 1.0, -s * 0.72, 4);
+    p.dot(-s * 0.3, -s * 0.18, 3.4);
+    p.dot(s * 0.35, s * 0.5, 3);
+    // A couple of decayed ones peeling away downward
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    p.dot(s * 0.1, s * 0.95, 2.6);
+    p.dot(s * 0.7, s * 1.0, 2.4);
+    ctx.restore();
+  },
+
+  lotka(p, s, ctx) {
+    // Two out-of-phase population waves (prey leading, predator trailing).
+    const span = s * 2.4, x0 = -span / 2, amp = s * 0.5;
+    const wave = (phase, color) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const t = i / 60;
+        const x = x0 + span * t;
+        const y = -Math.sin(t * Math.PI * 2 + phase) * amp;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    };
+    wave(0, "rgba(123,224,208,0.9)");            // prey
+    wave(Math.PI * 0.5, "rgba(255,138,163,0.9)"); // predator, quarter-cycle behind
+  },
 };
 
 export function drawMotif(ctx, kind, cx, cy, s) {
