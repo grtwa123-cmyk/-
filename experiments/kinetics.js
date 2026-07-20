@@ -86,6 +86,7 @@
   let nCollisions = 0;          // A–B encounters
   let nEnergetic = 0;           // A–B encounters with E⊥ ≥ Ea (Boltzmann tally)
   let nReactions = 0;           // energetic AND passed the steric roll
+  const flashes = [];           // { x, y, ts } reaction bursts
 
   let gaussSpare = null;
   function gauss() {
@@ -124,23 +125,23 @@
     nCollisions = 0;
     nEnergetic = 0;
     nReactions = 0;
+    flashes.length = 0;
     running = false;
     syncStartBtn();
   }
 
   // ── Step ───────────────────────────────────────────────────────────────
   function step(dt, p) {
-    // Sub-step so the fastest particle moves well under a radius per
-    // sub-step. Coarse steps detect fast pairs deep in penetration where
-    // the centre line has already rotated away from the true contact
-    // normal — which selectively kills exactly the energetic (reactive)
-    // collisions and drags the measured rate ~40% below Boltzmann.
+    // Sub-step so the fastest particle cannot tunnel through a partner
+    // between checks (the exact contact-time back-projection below makes
+    // penetration depth itself harmless, so ~3 px per sub-step is enough
+    // and keeps the pair loop cheap even at high T and N).
     let vmax2 = 0;
     for (const q of parts) {
       const s2 = q.vx * q.vx + q.vy * q.vy;
       if (s2 > vmax2) vmax2 = s2;
     }
-    const sub = Math.min(40, Math.max(1, Math.ceil(Math.sqrt(vmax2) * dt / 1.2)));
+    const sub = Math.min(16, Math.max(1, Math.ceil(Math.sqrt(vmax2) * dt / 3)));
     const h = dt / sub;
     for (let s = 0; s < sub; s++) subStep(h, p);
   }
@@ -225,6 +226,7 @@
               };
               toRemove.add(a); toRemove.add(b);
               parts.push(c);
+              flashes.push({ x: c.x, y: c.y, ts: performance.now() / 1000 });
               break;
             }
           }
@@ -267,6 +269,26 @@
       ctx.fillStyle = COLOR[q.kind];
       ctx.beginPath();
       ctx.arc(q.x, q.y, q.kind === "C" ? R + 1.5 : R, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Reaction flashes — a brief violet burst where a product formed.
+    const nowS = performance.now() / 1000;
+    for (let i = flashes.length - 1; i >= 0; i--) {
+      const age = nowS - flashes[i].ts;
+      if (age > 0.5) { flashes.splice(i, 1); continue; }
+      const k = age / 0.5;
+      ctx.strokeStyle = `rgba(196, 123, 255, ${0.85 * (1 - k)})`;
+      ctx.lineWidth = 2 * (1 - k * 0.5);
+      ctx.beginPath();
+      ctx.arc(flashes[i].x, flashes[i].y, R + 2 + k * 26, 0, Math.PI * 2);
+      ctx.stroke();
+      const g = ctx.createRadialGradient(flashes[i].x, flashes[i].y, 0, flashes[i].x, flashes[i].y, R + 10);
+      g.addColorStop(0, `rgba(230, 200, 255, ${0.5 * (1 - k)})`);
+      g.addColorStop(1, "rgba(230, 200, 255, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(flashes[i].x, flashes[i].y, R + 10, 0, Math.PI * 2);
       ctx.fill();
     }
 

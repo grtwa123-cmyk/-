@@ -167,8 +167,9 @@
     ctx.beginPath(); ctx.moveTo(g.x0, nToY(yEq)); ctx.lineTo(g.x1, nToY(yEq)); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Curves
-    const plot = (key, color) => {
+    // Curves — soft area fill under each population, then the line.
+    const plot = (key, color, fill) => {
+      let first = null, lastPt = null;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -176,12 +177,40 @@
       for (const s of series) {
         if (s.t < t - WINDOW) continue;
         const px = tToX(s.t), py = nToY(s[key]);
-        if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+        if (!started) { ctx.moveTo(px, py); started = true; first = { px, py }; }
+        else ctx.lineTo(px, py);
+        lastPt = { px, py };
       }
-      ctx.stroke();
+      if (first && lastPt) {
+        ctx.save();
+        ctx.lineTo(lastPt.px, g.y1);
+        ctx.lineTo(first.px, g.y1);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.restore();
+        // Re-stroke the outline (the closePath fill consumed the path)
+        ctx.beginPath();
+        started = false;
+        for (const s of series) {
+          if (s.t < t - WINDOW) continue;
+          const px = tToX(s.t), py = nToY(s[key]);
+          if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        // Glowing marker on the newest sample
+        ctx.save();
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(lastPt.px, lastPt.py, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     };
-    plot("x", PREY_COLOR);
-    plot("y", PRED_COLOR);
+    plot("x", PREY_COLOR, "rgba(123, 224, 208, 0.08)");
+    plot("y", PRED_COLOR, "rgba(255, 138, 163, 0.08)");
 
     // Legend
     ctx.font = "11px ui-monospace, monospace";
@@ -233,11 +262,15 @@
     ctx.beginPath(); ctx.moveTo(fxx - 5, fyy); ctx.lineTo(fxx + 5, fyy);
     ctx.moveTo(fxx, fyy - 5); ctx.lineTo(fxx, fyy + 5); ctx.stroke();
 
-    // Current state
+    // Current state — glowing
+    ctx.save();
+    ctx.shadowColor = "#c47bff";
+    ctx.shadowBlur = 10;
     ctx.fillStyle = "#f2f5ff";
     ctx.beginPath();
     ctx.arc(xToPx(x), yToPy(y), 4, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 
   function render(p) {

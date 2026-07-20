@@ -59,6 +59,7 @@
   let lastTs = performance.now();
   let raf = 0;
   const history = [];       // { t, n } samples for the live curve
+  const flashes = [];       // { i, ts } — grid index + wall-clock of each decay
 
   function readParams() {
     return {
@@ -81,6 +82,7 @@
     t = 0;
     history.length = 0;
     history.push({ t: 0, n: N0 });
+    flashes.length = 0;
     running = false;
     syncStartBtn();
   }
@@ -102,8 +104,13 @@
     const h = simDt / sub;
     for (let s = 0; s < sub; s++) {
       const pDecay = 1 - Math.pow(2, -h / halfLife);
-      for (const nu of nuclei) {
-        if (nu.alive && Math.random() < pDecay) nu.alive = false;
+      const nowS = performance.now() / 1000;
+      for (let i = 0; i < nuclei.length; i++) {
+        const nu = nuclei[i];
+        if (nu.alive && Math.random() < pDecay) {
+          nu.alive = false;
+          flashes.push({ i, ts: nowS });
+        }
       }
       t += h;
     }
@@ -144,6 +151,23 @@
       ctx.fill();
     }
     ctx.shadowBlur = 0;
+
+    // Decay flashes: a brief amber burst where a nucleus just popped.
+    const nowS = performance.now() / 1000;
+    for (let f = flashes.length - 1; f >= 0; f--) {
+      const age = nowS - flashes[f].ts;
+      if (age > 0.6) { flashes.splice(f, 1); continue; }
+      const k = age / 0.6;
+      const i = flashes[f].i;
+      const col = i % cols, row = Math.floor(i / cols);
+      const cx = GRID.x + col * cw + cw / 2;
+      const cy = GRID.y + row * ch + ch / 2;
+      ctx.strokeStyle = `rgba(255, 200, 110, ${0.9 * (1 - k)})`;
+      ctx.lineWidth = 1.6 * (1 - k * 0.5);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 1 + k * 14, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
 
   function drawGraph() {

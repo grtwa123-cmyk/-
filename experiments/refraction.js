@@ -122,19 +122,39 @@
     ctx.fillText(i18nText("refractionNormal", "normal"), ox - 8, 34);
   }
 
-  function ray(ox, oy, angleFromNormalUp, len, color, width, alpha) {
+  // dashDir: +1 → photon dashes travel from the far end toward the origin
+  // (incoming light), −1 → outward from the origin, 0 → no animation.
+  function ray(ox, oy, angleFromNormalUp, len, color, width, alpha, dashDir, phase) {
+    const ex = ox + Math.sin(angleFromNormalUp) * len;
+    const ey = oy - Math.cos(angleFromNormalUp) * len;
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = color;
-    ctx.lineWidth = width;
     ctx.lineCap = "round";
+    // Faint continuous beam underneath…
+    ctx.lineWidth = width;
+    ctx.globalAlpha = alpha * 0.45;
     ctx.beginPath();
     ctx.moveTo(ox, oy);
-    ctx.lineTo(ox + Math.sin(angleFromNormalUp) * len, oy - Math.cos(angleFromNormalUp) * len);
+    ctx.lineTo(ex, ey);
     ctx.stroke();
+    // …with bright travelling photon dashes on top.
+    if (dashDir) {
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 9;
+      ctx.setLineDash([13, 11]);
+      ctx.lineDashOffset = dashDir * phase * 85;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
+    }
     // Arrow head
-    const ex = ox + Math.sin(angleFromNormalUp) * len;
-    const ey = oy - Math.cos(angleFromNormalUp) * len;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = width;
     const back = angleFromNormalUp;
     ctx.beginPath();
     ctx.moveTo(ex, ey);
@@ -163,28 +183,37 @@
     ctx.restore();
   }
 
-  function render(p, sol) {
+  function render(p, sol, phase) {
     drawBackground(p);
     const ox = originX(), oy = originY();
     const L = Math.min(W, H) * 0.42;
 
-    // Incident ray: comes from upper-left, drawn from origin back up-left.
-    ray(ox, oy, -p.theta1, L, "#ffd27a", 3, 1);
-    // Reflected ray: back into medium 1, mirrored across the normal.
+    // Incident ray: drawn origin → upper-left; the light travels the
+    // other way, so its dashes flow toward the interface (dashDir +1).
+    ray(ox, oy, -p.theta1, L, "#ffd27a", 3, 1, +1, phase);
+    // Reflected ray: outward into medium 1 (dashes flow away, −1).
     const rAlpha = 0.35 + 0.6 * sol.R;
-    ray(ox, oy, p.theta1, L * 0.85, "#ff9f6b", 2.4, rAlpha);
+    ray(ox, oy, p.theta1, L * 0.85, "#ff9f6b", 2.4, rAlpha, -1, phase);
     // Refracted or (if TIR) nothing transmitted.
     if (!sol.tir) {
       const tAlpha = 0.35 + 0.6 * (1 - sol.R);
       // Refracted ray goes DOWN into medium 2 at θ₂ on the same side.
-      ctx.save();
-      ctx.globalAlpha = tAlpha;
-      ctx.strokeStyle = "#7ad9ee";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
       const ex = ox + Math.sin(sol.theta2) * L;
       const ey = oy + Math.cos(sol.theta2) * L;
+      ctx.save();
+      ctx.strokeStyle = "#7ad9ee";
+      ctx.lineCap = "round";
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = tAlpha * 0.45;
       ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.globalAlpha = tAlpha;
+      ctx.shadowColor = "#7ad9ee";
+      ctx.shadowBlur = 9;
+      ctx.setLineDash([13, 11]);
+      ctx.lineDashOffset = -phase * 85;
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowBlur = 0;
       const fwd = sol.theta2;
       ctx.beginPath();
       ctx.moveTo(ex, ey);
@@ -233,12 +262,22 @@
     inputValues.n2.textContent = p.n2.toFixed(2);
   }
 
+  let raf = 0;
   function frame() {
+    raf = requestAnimationFrame(frame);
     const p = readParams();
     const sol = solve(p);
-    render(p, sol);
+    render(p, sol, performance.now() / 1000);
     updateReadouts(p, sol);
   }
+  function start() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(frame);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelAnimationFrame(raf);
+    else start();
+  });
 
   // ── Drag the incident ray angle ────────────────────────────────────────
   let dragging = false;
@@ -257,21 +296,26 @@
     stage.setPointerCapture(e.pointerId);
     inputs.angle.value = String(Math.round(angleFromPointer(e.clientX, e.clientY)));
     updateLabels(readParams());
-    frame();
   });
   stage.addEventListener("pointermove", (e) => {
     if (!dragging) return;
     inputs.angle.value = String(Math.round(angleFromPointer(e.clientX, e.clientY)));
     updateLabels(readParams());
-    frame();
   });
   const endDrag = () => { dragging = false; };
   stage.addEventListener("pointerup", endDrag);
   stage.addEventListener("pointercancel", endDrag);
 
   // ── Wiring ─────────────────────────────────────────────────────────────
+  // Manually moving an index slider means the media no longer match any
+  // preset — clear the stale highlight.
+  const clearPresetActive = () =>
+    presetList.querySelectorAll(".mol-btn").forEach((b) => b.classList.remove("active"));
   Object.values(inputs).forEach((el) =>
-    el.addEventListener("input", () => { updateLabels(readParams()); frame(); }));
+    el.addEventListener("input", () => {
+      if (el !== inputs.angle) clearPresetActive();
+      updateLabels(readParams());
+    }));
 
   presetList.querySelectorAll(".mol-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -281,7 +325,6 @@
       inputs.n2.value = String(pre.n2);
       presetList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b === btn));
       updateLabels(readParams());
-      frame();
     });
   });
 
@@ -291,7 +334,6 @@
     inputs.n2.value = "1.52";
     presetList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b.dataset.key === "airGlass"));
     updateLabels(readParams());
-    frame();
   });
 
   document.addEventListener("langchange", frame);
@@ -308,11 +350,10 @@
     stage.style.setProperty("width", W + "px", "important");
     stage.style.setProperty("height", H + "px", "important");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    frame();
   }
   window.addEventListener("resize", resizeCanvas);
 
   resizeCanvas();
   updateLabels(readParams());
-  frame();
+  start();
 })();
