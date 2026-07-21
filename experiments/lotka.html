@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Predator and prey populations chase each other in endless cycles — the Lotka–Volterra equations, integrated live with a phase portrait tracing the closed orbit." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 40 Q20 16 32 40 T56 40' fill='none' stroke='%237be0d0' stroke-width='3' stroke-linecap='round'/&gt;&lt;path d='M8 48 Q26 30 38 50 T56 44' fill='none' stroke='%23ff8aa3' stroke-width='3' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="lotkaPageTitle">Predator &amp; Prey · Biology</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount15">Biology · Predator &amp; prey</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="lotkaTitle">Predator &amp; Prey</h1>
+      <p data-i18n="lotkaIntro">Foxes eat rabbits; rabbits breed; foxes starve when rabbits run out. Two simple rules — the Lotka–Volterra equations — make the two populations chase each other in endless cycles, the predators always lagging a quarter-step behind their prey.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="alpha" data-i18n="lotkaAlphaLabel">Prey growth α</label>
+          <span class="value"><span id="alpha-value">1.10</span></span>
+          <input type="range" id="alpha" min="0.2" max="2" step="0.05" value="1.1" />
+        </div>
+
+        <div class="control">
+          <label for="beta" data-i18n="lotkaBetaLabel">Predation β</label>
+          <span class="value"><span id="beta-value">0.40</span></span>
+          <input type="range" id="beta" min="0.1" max="1" step="0.05" value="0.4" />
+        </div>
+
+        <div class="control">
+          <label for="delta" data-i18n="lotkaDeltaLabel">Predator gain δ</label>
+          <span class="value"><span id="delta-value">0.100</span></span>
+          <input type="range" id="delta" min="0.02" max="0.3" step="0.005" value="0.1" />
+        </div>
+
+        <div class="control">
+          <label for="gamma" data-i18n="lotkaGammaLabel">Predator death γ</label>
+          <span class="value"><span id="gamma-value">0.40</span></span>
+          <input type="range" id="gamma" min="0.1" max="1" step="0.05" value="0.4" />
+        </div>
+
+        <div class="control">
+          <label for="rate" data-i18n="lotkaRateLabel">Speed</label>
+          <span class="value"><span id="rate-value">1.0</span>×</span>
+          <input type="range" id="rate" min="0.2" max="4" step="0.1" value="1.0" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="lotkaFormulaPrey">Prey</span>: <code>dx/dt = α·x − β·x·y</code></li>
+            <li><span data-i18n="lotkaFormulaPredator">Predator</span>: <code>dy/dt = δ·x·y − γ·y</code></li>
+            <li><span data-i18n="lotkaFormulaEq">Fixed point</span>: <code>x* = γ/δ, y* = α/β</code></li>
+            <li><span data-i18n="lotkaFormulaInvariant">Conserved</span>: <code>V = δx − γ ln x + βy − α ln y</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="lotkaNotes">Notes</summary>
+          <ul>
+            <li data-i18n="lotkaNote1">Neither species settles down: the populations orbit the fixed point forever, and the predator peak always trails the prey peak by a quarter cycle.</li>
+            <li data-i18n="lotkaNote2">The phase portrait (right) traces one closed loop — the model conserves the quantity V exactly, so the orbit never spirals in or out.</li>
+            <li data-i18n="lotkaNote3">Raising the prey growth α or lowering the predator death γ shifts the equilibrium and stretches the cycle; the readout V should stay essentially constant, a check on the integrator.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="460" aria-label="Predator and prey populations oscillating over time beside a phase-space portrait"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutPrey">Prey now</div>
+            <div class="num" id="out-prey">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutPredator">Predators now</div>
+            <div class="num" id="out-predator">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutPreyEq">Prey equilibrium x*</div>
+            <div class="num" id="out-prey-eq">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutPredEq">Predator equilibrium y*</div>
+            <div class="num" id="out-pred-eq">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutPeriod">Cycle period</div>
+            <div class="num" id="out-period">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutInvariant">Invariant V</div>
+            <div class="num" id="out-invariant">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="lotka.js" defer></script>
+</body>
+</html>

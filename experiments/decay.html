@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Watch a population of radioactive nuclei decay one by one — the random survival of each nucleus builds the exact exponential half-life curve N = N₀·2^(−t/T½)." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M10 50 Q26 14 54 12' fill='none' stroke='%236effc6' stroke-width='3' stroke-linecap='round'/&gt;&lt;circle cx='18' cy='40' r='3' fill='%236effc6'/&gt;&lt;circle cx='34' cy='24' r='3' fill='%236effc6'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="decayPageTitle">Radioactive Decay · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount14">Chemistry · Radioactive decay</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="decayTitle">Radioactive Decay</h1>
+      <p data-i18n="decayIntro">Every nucleus decays at random, with no memory and no schedule — yet a whole population halves on a fixed clock. Press Start and watch thousands of independent coin-flips trace out the exact exponential half-life curve.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="count" data-i18n="decayCountLabel">Initial nuclei N₀</label>
+          <span class="value"><span id="count-value">200</span></span>
+          <input type="range" id="count" min="50" max="600" step="10" value="200" />
+        </div>
+
+        <div class="control">
+          <label for="halflife" data-i18n="decayHalfLifeLabel">Half-life T½</label>
+          <span class="value"><span id="halflife-value">4.0</span> s</span>
+          <input type="range" id="halflife" min="1" max="10" step="0.5" value="4" />
+        </div>
+
+        <div class="control">
+          <label for="rate" data-i18n="decayRateLabel">Playback rate</label>
+          <span class="value"><span id="rate-value">1.0</span>×</span>
+          <input type="range" id="rate" min="0.2" max="4" step="0.1" value="1.0" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="decayFormulaLaw">Decay law</span>: <code>N(t) = N₀·2^(−t/T½) = N₀·e^(−λt)</code></li>
+            <li><span data-i18n="decayFormulaLambda">Decay constant</span>: <code>λ = ln2 / T½</code></li>
+            <li><span data-i18n="decayFormulaActivity">Activity</span>: <code>A = λ·N</code></li>
+            <li><span data-i18n="decayFormulaTau">Mean lifetime</span>: <code>τ = 1/λ = T½ / ln2</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="decayNotes">Notes</summary>
+          <ul>
+            <li data-i18n="decayNote1">Each nucleus decays independently with a fixed probability per unit time — it has no age and no memory. The single-nucleus rule is pure chance.</li>
+            <li data-i18n="decayNote2">Averaged over many nuclei that randomness becomes the smooth exponential: every half-life T½ the count halves, N₀ → N₀/2 → N₀/4 → …, regardless of how many you start with.</li>
+            <li data-i18n="decayNote3">The live curve wanders around the theoretical one by roughly √N — shrink N₀ and the statistical scatter becomes obvious; raise it and the law tightens.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="460" aria-label="A grid of nuclei decaying over time beside a live count-versus-time curve"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="decayOutRemaining">Remaining</div>
+            <div class="num" id="out-remaining">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="decayOutDecayed">Decayed</div>
+            <div class="num" id="out-decayed">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="decayOutFraction">Fraction left</div>
+            <div class="num" id="out-fraction">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="decayOutActivity">Activity A</div>
+            <div class="num" id="out-activity">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="decayOutElapsed">Elapsed time</div>
+            <div class="num"><span id="out-elapsed">0.0</span> s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="decayOutHalves">Half-lives</div>
+            <div class="num" id="out-halves">0.00</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="decay.js" defer></script>
+</body>
+</html>

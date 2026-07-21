@@ -90,11 +90,13 @@
       key: 'ammonia', nameKey: 'molAmmonia', formula: 'NH₃',
       geometryKey: 'geomTrigPyramidal', angle: '107°', hybrid: 'sp³',
       patternKey: 'patternBodyTrigPyramidal',
+      // H ring radius 0.937, apex height 0.376 below N → H–N–H = 107°,
+      // N–H = 1.01 Å (the previous coordinates measured only 98.6°).
       atoms: [
-        { el: 'N', x: 0,     y: 0.20,  z: 0 },
-        { el: 'H', x: 0.94,  y: -0.32, z: 0 },
-        { el: 'H', x: -0.47, y: -0.32, z: 0.81 },
-        { el: 'H', x: -0.47, y: -0.32, z: -0.81 },
+        { el: 'N', x: 0,      y: 0.19,   z: 0 },
+        { el: 'H', x: 0.937,  y: -0.186, z: 0 },
+        { el: 'H', x: -0.468, y: -0.186, z: 0.811 },
+        { el: 'H', x: -0.468, y: -0.186, z: -0.811 },
       ],
       bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]],
     },

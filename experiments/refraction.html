@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Snell's law in action: a ray refracts across an interface, bending toward or away from the normal, and undergoes total internal reflection past the critical angle." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 32 h48' stroke='%23ecf0fb' stroke-width='2'/&gt;&lt;path d='M20 10 L32 32 L50 54' fill='none' stroke='%236ea8ff' stroke-width='3' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="refractionPageTitle">Refraction · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount13">Physics · Refraction</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="refractionTitle">Refraction &amp; Total Internal Reflection</h1>
+      <p data-i18n="refractionIntro">A ray of light crosses from one medium into another and bends by Snell's law. Drag the incident ray or use the sliders; when it travels into a less dense medium beyond the critical angle, it stops crossing and reflects entirely.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="angle" data-i18n="incidenceLabel">Incidence angle θ₁</label>
+          <span class="value"><span id="angle-value">35</span>°</span>
+          <input type="range" id="angle" min="0" max="89" step="1" value="35" />
+        </div>
+
+        <div class="control">
+          <label for="n1" data-i18n="n1Label">Index n₁ (top)</label>
+          <span class="value"><span id="n1-value">1.00</span></span>
+          <input type="range" id="n1" min="1" max="2.5" step="0.01" value="1.00" />
+        </div>
+
+        <div class="control">
+          <label for="n2" data-i18n="n2Label">Index n₂ (bottom)</label>
+          <span class="value"><span id="n2-value">1.52</span></span>
+          <input type="range" id="n2" min="1" max="2.5" step="0.01" value="1.52" />
+        </div>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="refractionPresets">Media presets</label>
+        </div>
+        <div class="molecule-list" id="preset-list" style="grid-template-columns: 1fr 1fr;">
+          <button type="button" class="mol-btn" data-key="airWater"><span data-i18n="presetAirWater">Air → Water</span></button>
+          <button type="button" class="mol-btn active" data-key="airGlass"><span data-i18n="presetAirGlass">Air → Glass</span></button>
+          <button type="button" class="mol-btn" data-key="waterAir"><span data-i18n="presetWaterAir">Water → Air</span></button>
+          <button type="button" class="mol-btn" data-key="glassAir"><span data-i18n="presetGlassAir">Glass → Air</span></button>
+          <button type="button" class="mol-btn" data-key="diamond"><span data-i18n="presetDiamond">Diamond → Air</span></button>
+        </div>
+
+        <div class="buttons" style="margin-top: 0.8rem;">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="refractionFormulaSnell">Snell's law</span>: <code>n₁·sin θ₁ = n₂·sin θ₂</code></li>
+            <li><span data-i18n="refractionFormulaCritical">Critical angle</span> (n₁ &gt; n₂): <code>θ_c = arcsin(n₂/n₁)</code></li>
+            <li><span data-i18n="refractionFormulaSpeed">Phase speed</span>: <code>v = c / n</code></li>
+            <li><span data-i18n="refractionFormulaFresnel">Reflectance (unpolarised)</span>: <code>R = (R_s + R_p) / 2</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="refractionNotes">Notes</summary>
+          <ul>
+            <li data-i18n="refractionNote1">Into a denser medium (n₂ &gt; n₁) the ray bends toward the normal; into a rarer medium it bends away.</li>
+            <li data-i18n="refractionNote2">Total internal reflection only happens going from dense to rare (n₁ &gt; n₂), once θ₁ exceeds the critical angle — this is how optical fibres trap light.</li>
+            <li data-i18n="refractionNote3">The reflected and refracted brightness follow the Fresnel equations: reflectance rises toward 100% as θ₁ approaches grazing incidence or the critical angle.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="460" style="touch-action: none;" aria-label="A light ray refracting and reflecting at the boundary between two media"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutTheta2">Refraction angle θ₂</div>
+            <div class="num" id="out-theta2">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutCritical">Critical angle θ_c</div>
+            <div class="num" id="out-critical">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutReflect">Reflected</div>
+            <div class="num" id="out-reflect">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutTransmit">Transmitted</div>
+            <div class="num" id="out-transmit">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutSpeed">Speed in n₂</div>
+            <div class="num" id="out-speed">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutRegime">Regime</div>
+            <div class="num" id="out-regime">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="refraction.js" defer></script>
+</body>
+</html>

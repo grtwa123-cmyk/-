@@ -382,15 +382,21 @@
       }
     }
     stirAngle += dt * (running ? 9 : 3);
+    // Drops vanish where they meet the liquid surface (which rises as
+    // titrant accumulates), not at a fixed depth inside the solution.
+    const liquidY = APP.flaskBot - 16 - ((p.Va + vb) / 90) * 92;
     for (let i = drops.length - 1; i >= 0; i--) {
       drops[i].y += 330 * dt;
-      if (drops[i].y > APP.flaskBot - 40) drops.splice(i, 1);
+      if (drops[i].y > liquidY - 2) drops.splice(i, 1);
     }
   }
 
   function frame(ts) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min((ts - lastTs) / 1000, 0.05);
+    // Clamp below at 0 too — a first rAF timestamp can precede the
+    // performance.now() captured in start(), and a negative dt would
+    // run accumulators (charge, time, volume) backwards.
+    const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.05));
     lastTs = ts;
     const p = readParams();
     step(dt, p);

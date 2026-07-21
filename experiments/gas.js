@@ -290,7 +290,10 @@
   // ── Main loop ──────────────────────────────────────────────────────────
   function frame(ts) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min((ts - lastTs) / 1000, 0.033);
+    // Clamp below at 0 too — a first rAF timestamp can precede the
+    // performance.now() captured in start(), and a negative dt would
+    // run accumulators (charge, time, volume) backwards.
+    const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.033));
     lastTs = ts;
     const p = readParams();
     syncCount(p);
@@ -322,11 +325,24 @@
       stage.setPointerCapture(e.pointerId);
     }
   });
+  // Keep every particle inside the (possibly smaller) chamber. step()
+  // normally handles this, but it doesn't run while paused — without an
+  // explicit confine, dragging the piston inward while paused leaves
+  // particles stranded outside the chamber.
+  function confineParticles() {
+    const px = pistonX(readParams().fr);
+    for (const q of parts) {
+      if (q.x > px - R) { q.x = px - R; if (q.vx > 0) q.vx = -q.vx; }
+      if (q.x < BOX.x0 + R) q.x = BOX.x0 + R;
+    }
+  }
+
   stage.addEventListener("pointermove", (e) => {
     if (!draggingPiston) return;
     const fr = Math.min(Math.max((canvasX(e.clientX) - BOX.x0) / BOX.fullW, FR_MIN), FR_MAX);
     inputs.volume.value = String(Math.round(fr * 100));
     updateLabels(readParams());
+    confineParticles();
   });
   const endDrag = () => { draggingPiston = false; };
   stage.addEventListener("pointerup", endDrag);
@@ -334,7 +350,10 @@
 
   // ── Wiring ─────────────────────────────────────────────────────────────
   Object.values(inputs).forEach((el) =>
-    el.addEventListener("input", () => updateLabels(readParams())));
+    el.addEventListener("input", () => {
+      updateLabels(readParams());
+      confineParticles();
+    }));
 
   pauseBtn.addEventListener("click", () => {
     paused = !paused;

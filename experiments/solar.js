@@ -752,8 +752,12 @@
     canvas.style.removeProperty('height');
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    CW = Math.max(Math.round(rect.width), 320);
-    CH = 720;
+    const newCW = Math.max(Math.round(rect.width), 320);
+    const newCH = 720;
+    const shiftX = (newCW - CW) / 2;
+    const shiftY = (newCH - CH) / 2;
+    CW = newCW;
+    CH = newCH;
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
     canvas.style.setProperty('width', CW + 'px', 'important');
@@ -761,8 +765,22 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    recomputeScale();
-    if (planets.length === 0) initPlanets();
+    if (planets.length === 0) {
+      recomputeScale();
+      initPlanets();
+    } else if (shiftX !== 0 || shiftY !== 0) {
+      // A resize mid-flight must NOT recompute DISTANCE_SCALE / MU_SUN:
+      // changing the gravitational parameter under bodies that were set
+      // on circular orbits for the old value knocks every orbit off.
+      // Just translate the whole running system to the new centre.
+      sun.x += shiftX; sun.y += shiftY;
+      for (const p of planets) {
+        p.x += shiftX; p.y += shiftY;
+        for (const t of p.trail) { t.x += shiftX; t.y += shiftY; }
+      }
+      for (const bh of blackHoles) { bh.x += shiftX; bh.y += shiftY; }
+      for (const e of effects) { e.x += shiftX; e.y += shiftY; }
+    }
     draw();
   }
 
