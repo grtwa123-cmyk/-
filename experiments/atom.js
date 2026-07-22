@@ -76,17 +76,38 @@
 
   // ── Layout (logical px) ────────────────────────────────────────────────
   let cx = 0, cy = 0;          // nucleus centre
-  const SHELL_R = [70, 116];   // Bohr shell radii
+  let SHELL_R = [70, 116];     // Bohr shell radii (scaled to fit narrow screens)
   const bucket = {};           // p/n/e → { x, y }
-  const B_R = 46;              // bucket radius
+  let B_R = 46;                // bucket radius (shrinks on narrow screens)
+  let narrow = false;          // portrait / phone layout
 
   function computeLayout() {
-    cx = W * 0.42;
-    cy = 232;
-    const by = H - 66;
-    bucket.p = { x: W * 0.20, y: by };
-    bucket.n = { x: W * 0.44, y: by };
-    bucket.e = { x: W * 0.68, y: by };
+    narrow = W < 560;
+    // Nucleus centred horizontally so it never crowds a corner; sits in the
+    // upper third so the element tile (top-left) and buckets (bottom) both
+    // have their own clear band.
+    cx = W / 2;
+    cy = narrow ? Math.round(H * 0.40) : 236;
+    // Shells scale down only if they'd spill past the canvas edge.
+    const fit = Math.min(1, (W / 2 - 16) / 116);
+    SHELL_R = [Math.round(70 * fit), Math.round(116 * fit)];
+    // Three buckets spread evenly across the foot; radius adapts so they
+    // never touch on a phone.
+    B_R = Math.max(30, Math.min(46, Math.round(W * 0.135)));
+    const by = H - (narrow ? B_R + 34 : 66);
+    bucket.p = { x: Math.round(W * 0.17), y: by };
+    bucket.n = { x: Math.round(W * 0.50), y: by };
+    bucket.e = { x: Math.round(W * 0.83), y: by };
+  }
+
+  function roundRectPath(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   const arr = (kind) => (kind === "p" ? protons : kind === "n" ? neutrons : electrons);
@@ -212,20 +233,55 @@
     ctx.fillText(label + "  " + rem, b.x, b.y + 40);
   }
 
-  function drawSymbolBadge() {
+  // Element identity as a periodic-table tile in the top-left corner, well
+  // clear of the nucleus — the symbol used to sit on top of the nucleons,
+  // where the packed particles made it unreadable.
+  function drawSymbolTile() {
     if (!showSymbol) return;
     const p = protons.length;
     const el = ELEMENTS[p];
-    if (!el) return;
+    const size = narrow ? 74 : 90;
+    const x = 14, y = 14;
     ctx.save();
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = "rgba(236,240,251,0.9)";
-    ctx.font = `800 ${Math.min(34, 16 + nucleusRadius() * 0.6)}px -apple-system, "Segoe UI", sans-serif`;
+    roundRectPath(x, y, size, size, 12);
+    ctx.fillStyle = el ? "rgba(18, 24, 44, 0.82)" : "rgba(18, 24, 44, 0.4)";
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = el ? "rgba(150, 190, 255, 0.55)" : "rgba(255, 255, 255, 0.12)";
+    ctx.stroke();
+
+    if (!el) {
+      ctx.fillStyle = "rgba(236, 240, 251, 0.28)";
+      ctx.font = `700 ${Math.round(size * 0.42)}px -apple-system, "Segoe UI", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", x + size / 2, y + size / 2);
+      ctx.restore();
+      return;
+    }
+
+    // Atomic number (top-left) and mass number (top-right).
+    ctx.fillStyle = "rgba(236, 240, 251, 0.7)";
+    ctx.font = `700 ${narrow ? 11 : 12}px ui-monospace, monospace`;
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillText(String(p), x + 8, y + 7);
+    ctx.textAlign = "right";
+    ctx.fillText(String(p + neutrons.length), x + size - 8, y + 7);
+
+    // Symbol, large and centred.
+    ctx.fillStyle = "#eaf0ff";
+    ctx.font = `800 ${narrow ? 30 : 38}px -apple-system, "Segoe UI", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 6;
-    ctx.fillText(el.sym, cx, cy);
+    ctx.fillText(el.sym, x + size / 2, y + size / 2 + 2);
+
+    // Element name across the foot of the tile.
+    ctx.fillStyle = "rgba(150, 190, 255, 0.9)";
+    ctx.font = `600 ${narrow ? 10 : 11}px -apple-system, "Segoe UI", sans-serif`;
+    ctx.textBaseline = "bottom";
+    ctx.textAlign = "center";
+    ctx.fillText(i18nText(el.key, el.sym), x + size / 2, y + size - 6);
     ctx.restore();
   }
 
@@ -238,10 +294,11 @@
     for (let i = 0; i < protons.length; i++) if (protons[i] !== (drag && drag.obj)) drawParticle(protons[i], "p", rN);
     for (let i = 0; i < neutrons.length; i++) if (neutrons[i] !== (drag && drag.obj)) drawParticle(neutrons[i], "n", rN);
 
-    if (electronModel === "shells") drawSymbolBadge();
-
     // Electrons
     for (let i = 0; i < electrons.length; i++) if (electrons[i] !== (drag && drag.obj)) drawParticle(electrons[i], "e", 7);
+
+    // Element tile — a corner badge, clear of the nucleus, shown in both models
+    drawSymbolTile();
 
     // Buckets
     drawBucket("p", i18nText("atomProtons", "Protons"));
@@ -333,8 +390,9 @@
     return null;
   }
   function inAtomZone(pt) {
-    // Accept a drop that lands anywhere on the atom side (above the buckets).
-    return pt.y < H - 120 && dist2(pt, cx, cy) < (SHELL_R[1] + 60) ** 2;
+    // Accept a drop anywhere in the upper region, above the bucket tray —
+    // forgiving on touch, where precise aiming at the nucleus is hard.
+    return pt.y < bucket.p.y - B_R - 4;
   }
 
   function pickExisting(pt) {
@@ -351,9 +409,12 @@
         if (d < r2 && d < bestD) { bestD = d; best = { kind, obj: list[i] }; }
       }
     };
-    scan(electrons, "e", 20);
-    scan(neutrons, "n", 13);
-    scan(protons, "p", 13);
+    // A touch pointer is coarser than a mouse, so widen the grab radii when
+    // the primary input is touch.
+    const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    scan(electrons, "e", touch ? 26 : 20);
+    scan(neutrons, "n", touch ? 18 : 13);
+    scan(protons, "p", touch ? 18 : 13);
     return best;
   }
 
@@ -418,8 +479,10 @@
     stage.style.removeProperty("height");
     const rect = stage.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    W = Math.max(Math.round(rect.width), 520);
-    H = 540;
+    // Fill the container width (down to a small floor so it never overflows a
+    // phone) and give the portrait layout extra height for the buckets.
+    W = Math.max(Math.round(rect.width), 260);
+    H = W < 560 ? 600 : 540;
     stage.width = Math.round(W * dpr);
     stage.height = Math.round(H * dpr);
     stage.style.setProperty("width", W + "px", "important");
