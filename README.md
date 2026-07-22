@@ -60,6 +60,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Radioactive Decay** | A grid of nuclei decays by pure per-nucleus chance and traces the exact exponential half-life curve N = N₀·2^(−t/T½); live activity and half-life markers. |
 | **Electrolysis of Water** | Above 1.23 V the cell runs and Faraday's laws fill the tubes: n(H₂)=Q/2F, n(O₂)=Q/4F — a live 2:1 volume ratio. |
 | **Reaction Rates & Collision Theory** | A+B→C only when the line-of-centres collision energy beats Ea; the measured per-collision success converges exactly to e^(−Ea/kT). |
+| **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
 
 ### Biology
 
@@ -132,6 +133,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── decay.{html,js}
     ├── electrolysis.{html,js}
     ├── kinetics.{html,js}
+    ├── atom.{html,js}
     └── lotka.{html,js}
 ```
 
@@ -162,7 +164,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 22 experiments, so screen readers and search engines can discover the catalogue.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 23 experiments, so screen readers and search engines can discover the catalogue.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift; CSS animations are short-circuited via a media query in `styles.css`.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

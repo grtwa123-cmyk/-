@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Drag protons, neutrons, and electrons to build an atom. The proton count names the element, electrons set the charge, and neutrons make isotopes — with a live stable/unstable readout." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='5' fill='%23ff6b8a'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='9' fill='none' stroke='%236ea8ff' stroke-width='2.5'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='9' fill='none' stroke='%236ea8ff' stroke-width='2.5' transform='rotate(60 32 32)'/&gt;&lt;circle cx='54' cy='32' r='3' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="atomPageTitle">Build an Atom · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount18">Chemistry · Build an atom</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="atomTitle">Build an Atom</h1>
+      <p data-i18n="atomIntro">Drag protons, neutrons, and electrons onto the atom. The number of protons alone decides which element you have; electrons set the overall charge; neutrons change only the mass and nuclear stability. Drag a particle back to its bucket to remove it.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="atomElectronModel">Electron model</label>
+        </div>
+        <div class="molecule-list" id="model-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.8rem;">
+          <button type="button" class="mol-btn active" data-key="shells"><span data-i18n="atomModelShells">Orbits (Bohr)</span></button>
+          <button type="button" class="mol-btn" data-key="cloud"><span data-i18n="atomModelCloud">Cloud</span></button>
+        </div>
+
+        <div class="control">
+          <label for="symbol-toggle" data-i18n="atomShowSymbol">Show element symbol</label>
+          <span class="value"><input type="checkbox" id="symbol-toggle" checked /></span>
+        </div>
+
+        <div class="buttons">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <div class="property-list">
+          <div class="property"><span class="property-label" data-i18n="atomProtons">Protons (Z)</span><span class="property-value" id="prop-protons">0</span></div>
+          <div class="property"><span class="property-label" data-i18n="atomNeutrons">Neutrons</span><span class="property-value" id="prop-neutrons">0</span></div>
+          <div class="property"><span class="property-label" data-i18n="atomElectrons">Electrons</span><span class="property-value" id="prop-electrons">0</span></div>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="atomFormulaElement">Element</span>: <code>Z = number of protons</code></li>
+            <li><span data-i18n="atomFormulaCharge">Net charge</span>: <code>q = protons − electrons</code></li>
+            <li><span data-i18n="atomFormulaMass">Mass number</span>: <code>A = protons + neutrons</code></li>
+            <li><span data-i18n="atomFormulaIsotope">Isotope</span>: <code>same Z, different N</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="atomNotes">Notes</summary>
+          <ul>
+            <li data-i18n="atomNote1">Protons alone define the element — one proton is hydrogen, six is carbon. Add or remove a proton and you have a different element entirely.</li>
+            <li data-i18n="atomNote2">Electrons carry the charge. Equal protons and electrons → neutral; fewer electrons → a positive ion (cation); more → a negative ion (anion).</li>
+            <li data-i18n="atomNote3">Neutrons change neither the element nor the charge — only the mass number and whether the nucleus is stable. Same element, different neutron count = isotopes.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="540" style="touch-action: none;" aria-label="An atom being built from draggable protons, neutrons, and electrons, with element, charge, and mass readouts"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="atomOutElement">Element</div>
+            <div class="num" id="out-element">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="atomOutIsotope">Isotope</div>
+            <div class="num" id="out-isotope">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="atomOutCharge">Net charge</div>
+            <div class="num" id="out-charge">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="atomOutMass">Mass number A</div>
+            <div class="num" id="out-mass">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="atomOutState">Charge state</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="atomOutStability">Nucleus</div>
+            <div class="num" id="out-stability">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="atom.js" defer></script>
+</body>
+</html>
