@@ -406,6 +406,55 @@ const RENDERERS = {
     wave(0, "rgba(123,224,208,0.9)");            // prey
     wave(Math.PI * 0.5, "rgba(255,138,163,0.9)"); // predator, quarter-cycle behind
   },
+
+  atom(p, s, ctx) {
+    // Bohr atom: nucleus dot + two tilted elliptical shells with electrons.
+    ctx.save();
+    for (let k = 0; k < 2; k++) {
+      ctx.save();
+      ctx.rotate(k * Math.PI / 2 + 0.3);
+      ctx.strokeStyle = "rgba(150, 190, 255, 0.7)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 1.25, s * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Electrons on the shells
+    ctx.fillStyle = "rgba(140, 190, 255, 0.95)";
+    p.dot(Math.cos(0.3) * s * 1.25, Math.sin(0.3) * s * 0.5, 3.4);
+    p.dot(-Math.cos(1.87) * s * 0.5, -Math.sin(1.87) * s * 1.25, 3.4);
+    // Nucleus — a small red/grey cluster
+    ctx.fillStyle = "rgba(255, 107, 138, 0.95)";
+    p.dot(-2, -1, 4.5);
+    ctx.fillStyle = "rgba(154, 163, 189, 0.9)";
+    p.dot(3, 2, 4);
+    ctx.restore();
+  },
+
+  generator(p, s, ctx) {
+    // Bar magnet (N red / S blue) inside an elliptical coil loop.
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 225, 74, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 1.3, s * 0.72, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // Magnet, tilted
+    ctx.rotate(-0.5);
+    const L = s * 1.5, w = s * 0.5;
+    ctx.fillStyle = "rgba(110, 168, 255, 0.9)";
+    ctx.fillRect(-L / 2, -w / 2, L / 2, w);
+    ctx.fillStyle = "rgba(255, 107, 138, 0.9)";
+    ctx.fillRect(0, -w / 2, L / 2, w);
+    ctx.restore();
+    // A little rotation arrow
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, s * 0.95, -0.6, 0.8);
+    ctx.stroke();
+  },
 };
 
 export function drawMotif(ctx, kind, cx, cy, s) {

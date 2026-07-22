@@ -48,6 +48,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Semiconductors & Battery** | Compare intrinsic / n-type / p-type silicon under the same battery and flip the polarity. |
 | **PN Junction Diode** | Watch the depletion region grow and shrink under forward vs reverse bias. |
 | **Refraction & TIR** | A ray bends across an interface by Snell's law, with the critical angle, total internal reflection, and Fresnel reflectance. |
+| **Electromagnetic Generator** | A water wheel spins a bar magnet inside a pickup coil; Faraday's law EMF = N·B·A·ω·sin(ωt) lights a bulb, with the live rotating dipole field. |
 
 ### Chemistry
 
@@ -109,7 +110,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
-│       ├── motifs.js           22 line-art glyphs, one per experiment
+│       ├── motifs.js           24 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
     ├── projectile.{html,js}
@@ -126,6 +127,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── semiconductor.{html,js}
     ├── diode.{html,js}
     ├── refraction.{html,js}
+    ├── generator.{html,js}
     ├── molecule.{html,js}
     ├── crystal.{html,js}
     ├── titration.{html,js}
@@ -142,7 +144,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (22 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (24 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
@@ -164,7 +166,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 23 experiments, so screen readers and search engines can discover the catalogue.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 24 experiments, so screen readers and search engines can discover the catalogue.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift; CSS animations are short-circuited via a media query in `styles.css`.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="A water wheel spins a bar magnet inside a pickup coil, inducing an AC voltage by Faraday's law — EMF = N·B·A·ω·sin(ωt) — that lights a bulb. Adjust the flow, loops, area, and magnet strength." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;rect x='14' y='26' width='20' height='12' rx='2' fill='%23ff6b8a'/&gt;&lt;rect x='34' y='26' width='16' height='12' rx='2' fill='%236ea8ff'/&gt;&lt;ellipse cx='32' cy='32' rx='30' ry='16' fill='none' stroke='%23ffe14a' stroke-width='2.5'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="generatorPageTitle">Generator · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount19">Physics · Generator</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="generatorTitle">Electromagnetic Generator</h1>
+      <p data-i18n="generatorIntro">Water from the faucet turns a wheel, spinning a bar magnet inside a coil of wire. The turning magnet's changing flux induces an AC voltage by Faraday's law — EMF = N·B·A·ω·sin(ωt) — that lights the bulb. Open the faucet, add coils, and watch the voltage rise.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="flow" data-i18n="genFlowLabel">Water flow</label>
+          <span class="value"><span id="flow-value">60</span> %</span>
+          <input type="range" id="flow" min="0" max="100" step="1" value="60" />
+        </div>
+
+        <div class="control">
+          <label for="loops" data-i18n="genLoopsLabel">Coil loops N</label>
+          <span class="value"><span id="loops-value">4</span></span>
+          <input type="range" id="loops" min="1" max="8" step="1" value="4" />
+        </div>
+
+        <div class="control">
+          <label for="area" data-i18n="genAreaLabel">Loop area A</label>
+          <span class="value"><span id="area-value">1.00</span></span>
+          <input type="range" id="area" min="0.5" max="1.6" step="0.05" value="1.0" />
+        </div>
+
+        <div class="control">
+          <label for="strength" data-i18n="genStrengthLabel">Magnet strength B</label>
+          <span class="value"><span id="strength-value">1.00</span></span>
+          <input type="range" id="strength" min="0.3" max="1.8" step="0.05" value="1.0" />
+        </div>
+
+        <div class="buttons">
+          <button id="flip-btn" type="button" data-i18n="genFlipBtn">Flip poles</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <div class="control" style="margin: 0.8rem 0 0.4rem;">
+          <label data-i18n="genMeter">Meter</label>
+        </div>
+        <div class="molecule-list" id="meter-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.7rem;">
+          <button type="button" class="mol-btn active" data-key="bulb"><span data-i18n="genMeterBulb">Light bulb</span></button>
+          <button type="button" class="mol-btn" data-key="volt"><span data-i18n="genMeterVoltmeter">Voltmeter</span></button>
+        </div>
+
+        <div class="control">
+          <label for="field-toggle" data-i18n="genShowField">Show magnetic field</label>
+          <span class="value"><input type="checkbox" id="field-toggle" checked /></span>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="genFormulaFlux">Flux through coil</span>: <code>Φ = N·B·A·cos(θ)</code></li>
+            <li><span data-i18n="genFormulaEmf">Faraday's law</span>: <code>EMF = −dΦ/dt = N·B·A·ω·sin(ωt)</code></li>
+            <li><span data-i18n="genFormulaFreq">Frequency</span>: <code>f = ω / 2π</code></li>
+            <li><span data-i18n="genFormulaWheel">Wheel</span>: <code>I·dω/dt = τ(flow) − b·ω</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="genNotes">Notes</summary>
+          <ul>
+            <li data-i18n="genNote1">Only a changing flux induces a voltage. A magnet held still makes nothing; it's the turning — dΦ/dt — that drives the current, so the faster the wheel spins the brighter the bulb.</li>
+            <li data-i18n="genNote2">The output is alternating: as the magnet rotates, the flux swings + to −, so the induced EMF is a sine wave and the voltmeter needle swings both ways.</li>
+            <li data-i18n="genNote3">Peak voltage scales with every factor in N·B·A·ω — double the loops, the area, the magnet strength, or the spin rate and you double the peak EMF.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="500" style="touch-action: none;" aria-label="A water wheel spinning a bar magnet inside a pickup coil connected to a light bulb, with the magnetic field and a live voltage trace"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="genOutEmf">Induced EMF</div>
+            <div class="num"><span id="out-emf">0.00</span> V</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="genOutRpm">Rotation</div>
+            <div class="num"><span id="out-rpm">0</span> rpm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="genOutPeak">Peak EMF</div>
+            <div class="num"><span id="out-peak">0.00</span> V</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="genOutFreq">Frequency</div>
+            <div class="num"><span id="out-freq">0.00</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="genOutFlux">Flux Φ</div>
+            <div class="num" id="out-flux">0.00</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="genOutPower">Bulb power</div>
+            <div class="num"><span id="out-power">0</span> %</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="generator.js" defer></script>
+</body>
+</html>
