@@ -27,6 +27,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "semiTitle",        url: "experiments/semiconductor.html", cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#22153a", "#a06fc8"], motif: "semi" },
   { titleKey: "diodeTitle",       url: "experiments/diode.html",         cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#2c0e22", "#d65a8a"], motif: "diode" },
   { titleKey: "refractionTitle",  url: "experiments/refraction.html",    cat: "Physics",   tags: ["OPTICS", "SNELL"],      colors: ["#0a1428", "#6ea8ff"], motif: "refraction" },
+  { titleKey: "generatorTitle",   url: "experiments/generator.html",     cat: "Physics",   tags: ["INDUCTION", "FARADAY"], colors: ["#1d1405", "#ffe14a"], motif: "generator" },
   { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#0d0a1e", "#e0a24a"], motif: "solar" },
   { titleKey: "moleculeTitle",    url: "experiments/molecule.html",      cat: "Chemistry", tags: ["3D", "MODEL"],          colors: ["#0a1f15", "#6fbf8a"], motif: "molecule" },
   { titleKey: "crystalTitle",     url: "experiments/crystal.html",       cat: "Chemistry", tags: ["LATTICE", "3D"],        colors: ["#0a1822", "#6fc4d4"], motif: "crystal" },
@@ -35,5 +36,6 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "decayTitle",       url: "experiments/decay.html",         cat: "Chemistry", tags: ["NUCLEAR", "HALF-LIFE"], colors: ["#0a1e14", "#6effc6"], motif: "decay" },
   { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], motif: "electrolysis" },
   { titleKey: "kinTitle",         url: "experiments/kinetics.html",      cat: "Chemistry", tags: ["ARRHENIUS", "RATE"],    colors: ["#22091a", "#ff8aa3"], motif: "kinetics" },
+  { titleKey: "atomTitle",        url: "experiments/atom.html",          cat: "Chemistry", tags: ["ELEMENT", "ISOTOPE"],   colors: ["#0a1424", "#6ea8ff"], motif: "atom" },
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], motif: "lotka" },
 ]);
