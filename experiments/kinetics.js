@@ -227,6 +227,12 @@
               toRemove.add(a); toRemove.add(b);
               parts.push(c);
               flashes.push({ x: c.x, y: c.y, ts: performance.now() / 1000 });
+              // A little rising "pop" when a reaction actually fires. Gated
+              // so a burst of reactions stays pleasant rather than harsh.
+              if (Math.random() < 0.7) {
+                const f = 300 + Math.random() * 120;
+                window.SFX?.tone({ freq: f, dur: 0.08, type: "sawtooth", gain: 0.12, glideTo: f + 220, release: 0.08 });
+              }
               break;
             }
           }

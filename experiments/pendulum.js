@@ -153,6 +153,7 @@
         theta: theta0,
         omega: 0,
         L: lengthForIndex(i, N, Lbase),
+        prevTheta: theta0,
       });
     }
   }
@@ -221,6 +222,16 @@
 
     integrate(dt);
     elapsed += dt;
+
+    // A soft wooden "tock" each time a bob swings through the bottom;
+    // shorter pendulums ring higher, so the wave pendulum cascades.
+    for (const pen of pendulums) {
+      if (pen.prevTheta * pen.theta < 0 && Math.abs(pen.omega) > 0.3) {
+        const f = Math.max(140, Math.min(880, 220 * Math.sqrt(2 / (pen.L || 1))));
+        window.SFX?.tone({ freq: f, dur: 0.12, type: 'triangle', gain: pendulums.length > 1 ? 0.05 : 0.09, attack: 0.004, release: 0.1 });
+      }
+      pen.prevTheta = pen.theta;
+    }
 
     drawScene(pendulums.length, activeParams.L);
     updateReadouts(activeParams.L, activeParams.g);

@@ -135,13 +135,24 @@
       for (const q of parts) { q.vx *= f; q.vy *= f; }
     }
 
+    let wallHits = 0;
     for (const q of parts) {
       q.x += q.vx * dt;
       q.y += q.vy * dt;
-      if (q.x < BOX.x0 + R)  { q.x = BOX.x0 + R;  impulseAcc += 2 * Math.abs(q.vx); q.vx =  Math.abs(q.vx); }
-      if (q.x > px - R)      { q.x = px - R;      impulseAcc += 2 * Math.abs(q.vx); q.vx = -Math.abs(q.vx); }
-      if (q.y < BOX.y0 + R)  { q.y = BOX.y0 + R;  impulseAcc += 2 * Math.abs(q.vy); q.vy =  Math.abs(q.vy); }
-      if (q.y > BOX.y1 - R)  { q.y = BOX.y1 - R;  impulseAcc += 2 * Math.abs(q.vy); q.vy = -Math.abs(q.vy); }
+      if (q.x < BOX.x0 + R)  { q.x = BOX.x0 + R;  impulseAcc += 2 * Math.abs(q.vx); q.vx =  Math.abs(q.vx); wallHits++; }
+      if (q.x > px - R)      { q.x = px - R;      impulseAcc += 2 * Math.abs(q.vx); q.vx = -Math.abs(q.vx); wallHits++; }
+      if (q.y < BOX.y0 + R)  { q.y = BOX.y0 + R;  impulseAcc += 2 * Math.abs(q.vy); q.vy =  Math.abs(q.vy); wallHits++; }
+      if (q.y > BOX.y1 - R)  { q.y = BOX.y1 - R;  impulseAcc += 2 * Math.abs(q.vy); q.vy = -Math.abs(q.vy); wallHits++; }
+    }
+    // A faint patter of wall hits — more collisions (hotter / more crowded)
+    // makes a busier sizzle. Capped so it stays a texture, not a roar.
+    if (wallHits > 0) {
+      const ticks = Math.min(2, Math.ceil(wallHits / 3));
+      for (let i = 0; i < ticks; i++) {
+        if (Math.random() < 0.6) {
+          window.SFX?.noise({ dur: 0.02, gain: 0.025, color: "white", filter: "highpass", freq: 2600 + Math.random() * 1800, q: 0.7 });
+        }
+      }
     }
 
     windowT += dt;
@@ -357,6 +368,7 @@
 
   pauseBtn.addEventListener("click", () => {
     paused = !paused;
+    window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
     pauseBtn.textContent = paused
       ? i18nText("waveResumeBtn", "Resume")
       : i18nText("wavePauseBtn", "Pause");

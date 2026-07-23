@@ -337,7 +337,10 @@
       label.dataset.i18n = lattice.nameKey;
       label.textContent = i18nText(lattice.nameKey, key);
       btn.appendChild(label);
-      btn.addEventListener('click', () => selectLattice(key));
+      btn.addEventListener('click', () => {
+        window.SFX?.tone({ freq: 560, dur: 0.07, type: 'triangle', gain: 0.1 });
+        selectLattice(key);
+      });
       listEl.appendChild(btn);
     }
   }

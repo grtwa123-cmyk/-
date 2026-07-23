@@ -122,6 +122,7 @@
       r: 4, ring: false, guideR: 0, isTemplate: false,
       x, y, vx, vy, alive: true, trail: [],
     });
+    window.SFX?.tone({ freq: 500, dur: 0.1, type: 'sine', gain: 0.12 });
     updateCounts();
   }
 
@@ -147,6 +148,8 @@
       x, y, vx: 0, vy: 0, mass,
       created: 0, spin: Math.random() * Math.PI * 2,
     });
+    // A deep descending rumble as spacetime caves in.
+    window.SFX?.sweep({ from: 300, to: 38, dur: 0.6, type: 'sine', gain: 0.2 });
     updateCounts();
   }
 
@@ -158,6 +161,7 @@
       const speed = (60 + Math.random() * 130) * scale;
       parts.push({ x: 0, y: 0, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed });
     }
+    window.SFX?.noise({ dur: Math.min(0.3, 0.18 * scale), gain: Math.min(0.28, 0.14 * scale), color: 'pink', filter: 'lowpass', freq: 260, q: 0.8 });
     effects.push({ x, y, color, parts, t: 0, life: 0.9, scale });
   }
 
@@ -698,6 +702,7 @@
   function selectMode(key) {
     if (key !== 'blackhole' && key !== 'planet') return;
     spawnMode = key;
+    window.SFX?.tone({ freq: 620, dur: 0.07, type: 'triangle', gain: 0.1 });
     modeList.querySelectorAll('.mol-btn').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.key === key);
     });

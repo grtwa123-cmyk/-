@@ -535,6 +535,10 @@
     drawBattery();
   }
 
+  // Conduction buzz — loud when the junction actually passes current
+  // (forward bias), near-silent under reverse bias. You hear the diode work.
+  const buzz = window.SFX ? new window.SFX.Drone({ type: "square", freq: 110, gain: 0 }) : null;
+
   function step(ts) {
     if (!lastTs) lastTs = ts;
     let dt = (ts - lastTs) / 1000;
@@ -543,6 +547,7 @@
     updateCarriers(dt);
     updateReadouts();
     render();
+    if (buzz) buzz.setGain(batteryOn ? Math.min(0.045, smoothedCurrent * 0.12) : 0);
     animId = requestAnimationFrame(step);
   }
 
@@ -553,7 +558,10 @@
   }
 
   function wireEvents() {
-    batteryToggle.addEventListener('change', () => { batteryOn = batteryToggle.checked; });
+    batteryToggle.addEventListener('change', () => {
+      batteryOn = batteryToggle.checked;
+      window.SFX?.tone({ freq: batteryOn ? 520 : 300, dur: 0.07, type: 'triangle', gain: 0.12 });
+    });
     voltageInput.addEventListener('input', () => {
       voltage = parseFloat(voltageInput.value);
       voltageValue.textContent = voltage.toFixed(2);
@@ -562,7 +570,10 @@
       temperature = parseFloat(tempInput.value);
       tempValue.textContent = temperature.toFixed(2);
     });
-    reverseBtn.addEventListener('click', () => { polarity = -polarity; });
+    reverseBtn.addEventListener('click', () => {
+      polarity = -polarity;
+      window.SFX?.noise({ dur: 0.07, gain: 0.16, color: 'pink', filter: 'lowpass', freq: 340, q: 0.9 });
+    });
   }
 
   document.addEventListener('langchange', updateReadouts);

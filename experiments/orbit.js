@@ -49,6 +49,8 @@
       alive: true,
     });
     nextColor++;
+    // A soft launch blip as the planet leaves your fingertip.
+    window.SFX?.tone({ freq: 520, dur: 0.1, type: 'sine', gain: 0.12 });
     updateCount();
   }
 
@@ -97,6 +99,9 @@
       life: 1.8,
       strength,
     });
+    // Impact into the star — louder for a faster infall.
+    window.SFX?.noise({ dur: 0.22, gain: Math.min(0.3, 0.1 + impactSpeed * 0.004), color: 'pink', filter: 'lowpass', freq: 260, q: 0.8 });
+    window.SFX?.sweep({ from: 400, to: 120, dur: 0.18, type: 'sawtooth', gain: 0.1 });
   }
 
   function stepCollisions(dt) {

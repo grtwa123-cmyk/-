@@ -383,6 +383,14 @@
     rows.forEach(drawRow);
   }
 
+  // A faint electrical buzz whose loudness rises with the driving voltage,
+  // and falls silent when the battery is switched off.
+  const buzz = window.SFX ? new window.SFX.Drone({ type: "square", freq: 120, gain: 0 }) : null;
+  function updateBuzz() {
+    if (!buzz) return;
+    buzz.setGain(batteryOn ? Math.min(0.035, voltage * 0.02) : 0);
+  }
+
   function step(ts) {
     if (!lastTs) lastTs = ts;
     let dt = (ts - lastTs) / 1000;
@@ -390,6 +398,7 @@
     if (dt > 0.05) dt = 0.05;
     updateCarriers(dt);
     render();
+    updateBuzz();
     animId = requestAnimationFrame(step);
   }
 
@@ -402,6 +411,7 @@
   function wireEvents() {
     batteryToggle.addEventListener('change', () => {
       batteryOn = batteryToggle.checked;
+      window.SFX?.tone({ freq: batteryOn ? 520 : 300, dur: 0.07, type: 'triangle', gain: 0.12 });
       updateReadouts();
     });
     voltageInput.addEventListener('input', () => {
@@ -414,6 +424,7 @@
     });
     reverseBtn.addEventListener('click', () => {
       polarity = -polarity;
+      window.SFX?.noise({ dur: 0.07, gain: 0.16, color: 'pink', filter: 'lowpass', freq: 340, q: 0.9 });
       updateReadouts();
     });
   }

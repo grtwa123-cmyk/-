@@ -102,6 +102,7 @@
     const maxStep = halfLife * 0.05;
     const sub = Math.max(1, Math.ceil(simDt / maxStep));
     const h = simDt / sub;
+    let decayedThisFrame = 0;
     for (let s = 0; s < sub; s++) {
       const pDecay = 1 - Math.pow(2, -h / halfLife);
       const nowS = performance.now() / 1000;
@@ -110,9 +111,19 @@
         if (nu.alive && Math.random() < pDecay) {
           nu.alive = false;
           flashes.push({ i, ts: nowS });
+          decayedThisFrame++;
         }
       }
       t += h;
+    }
+    // Geiger-counter crackle: one click per decay, capped per frame so a
+    // burst of decays stays a crackle rather than a wall of noise. The rate
+    // of clicks you hear tracks the activity.
+    if (decayedThisFrame > 0) {
+      const clicks = Math.min(5, decayedThisFrame);
+      for (let c = 0; c < clicks; c++) {
+        window.SFX?.click({ freq: 1700 + Math.random() * 1500, gain: 0.13 });
+      }
     }
     const n = aliveCount();
     const last = history[history.length - 1];

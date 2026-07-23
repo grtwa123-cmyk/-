@@ -163,7 +163,10 @@
       formula.textContent = mol.formula;
       btn.appendChild(label);
       btn.appendChild(formula);
-      btn.addEventListener('click', () => selectMolecule(key));
+      btn.addEventListener('click', () => {
+        window.SFX?.tone({ freq: 600, dur: 0.07, type: 'triangle', gain: 0.1 });
+        selectMolecule(key);
+      });
       listEl.appendChild(btn);
     }
   }

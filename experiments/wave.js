@@ -269,9 +269,13 @@
     updateReadouts(p);
   }
   Object.values(inputs).forEach((el) => el.addEventListener("input", handleInput));
+  // A soft "plip" when a slider is released, pitched by the new wavelength.
+  inputs.wavelength.addEventListener("change", () =>
+    window.SFX?.tone({ freq: 520 - parseFloat(inputs.wavelength.value) * 3, dur: 0.1, type: "sine", gain: 0.1 }));
 
   pauseBtn.addEventListener("click", () => {
     paused = !paused;
+    window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
     pauseBtn.textContent = paused
       ? i18nText("waveResumeBtn", "Resume")
       : i18nText("wavePauseBtn", "Pause");

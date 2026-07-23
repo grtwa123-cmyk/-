@@ -427,9 +427,15 @@
   stage.style.cursor = "grab";
 
   // ── Wiring ─────────────────────────────────────────────────────────────
+  // Each base has its own note, so typing a sequence plays a little melody.
+  const BASE_NOTE = { A: 440, T: 349.23, G: 523.25, C: 392 };
   inputs.seq.addEventListener("input", () => {
+    const prevLen = seq.length;
     seq = sanitize(inputs.seq.value);
     inputs.seq.value = seq;       // mirror cleaned text back to the field
+    if (seq.length > prevLen) {
+      window.SFX?.tone({ freq: BASE_NOTE[seq[seq.length - 1]] || 440, dur: 0.09, type: "sine", gain: 0.12 });
+    }
     inputs.length.value = String(Math.max(8, Math.min(30, seq.length || 8)));
     syncLabels();
     syncReadouts();
@@ -443,12 +449,14 @@
     const n = parseInt(inputs.length.value, 10);
     seq = randomSeq(n);
     inputs.seq.value = seq;
+    window.SFX?.sweep({ from: 320, to: 720, dur: 0.22, type: "sine", gain: 0.1 });
     syncLabels();
     syncReadouts();
   });
 
   pauseBtn.addEventListener("click", () => {
     paused = !paused;
+    window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
     pauseBtn.textContent = paused
       ? i18nText("waveResumeBtn", "Resume")
       : i18nText("wavePauseBtn", "Pause");

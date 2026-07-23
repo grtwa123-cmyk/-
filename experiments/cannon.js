@@ -83,6 +83,9 @@
       trails.shift();
       activeIndex--;
     }
+    // Cannon boom — a low noise thump plus a downward report.
+    window.SFX?.noise({ dur: 0.22, gain: 0.26, color: 'pink', filter: 'lowpass', freq: 240, q: 0.8 });
+    window.SFX?.sweep({ from: 320, to: 90, dur: 0.2, type: 'sawtooth', gain: 0.14 });
   }
 
   function resetAll() {
@@ -168,6 +171,11 @@
     for (const trail of trails) {
       if (!trail.ball.alive) continue;
       stepBall(trail, scaled);
+      if (!trail.ball.alive) {
+        // The ball just settled its fate this frame.
+        if (trail.ball.escaped) window.SFX?.sweep({ from: 220, to: 880, dur: 0.5, type: 'sine', gain: 0.14 });
+        else window.SFX?.noise({ dur: 0.18, gain: 0.2, color: 'pink', filter: 'lowpass', freq: 300, q: 0.8 });
+      }
     }
     draw();
     updateActiveReadouts();

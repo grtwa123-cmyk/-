@@ -392,6 +392,15 @@
     inputValues.strength.textContent = p.B.toFixed(2);
   }
 
+  // Generator hum — pitch rises with the wheel's spin, volume with it too,
+  // so the machine "spins up" audibly as you open the faucet.
+  const hum = window.SFX ? new window.SFX.Drone({ type: "sawtooth", freq: 50, gain: 0, partials: 1 }) : null;
+  function updateHum() {
+    if (!hum) return;
+    hum.setFreq(38 + omega * 6);
+    hum.setGain(Math.min(0.06, omega * 0.006));
+  }
+
   // ── Loop ───────────────────────────────────────────────────────────────
   function frame(ts) {
     raf = requestAnimationFrame(frame);
@@ -401,6 +410,7 @@
     step(dt, p);
     render(p);
     updateReadouts(p);
+    updateHum();
   }
   function start() {
     cancelAnimationFrame(raf);
@@ -410,10 +420,14 @@
 
   // ── Wiring ─────────────────────────────────────────────────────────────
   Object.values(inputs).forEach((el) => el.addEventListener("input", () => updateLabels(readParams())));
-  flipBtn.addEventListener("click", () => { pole *= -1; });
+  flipBtn.addEventListener("click", () => {
+    pole *= -1;
+    window.SFX?.noise({ dur: 0.08, gain: 0.18, color: "pink", filter: "lowpass", freq: 320, q: 0.9 });
+  });
   meterList.querySelectorAll(".mol-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       meter = btn.dataset.key === "volt" ? "volt" : "bulb";
+      window.SFX?.tone({ freq: 620, dur: 0.07, type: "triangle", gain: 0.1 });
       meterList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b === btn));
     });
   });
