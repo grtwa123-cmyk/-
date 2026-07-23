@@ -106,6 +106,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ├── styles.css                  Shared hub / experiment styles + per-theme tokens
 ├── i18n.js                     EN / KO / ZH dictionary + data-i18n binding
 ├── assets/
+│   ├── sfx.js                  Procedural Web Audio SFX engine + mute toggle
 │   └── index/                  Landing-page modules
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
@@ -148,6 +149,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
+- **Procedural sound.** `assets/sfx.js` is a tiny Web Audio engine — every effect is synthesised from oscillators and noise buffers (no audio files, nothing to download), tied to each experiment's real events: a Geiger crackle per radioactive decay, the generator's hum rising with the wheel speed, a Doppler-shifted tone, electrolysis fizz, titration drips, and more. Audio unlocks on the first gesture and a floating 🔊 toggle (persisted to `localStorage`) mutes the whole site.
 - **WebGL black hole.** Vector Binet equation `a = −3Mh²x/r⁵` integrated with leapfrog (adaptive steps) for the exact photon-sphere shadow; Novikov–Thorne emissivity for the disk; bolometric beaming `I ∝ g⁴`.
 
 ---

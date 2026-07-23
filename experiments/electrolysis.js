@@ -111,6 +111,12 @@
           r: (side === "cath" ? 1.5 : 1.8) + Math.random() * 1.8,
           vy: 24 + Math.random() * 24,
         });
+        // A soft upward "bloop" for some bubbles — the fizz thickens with
+        // the current since bubbles spawn proportionally to it.
+        if (Math.random() < 0.22) {
+          const f = 480 + Math.random() * 640;
+          window.SFX?.tone({ freq: f, dur: 0.05, type: "sine", gain: 0.05, glideTo: f + 260, release: 0.05 });
+        }
       };
       mk("cath");
       if (Math.random() < 0.5) mk("anode");
@@ -131,6 +137,7 @@
       } else if (b.y < surfaceAt(b.x, ph) + 2) {
         // Escaped to the open surface: pop into a ripple.
         ripples.push({ x: b.x, r: b.r * 1.6, life: 0.7, t: 0 });
+        if (Math.random() < 0.4) window.SFX?.tone({ freq: 280 + Math.random() * 180, dur: 0.04, type: "sine", gain: 0.05 });
         bubbles.splice(i, 1);
       }
     }
@@ -470,7 +477,11 @@
 
   // ── Wiring ─────────────────────────────────────────────────────────────
   inputs.voltage.addEventListener("input", updateLabels);
-  pauseBtn.addEventListener("click", () => { paused = !paused; syncPauseBtn(); });
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
+    syncPauseBtn();
+  });
   resetBtn.addEventListener("click", () => {
     charge = 0;
     bubbles.length = 0;

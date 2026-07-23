@@ -113,6 +113,7 @@
   let lastTs = performance.now();
   let raf = 0;
   let stirAngle = 0;
+  let wasPink = false;                     // tracks the phenolphthalein endpoint for its chime
   const drops = [];                       // { y } falling titrant drops
   let dropTimer = 0;
 
@@ -379,6 +380,8 @@
       if (dropTimer <= 0) {
         drops.push({ y: APP.tipY + 4 });
         dropTimer = 0.22 / Math.max(p.rate, 0.2);
+        // A little water "plink" each time a drop is released.
+        window.SFX?.tone({ freq: 860 + Math.random() * 120, dur: 0.05, type: "sine", gain: 0.09, release: 0.06 });
       }
     }
     stirAngle += dt * (running ? 9 : 3);
@@ -401,6 +404,14 @@
     const p = readParams();
     step(dt, p);
     const phNow = phAt(vb, p);
+    // A soft chime the instant phenolphthalein turns pink (pH crosses 8.2) —
+    // the visual endpoint of the titration.
+    const pink = phNow >= 8.2;
+    if (pink && !wasPink) {
+      window.SFX?.tone({ freq: 990, dur: 0.18, type: "sine", gain: 0.14, release: 0.3 });
+      window.SFX?.tone({ freq: 1480, dur: 0.16, type: "sine", gain: 0.07, release: 0.26 });
+    }
+    wasPink = pink;
     drawBackground();
     drawBurette(p);
     drawFlask(p, phNow);
@@ -441,6 +452,7 @@
   acidList.querySelectorAll(".mol-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       acidKey = btn.dataset.key;
+      window.SFX?.tone({ freq: 620, dur: 0.07, type: "triangle", gain: 0.1 });
       acidList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b === btn));
       curveDirty = true;
     });

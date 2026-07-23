@@ -219,6 +219,8 @@
       out.x.textContent = fmt(finalX);
       out.y.textContent = '0.00';
       out.speed.textContent = fmt(Math.hypot(p.v0 * d.cosT, p.v0 * d.sinT - p.g * finalT));
+      // Landing thud — soft low impact.
+      window.SFX?.noise({ dur: 0.14, gain: 0.16, color: 'pink', filter: 'lowpass', freq: 420, q: 0.7 });
       running = false;
       animId = null;
       launchBtn.textContent = i18nText('launchBtn', 'Launch');
@@ -251,6 +253,8 @@
     trail = [{ x: 0, y: 0 }];
     startTs = 0;
     running = true;
+    // Launch "whoomp" — pitch rises with muzzle speed.
+    window.SFX?.sweep({ from: 150, to: 360 + activeParams.v0 * 4, dur: 0.16, type: 'sawtooth', gain: 0.16 });
     launchBtn.textContent = i18nText('launchingBtn', 'Launching…');
     animId = requestAnimationFrame(step);
   }

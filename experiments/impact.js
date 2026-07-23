@@ -140,6 +140,16 @@
         egg.visualT = 0;
         egg.t = 0;
         egg.broken = broken;
+        // Impact sound — a crack if it broke, otherwise a thud whose
+        // dullness follows the cushion (hard = sharp, soft = muffled).
+        if (broken) {
+          window.SFX?.noise({ dur: 0.12, gain: 0.28, color: 'white', filter: 'highpass', freq: 1600, q: 0.7 });
+          window.SFX?.noise({ dur: 0.06, gain: 0.2, color: 'white', filter: 'bandpass', freq: 3000, q: 2 });
+        } else {
+          const cut = egg.materialKey === 'hard' ? 900 : egg.materialKey === 'medium' ? 500 : 280;
+          const dur = egg.materialKey === 'soft' ? 0.18 : 0.1;
+          window.SFX?.noise({ dur, gain: Math.min(0.28, 0.08 + vMS * 0.03), color: 'pink', filter: 'lowpass', freq: cut, q: 0.8 });
+        }
       }
     } else if (egg.state === 'collision') {
       egg.visualT += dt;

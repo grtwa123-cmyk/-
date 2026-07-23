@@ -444,14 +444,22 @@
     drag.obj.x = pt.x; drag.obj.y = pt.y;
   });
 
+  // Each particle type gets its own note; adding rises, removing falls.
+  const PITCH = { p: 440, n: 330, e: 620 };
   function endDrag(e) {
     if (!drag) return;
     const pt = pointerPos(e);
-    const { kind, obj } = drag;
+    const { kind, obj, source } = drag;
     const keep = inAtomZone(pt) && !overBucket(pt);
     if (keep) arr(kind).push(obj);   // commit (bucket-spawn) or re-attach (from atom)
     // else: dropped on a bucket / outside → discarded (for atom-source this
     //       is the removal; for bucket-source it simply never got added).
+    const f = PITCH[kind];
+    if (keep && source === "bucket") {
+      window.SFX?.tone({ freq: f, dur: 0.1, type: "sine", gain: 0.15, glideTo: f * 1.3 });
+    } else if (!keep && source === "atom") {
+      window.SFX?.tone({ freq: f, dur: 0.12, type: "sine", gain: 0.12, glideTo: f * 0.6 });
+    }
     drag = null;
   }
   stage.addEventListener("pointerup", endDrag);

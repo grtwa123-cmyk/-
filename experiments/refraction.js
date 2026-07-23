@@ -263,10 +263,18 @@
   }
 
   let raf = 0;
+  let prevTir = false;
   function frame() {
     raf = requestAnimationFrame(frame);
     const p = readParams();
     const sol = solve(p);
+    // A bright glassy "ping" the moment the ray tips into total internal
+    // reflection — the physically meaningful threshold.
+    if (sol.tir && !prevTir) {
+      window.SFX?.tone({ freq: 1320, dur: 0.16, type: "sine", gain: 0.16, release: 0.22 });
+      window.SFX?.tone({ freq: 1980, dur: 0.12, type: "sine", gain: 0.08, release: 0.18 });
+    }
+    prevTir = sol.tir;
     render(p, sol, performance.now() / 1000);
     updateReadouts(p, sol);
   }
@@ -323,6 +331,7 @@
       if (!pre) return;
       inputs.n1.value = String(pre.n1);
       inputs.n2.value = String(pre.n2);
+      window.SFX?.tone({ freq: 660, dur: 0.09, type: "triangle", gain: 0.12 });
       presetList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b === btn));
       updateLabels(readParams());
     });

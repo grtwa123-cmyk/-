@@ -325,7 +325,11 @@
   Object.values(inputs).forEach((el) =>
     el.addEventListener("input", () => updateLabels(readParams())));
 
-  pauseBtn.addEventListener("click", () => { paused = !paused; syncPauseBtn(); });
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
+    syncPauseBtn();
+  });
   resetBtn.addEventListener("click", () => {
     inputs.alpha.value = "1.1";
     inputs.beta.value = "0.4";

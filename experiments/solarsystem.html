@@ -1082,5 +1082,15 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
   animate();
 }));
 </script>
+<script src="../assets/sfx.js" defer></script>
+<script>
+  // A very quiet deep-space pad, started on the first gesture (so it obeys
+  // the browser's autoplay policy) and mutable via the 🔊 toggle.
+  window.addEventListener("pointerdown", function () {
+    if (window.SFX && !window.__ambientDrone) {
+      window.__ambientDrone = new window.SFX.Drone({ type: "sine", freq: 55, gain: 0.022, partials: 1 });
+    }
+  }, { once: true });
+</script>
 </body>
 </html>

@@ -203,6 +203,17 @@
     }
   }
 
+  // A tone for the right-edge observer, pitched by the true Doppler ratio:
+  // approaching (source moving right) it rises, receding it falls. Silent
+  // until the browser unlocks audio on the first gesture.
+  const drone = window.SFX ? new window.SFX.Drone({ type: "sine", freq: 300, gain: 0 }) : null;
+  function updateDrone(p) {
+    if (!drone) return;
+    const denom = Math.max(0.15, 1 - Math.min(p.mach, 3) * sourceDir);
+    drone.setFreq(300 / denom);
+    drone.setGain(paused ? 0 : 0.05);
+  }
+
   // ── Main loop ──────────────────────────────────────────────────────────
   function frame(ts) {
     raf = requestAnimationFrame(frame);
@@ -211,6 +222,7 @@
     const p = readParams();
     if (!paused) step(dt, p);
     render(p);
+    updateDrone(p);
   }
 
   function start() {
