@@ -719,7 +719,7 @@
       semiDesc: "고유·n형·p형 반도체에 같은 전지를 연결하고 극성을 바꿔 가며 캐리어 흐름을 비교해 보세요.",
       diodeTitle: "PN 접합 다이오드",
       diodeDesc: "순방향과 역방향 바이어스를 바꾸며 공핍 영역이 어떻게 달라지는지 관찰해 보세요.",
-      moleculeTitle: "분자 구조 뷰어",
+      moleculeTitle: "분자 구조 보기",
       moleculeDesc: "여러 분자의 원자·결합·형태를 살펴보고 물질 속에 숨은 규칙성을 찾아보세요.",
       crystalTitle: "결정 격자",
       crystalDesc: "단순 입방, BCC, FCC, NaCl, CsCl, 다이아몬드 등 주요 결정 구조를 살펴보며 원자 배치·배위수·충전율을 비교해 보세요.",
@@ -766,7 +766,7 @@
       outAngVel: "각속도",
       outElapsedTime: "경과 시간",
 
-      moleculePageTitle: "분자 구조 뷰어 · 화학",
+      moleculePageTitle: "분자 구조 보기 · 화학",
       experimentCount3: "화학 · 분자 구조",
       moleculeIntro: "분자를 골라 돌려 보세요. 같은 혼성화를 가진 분자끼리 공통된 기하학적 틀을 공유한다는 점을 직접 확인할 수 있습니다.",
       selectMolecule: "분자 선택",
