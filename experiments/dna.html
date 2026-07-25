@@ -10,7 +10,7 @@
   <title data-i18n="dnaPageTitle">DNA Double Helix · Biology Experiments</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
-<body>
+<body data-theme="biology">
   <div class="container">
     <div class="lang-switch" role="group" aria-label="Language">
       <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
@@ -72,7 +72,11 @@
       </section>
 
       <section class="stage" aria-label="Visualisation">
-        <canvas id="stage" width="800" height="440" aria-label="Rotating B-form DNA double helix with base pairs"></canvas>
+        <div class="stage-3d">
+          <canvas id="stage" width="800" height="520" aria-label="Interactive 3D model of a B-form DNA double helix — drag to rotate, scroll to zoom"></canvas>
+          <canvas id="overlay" class="overlay-2d" aria-hidden="true"></canvas>
+          <p class="hint-3d" data-i18n="hint3d">Drag to rotate · scroll to zoom</p>
+        </div>
 
         <div class="readouts">
           <div class="readout">
@@ -117,6 +121,7 @@
 
   <script src="../i18n.js" defer></script>
   <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/gl3d.js" defer></script>
   <script src="dna.js" defer></script>
 </body>
 </html>

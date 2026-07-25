@@ -1,6 +1,14 @@
+/*
+ * Crystal lattice — a real 3D model of the unit cell.
+ *
+ * Lattice sites are defined in fractional cell coordinates and rendered by
+ * the shared WebGL viewer in assets/gl3d.js: lit spheres with a true depth
+ * buffer, the unit cell drawn as real edge geometry, and free orbit on both
+ * axes so the coordination around any site can actually be inspected.
+ */
 (() => {
   const canvas = document.getElementById('stage');
-  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
   const listEl = document.getElementById('lattice-list');
   const rotateToggle = document.getElementById('rotate-toggle');
   const rotateSpeed = document.getElementById('rotate-speed');
@@ -19,13 +27,12 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
-  const FONT = '"Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
 
   // CPK-ish colors + sizes (fractional radius relative to a cell edge of 1).
   // Smaller than realistic radii so the lattice geometry stays visible.
   const ELEMENTS = {
     A:  { color: '#6ea8ff', text: '#0b1024', radius: 0.14 }, // generic metal
-    C:  { color: '#454d6d', text: '#e8ecf7', radius: 0.10 },
+    C:  { color: '#8391bb', text: '#0b1024', radius: 0.10 },
     Na: { color: '#ab5cf2', text: '#ffffff', radius: 0.13 },
     Cl: { color: '#5fe04f', text: '#0b1024', radius: 0.17 },
     Cs: { color: '#7d3eb3', text: '#ffffff', radius: 0.20 },
@@ -132,12 +139,6 @@
 
   // ---- View state ----
   let currentKey = 'sc';
-  let rotY = -0.5; // azimuth
-  let rotX = -0.4; // elevation
-  let lastTs = 0;
-  let animId = null;
-  let CW = 800;
-  let CH = 600;
 
   // ---- Atom expansion ----
   function expandAtoms(atoms) {
@@ -158,157 +159,105 @@
     return out;
   }
 
-  // ---- 3D projection ----
-  function project(p, cellSize, cellSpan) {
-    // Center the lattice on origin
-    const half = cellSpan / 2;
-    const x0 = (p.x - half) * cellSize;
-    const y0 = (p.y - half) * cellSize;
-    const z0 = (p.z - half) * cellSize;
-    // Rotate around Y, then X.
-    const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
-    const x1 = x0 * cosY + z0 * sinY;
-    const z1 = -x0 * sinY + z0 * cosY;
-    const y1 = y0;
-    const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
-    const y2 = y1 * cosX - z1 * sinX;
-    const z2 = y1 * sinX + z1 * cosX;
-    return { x: x1, y: y2, z: z2 };
-  }
-
+  // ── Colour helpers ─────────────────────────────────────────────────────
+  const hexRGB = (hex) => {
+    const h = hex.replace('#', '');
+    return new Float32Array([
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255,
+    ]);
+  };
+  const rgbCache = new Map();
   function elementInfo(el) {
-    return ELEMENTS[el] || { color: '#9aa0b8', text: '#0b1024', radius: 0.2 };
+    const info = ELEMENTS[el] || { color: '#888888', text: '#ffffff', radius: 0.14 };
+    if (!rgbCache.has(info.color)) rgbCache.set(info.color, hexRGB(info.color));
+    return { ...info, rgb: rgbCache.get(info.color) };
   }
 
-  function drawCellEdges(cellSize, cellSpan, depthScale) {
-    if (!cellToggle.checked) return;
-    const corners = [];
-    const repeats = expandToggle.checked ? 2 : 1;
-    for (let ix = 0; ix <= repeats; ix++)
-      for (let iy = 0; iy <= repeats; iy++)
-        for (let iz = 0; iz <= repeats; iz++) {
-          corners.push({ x: ix, y: iy, z: iz });
-        }
-    // Build edge list as pairs of corner indices.
-    const idx = (x, y, z) => (x * (repeats + 1) + y) * (repeats + 1) + z;
-    const edges = [];
-    for (let ix = 0; ix <= repeats; ix++)
-      for (let iy = 0; iy <= repeats; iy++)
-        for (let iz = 0; iz < repeats; iz++)
-          edges.push([idx(ix, iy, iz), idx(ix, iy, iz + 1)]);
-    for (let ix = 0; ix <= repeats; ix++)
-      for (let iz = 0; iz <= repeats; iz++)
-        for (let iy = 0; iy < repeats; iy++)
-          edges.push([idx(ix, iy, iz), idx(ix, iy + 1, iz)]);
-    for (let iy = 0; iy <= repeats; iy++)
-      for (let iz = 0; iz <= repeats; iz++)
-        for (let ix = 0; ix < repeats; ix++)
-          edges.push([idx(ix, iy, iz), idx(ix + 1, iy, iz)]);
+  const EDGE_COLOR = new Float32Array([0.42, 0.55, 0.78]);
+  const EDGE_R = 0.008;
 
-    const projected = corners.map((p) => projectToCanvas(p, cellSize, cellSpan));
+  // ── Scene construction ─────────────────────────────────────────────────
+  // The lattice is built in cell units (one cube edge = 1 world unit) and
+  // centred on the origin, so the camera framing is independent of which
+  // structure or expansion is showing.
+  function buildScene() {
+    const lat = LATTICES[currentKey];
+    const atoms = expandAtoms(lat.atoms);
+    const span = expandToggle.checked ? 2 : 1;
+    const half = span / 2;
+    const shift = (a) => [a.x - half, a.y - half, a.z - half];
 
-    ctx.save();
-    ctx.strokeStyle = 'rgba(232, 236, 247, 0.32)';
-    ctx.lineWidth = 1.2;
-    for (const [a, b] of edges) {
-      const za = projected[a].z;
-      const zb = projected[b].z;
-      const fade = 0.45 + 0.55 * depthScale((za + zb) / 2);
-      ctx.globalAlpha = Math.min(1, fade);
-      ctx.beginPath();
-      ctx.moveTo(projected[a].cx, projected[a].cy);
-      ctx.lineTo(projected[b].cx, projected[b].cy);
-      ctx.stroke();
+    const spheres = atoms.map((a) => {
+      const info = elementInfo(a.el);
+      return { p: shift(a), r: info.radius, color: info.rgb, el: a.el };
+    });
+
+    // Unit-cell wireframe: the 12 edges of every cube in the expansion,
+    // drawn as thin cylinders so they light and occlude like real geometry.
+    const cylinders = [];
+    if (cellToggle.checked) {
+      const reps = expandToggle.checked ? 2 : 1;
+      for (let ox = 0; ox < reps; ox++)
+        for (let oy = 0; oy < reps; oy++)
+          for (let oz = 0; oz < reps; oz++) {
+            const c = (x, y, z) => [x + ox - half, y + oy - half, z + oz - half];
+            for (let axis = 0; axis < 3; axis++) {
+              for (let u = 0; u <= 1; u++) {
+                for (let v = 0; v <= 1; v++) {
+                  let a, b;
+                  if (axis === 0) { a = c(0, u, v); b = c(1, u, v); }
+                  else if (axis === 1) { a = c(u, 0, v); b = c(u, 1, v); }
+                  else { a = c(u, v, 0); b = c(u, v, 1); }
+                  cylinders.push({ a, b, r: EDGE_R, color: EDGE_COLOR });
+                }
+              }
+            }
+          }
     }
-    ctx.restore();
+
+    // Radius that comfortably contains the cube corners plus atom radii.
+    const radius = Math.sqrt(3) * half + 0.2;
+    return { spheres, cylinders, radius };
   }
 
-  function projectToCanvas(p, cellSize, cellSpan) {
-    const proj = project(p, cellSize, cellSpan);
-    return {
-      cx: CW / 2 + proj.x,
-      cy: CH / 2 - proj.y,
-      z: proj.z,
-    };
-  }
-
-  function drawAtom(canvasAtom, cellSize, depthScale, showLabel) {
-    const f = depthScale(canvasAtom.z);
-    const info = elementInfo(canvasAtom.el);
-    const r = Math.max(7, info.radius * cellSize * f);
-
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = info.color;
-    ctx.beginPath();
-    ctx.arc(canvasAtom.cx, canvasAtom.cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Highlight sheen for a 3D look
-    const grad = ctx.createRadialGradient(
-      canvasAtom.cx - r * 0.35, canvasAtom.cy - r * 0.35, r * 0.1,
-      canvasAtom.cx, canvasAtom.cy, r
-    );
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(canvasAtom.cx, canvasAtom.cy, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (showLabel && r >= 10) {
-      ctx.fillStyle = info.text;
-      ctx.font = `${Math.max(10, Math.floor(r * 0.9))}px ${FONT}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(canvasAtom.el, canvasAtom.cx, canvasAtom.cy);
+  // ── Labels on the 2D overlay ───────────────────────────────────────────
+  // Only the ionic lattices carry more than one species, so labels matter
+  // most there; we still walk near-to-far and drop any symbol that would
+  // float on top of a nearer atom.
+  function drawLabels(ctx2d, project, v) {
+    if (!labelsToggle.checked) return;
+    const focal = (v.H / 2) / Math.tan((v.fov * Math.PI) / 360);
+    const items = [];
+    for (const s of view.spheres) {
+      const pr = project(s.p);
+      if (!pr.visible) continue;
+      items.push({ x: pr.x, y: pr.y, w: pr.w, rad: (s.r * focal) / pr.w, el: s.el });
     }
-    ctx.restore();
+    items.sort((a, b) => a.w - b.w);
+    const placed = [];
+    ctx2d.textAlign = 'center';
+    ctx2d.textBaseline = 'middle';
+    for (const it of items) {
+      if (placed.some((p) => Math.hypot(p.x - it.x, p.y - it.y) < p.rad * 0.9)) continue;
+      placed.push(it);
+      if (it.rad < 9) continue;
+      const info = elementInfo(it.el);
+      ctx2d.font = `700 ${Math.max(9, Math.min(16, it.rad * 0.8))}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx2d.fillStyle = info.text;
+      ctx2d.fillText(it.el, it.x, it.y);
+    }
   }
 
-  function render() {
-    const lattice = LATTICES[currentKey];
-    ctx.clearRect(0, 0, CW, CH);
-
-    const atoms = expandAtoms(lattice.atoms);
-    const cellSpan = expandToggle.checked ? 2 : 1;
-
-    // Pick a cell size so the projected lattice fits comfortably across
-    // every rotation. Worst-case extent is the body diagonal, √3 × side.
-    const margin = 70;
-    const fitSize = Math.min(CW - margin * 2, CH - margin * 2);
-    const cellSize = fitSize / (cellSpan * 1.8);
-
-    const projected = atoms.map((a) => projectToCanvas(a, cellSize, cellSpan));
-    const minZ = Math.min(...projected.map((p) => p.z));
-    const maxZ = Math.max(...projected.map((p) => p.z));
-    const zRange = Math.max(maxZ - minZ, 0.0001);
-    const depthScale = (z) => {
-      const t = (z - minZ) / zRange;
-      return 0.6 + 0.45 * t;
-    };
-
-    drawCellEdges(cellSize, cellSpan, depthScale);
-
-    const items = projected.map((p, i) => ({ ...p, el: atoms[i].el }));
-    items.sort((a, b) => a.z - b.z);
-    const showLabels = labelsToggle.checked;
-    for (const it of items) drawAtom(it, cellSize, depthScale, showLabels);
-  }
-
+  // ── UI ─────────────────────────────────────────────────────────────────
   function updateProperties() {
-    const lattice = LATTICES[currentKey];
-    prop.atoms.textContent = lattice.atomsPerCell;
-    prop.coord.textContent = lattice.coord;
-    prop.apf.textContent = lattice.apf;
-    prop.examples.textContent = lattice.examples;
-    patternBody.textContent = i18nText(lattice.patternKey, '');
+    const lat = LATTICES[currentKey];
+    prop.atoms.textContent = lat.atomsPerCell;
+    prop.coord.textContent = lat.coord;
+    prop.apf.textContent = lat.apf;
+    prop.examples.textContent = lat.examples;
+    patternBody.textContent = i18nText(lat.patternKey, '');
   }
 
   function highlightActive() {
@@ -317,12 +266,20 @@
     });
   }
 
+  function applyScene() {
+    if (!view) return;
+    const scene = buildScene();
+    view.setScene(scene);
+    view.fit(scene.radius);
+    view.setZoomRange(scene.radius * 0.5, scene.radius * 9);
+  }
+
   function selectLattice(key) {
     if (!LATTICES[key]) return;
     currentKey = key;
     highlightActive();
     updateProperties();
-    render();
+    applyScene();
   }
 
   function buildList() {
@@ -345,111 +302,73 @@
     }
   }
 
-  function tick(ts) {
-    if (!rotateToggle.checked) {
-      animId = null;
-      return;
-    }
-    if (!lastTs) lastTs = ts;
-    const dt = (ts - lastTs) / 1000;
-    lastTs = ts;
-    const speed = parseFloat(rotateSpeed.value);
-    rotY += dt * speed;
-    render();
-    animId = requestAnimationFrame(tick);
-  }
-
-  function startRotation() {
-    if (animId !== null) return;
-    lastTs = 0;
-    animId = requestAnimationFrame(tick);
-  }
-  function stopRotation() {
-    if (animId !== null) cancelAnimationFrame(animId);
-    animId = null;
+  // ── Fallback when WebGL is unavailable ─────────────────────────────────
+  function showFallback() {
+    const host = canvas.parentElement;
+    if (!host) return;
+    const note = document.createElement('p');
+    note.className = 'hint-3d';
+    note.style.cssText = 'position:static;padding:2rem 1rem;text-align:center;text-transform:none;font-size:0.95rem;opacity:1';
+    note.textContent = i18nText('webglUnavailable', 'This 3D model needs WebGL, which this browser has disabled.');
+    note.setAttribute('data-i18n', 'webglUnavailable');
+    canvas.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    host.appendChild(note);
   }
 
   function wireEvents() {
     rotateToggle.addEventListener('change', () => {
-      if (rotateToggle.checked) startRotation();
-      else stopRotation();
+      if (view) view.autoRotate = rotateToggle.checked;
     });
     rotateSpeed.addEventListener('input', () => {
-      rotateSpeedValue.textContent = parseFloat(rotateSpeed.value).toFixed(2);
+      const s = parseFloat(rotateSpeed.value);
+      rotateSpeedValue.textContent = s.toFixed(2);
+      if (view) view.speed = s;
     });
-    cellToggle.addEventListener('change', render);
-    expandToggle.addEventListener('change', render);
-    labelsToggle.addEventListener('change', render);
-
-    let dragging = false;
-    let lastX = 0;
-    let lastY = 0;
-    const onDown = (cx, cy) => { dragging = true; lastX = cx; lastY = cy; };
-    const onMove = (cx, cy) => {
-      if (!dragging) return;
-      const dx = cx - lastX;
-      const dy = cy - lastY;
-      lastX = cx; lastY = cy;
-      rotY += dx * 0.01;
-      rotX += dy * 0.01;
-      if (rotX > Math.PI / 2) rotX = Math.PI / 2;
-      if (rotX < -Math.PI / 2) rotX = -Math.PI / 2;
-      render();
-    };
-    const onUp = () => { dragging = false; };
-
-    canvas.addEventListener('mousedown', (e) => onDown(e.clientX, e.clientY));
-    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
-    window.addEventListener('mouseup', onUp);
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.touches[0]) {
-        onDown(e.touches[0].clientX, e.touches[0].clientY);
-        e.preventDefault();
-      }
-    }, { passive: false });
-    canvas.addEventListener('touchmove', (e) => {
-      if (e.touches[0]) {
-        onMove(e.touches[0].clientX, e.touches[0].clientY);
-        e.preventDefault();
-      }
-    }, { passive: false });
-    canvas.addEventListener('touchend', onUp);
+    cellToggle.addEventListener('change', applyScene);
+    expandToggle.addEventListener('change', applyScene);
+    labelsToggle.addEventListener('change', () => { if (view) view.draw(); });
   }
 
   document.addEventListener('langchange', () => {
     updateProperties();
+    buildList();
+    highlightActive();
   });
 
-  function resizeCanvas() {
-    // Un-pin the inline size from the previous pass before measuring —
-    // otherwise the canvas can never grow back when the window widens
-    // (it would keep re-measuring its own pinned width forever).
-    canvas.style.removeProperty('width');
-    canvas.style.removeProperty('height');
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    CW = Math.max(Math.round(rect.width), 320);
-    CH = 560;
-    canvas.width = Math.round(CW * dpr);
-    canvas.height = Math.round(CH * dpr);
-    canvas.style.setProperty('width', CW + 'px', 'important');
-    canvas.style.setProperty('height', CH + 'px', 'important');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    render();
-  }
+  window.addEventListener('resize', () => {
+    if (!view) return;
+    view.resize();
+    view.fit(buildScene().radius);
+  });
+
+  // ── Boot ───────────────────────────────────────────────────────────────
+  let view = null;
 
   buildList();
   highlightActive();
   updateProperties();
   rotateSpeedValue.textContent = parseFloat(rotateSpeed.value).toFixed(2);
   wireEvents();
-  window.addEventListener('resize', resizeCanvas);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopRotation();
-    else if (rotateToggle.checked) startRotation();
+
+  view = window.GL3D && window.GL3D.create({
+    canvas,
+    overlay,
+    height: 600,
+    minWidth: 260,
+    background: [0.035, 0.05, 0.115],
+    fov: 40,
+    yaw: -0.6,
+    pitch: 0.42,
   });
-  resizeCanvas();
-  startRotation();
+
+  if (!view) {
+    showFallback();
+  } else {
+    view.speed = parseFloat(rotateSpeed.value);
+    view.autoRotate = rotateToggle.checked;
+    view.onOverlay = drawLabels;
+    applyScene();
+    view.start();
+  }
 })();

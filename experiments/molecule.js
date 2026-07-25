@@ -1,6 +1,16 @@
+/*
+ * Molecule viewer — a real 3D ball-and-stick model.
+ *
+ * The coordinates below are genuine 3D geometries (tetrahedral methane,
+ * 107° pyramidal ammonia, planar benzene…), so they are rendered by the
+ * shared WebGL viewer in assets/gl3d.js rather than flattened into a 2D
+ * projection: perspective, a depth buffer, lit spheres, and free orbit on
+ * both axes. Bonds are split at the midpoint and take each end's atom
+ * colour, the way molecular viewers conventionally draw them.
+ */
 (() => {
   const canvas = document.getElementById('stage');
-  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
   const listEl = document.getElementById('molecule-list');
   const rotateToggle = document.getElementById('rotate-toggle');
   const speedInput = document.getElementById('rotate-speed');
@@ -142,12 +152,162 @@
   const MOL_ORDER = ['water', 'co2', 'methane', 'ammonia', 'ethane', 'ethylene', 'benzene'];
 
   let currentKey = 'water';
-  let rotation = 0;
-  let lastTs = 0;
-  let animId = null;
-  let CW = 800;
-  let CH = 400;
+  let view = null;
 
+  // ── Colour helpers ─────────────────────────────────────────────────────
+  const hexRGB = (hex) => {
+    const h = hex.replace('#', '');
+    return new Float32Array([
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255,
+    ]);
+  };
+  const rgbCache = new Map();
+  function elementInfo(el) {
+    const info = ELEMENTS[el] || { color: '#888888', text: '#fff', radius: 0.5 };
+    if (!rgbCache.has(info.color)) rgbCache.set(info.color, hexRGB(info.color));
+    return { ...info, rgb: rgbCache.get(info.color) };
+  }
+
+  // Ball-and-stick proportions: balls well under their van der Waals size so
+  // the bond framework — the point of the model — stays visible.
+  const BALL = 0.42;
+  const STICK = 0.10;
+
+  // ── Vector helpers ─────────────────────────────────────────────────────
+  const v3 = (a) => [a.x, a.y, a.z];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const mulS = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const mid = (a, b) => mulS(add(a, b), 0.5);
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  function unit(a) {
+    const l = Math.hypot(a[0], a[1], a[2]) || 1;
+    return [a[0] / l, a[1] / l, a[2] / l];
+  }
+
+  /**
+   * Offset direction for the extra lines of a multiple bond.
+   *
+   * A double bond's two lines have to be drawn in a chemically sensible
+   * plane, so we look for a neighbouring atom and take the component of
+   * that direction perpendicular to the bond — which puts the pair in the
+   * local molecular plane (the C=C of ethylene, the C=O of a carbonyl).
+   * With no neighbour to go on, any perpendicular will do.
+   */
+  function offsetDir(mol, i, j) {
+    const a = v3(mol.atoms[i]), b = v3(mol.atoms[j]);
+    const axis = unit(sub(b, a));
+    for (const [p, q] of mol.bonds) {
+      const other = (p === i && q !== j) ? q : (q === i && p !== j) ? p
+                  : (p === j && q !== i) ? q : (q === j && p !== i) ? p : -1;
+      if (other < 0) continue;
+      const ref = sub(v3(mol.atoms[other]), a);
+      const perp = sub(ref, mulS(axis, dot(ref, axis)));
+      if (Math.hypot(perp[0], perp[1], perp[2]) > 1e-3) return unit(perp);
+    }
+    const seed = Math.abs(axis[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+    return unit(cross(axis, seed));
+  }
+
+  function centroid(mol) {
+    const c = mol.atoms.reduce((s, a) => add(s, v3(a)), [0, 0, 0]);
+    return mulS(c, 1 / Math.max(mol.atoms.length, 1));
+  }
+
+  // ── Scene construction ─────────────────────────────────────────────────
+  function buildScene() {
+    const mol = MOLECULES[currentKey];
+    const cen = centroid(mol);
+    const spheres = [];
+    const cylinders = [];
+
+    for (const atom of mol.atoms) {
+      const info = elementInfo(atom.el);
+      spheres.push({ p: sub(v3(atom), cen), r: info.radius * BALL, color: info.rgb });
+    }
+
+    // Each bond is drawn as two half-cylinders so it takes the colour of the
+    // atom at each end.
+    const halfBond = (a, b, ca, cb, r) => {
+      const m = mid(a, b);
+      cylinders.push({ a, b: m, r, color: ca });
+      cylinders.push({ a: m, b, r, color: cb });
+    };
+
+    for (const [i, j, order] of mol.bonds) {
+      const a = sub(v3(mol.atoms[i]), cen);
+      const b = sub(v3(mol.atoms[j]), cen);
+      const ca = elementInfo(mol.atoms[i].el).rgb;
+      const cb = elementInfo(mol.atoms[j].el).rgb;
+
+      if (order === 1) {
+        halfBond(a, b, ca, cb, STICK);
+      } else if (order === 2 || order === 3) {
+        const d = offsetDir(mol, i, j);
+        const gap = STICK * (order === 2 ? 1.5 : 2.0);
+        const r = STICK * (order === 3 ? 0.62 : 0.72);
+        const offs = order === 2 ? [-gap, gap] : [-gap, 0, gap];
+        for (const o of offs) {
+          halfBond(add(a, mulS(d, o)), add(b, mulS(d, o)), ca, cb, r);
+        }
+      } else if (order === 1.5) {
+        // Aromatic: the full sigma bond plus a thinner partial line offset
+        // toward the ring centre, the standard way of drawing delocalised
+        // benzene bonds.
+        halfBond(a, b, ca, cb, STICK);
+        const inward = unit(sub(mulS(add(a, b), -0.5), [0, 0, 0]));
+        const axis = unit(sub(b, a));
+        let d = sub(inward, mulS(axis, dot(inward, axis)));
+        if (Math.hypot(d[0], d[1], d[2]) < 1e-3) d = offsetDir(mol, i, j);
+        else d = unit(d);
+        const o = mulS(d, STICK * 2.0);
+        halfBond(add(a, o), add(b, o), ca, cb, STICK * 0.5);
+      }
+    }
+    return { spheres, cylinders, radius: sceneRadius(spheres) };
+  }
+
+  function sceneRadius(spheres) {
+    let m = 1;
+    for (const s of spheres) m = Math.max(m, Math.hypot(s.p[0], s.p[1], s.p[2]) + s.r);
+    return m;
+  }
+
+  // ── Element-symbol labels on the 2D overlay ────────────────────────────
+  // Labels are placed by projecting each atom centre. An atom hidden behind
+  // a nearer one would otherwise show its symbol floating on top, so we walk
+  // near-to-far and skip any label whose anchor falls inside an already
+  // placed (nearer) atom's disc.
+  function drawLabels(ctx2d, project, v) {
+    if (!labelsToggle.checked) return;
+    const mol = MOLECULES[currentKey];
+    const focal = (v.H / 2) / Math.tan((v.fov * Math.PI) / 360);
+    const items = [];
+    for (let i = 0; i < view.spheres.length; i++) {
+      const s = view.spheres[i];
+      const pr = project(s.p);
+      if (!pr.visible) continue;
+      items.push({ x: pr.x, y: pr.y, w: pr.w, rad: (s.r * focal) / pr.w, el: mol.atoms[i].el });
+    }
+    items.sort((a, b) => a.w - b.w);
+    const placed = [];
+    ctx2d.textAlign = 'center';
+    ctx2d.textBaseline = 'middle';
+    for (const it of items) {
+      if (placed.some((p) => Math.hypot(p.x - it.x, p.y - it.y) < p.rad * 0.92)) continue;
+      placed.push(it);
+      if (it.rad < 7) continue;
+      const info = elementInfo(it.el);
+      ctx2d.font = `700 ${Math.max(10, Math.min(20, it.rad * 0.95))}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx2d.fillStyle = info.text;
+      ctx2d.fillText(it.el, it.x, it.y);
+    }
+  }
+
+  // ── UI ─────────────────────────────────────────────────────────────────
   function buildList() {
     listEl.innerHTML = '';
     for (const key of MOL_ORDER) {
@@ -171,155 +331,6 @@
     }
   }
 
-  function project(atom, angle) {
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    return {
-      x: atom.x * cos + atom.z * sin,
-      y: atom.y,
-      z: -atom.x * sin + atom.z * cos,
-      el: atom.el,
-    };
-  }
-
-  function elementInfo(el) {
-    return ELEMENTS[el] || { color: '#888', text: '#fff', radius: 0.5 };
-  }
-
-  function drawBond(a, b, order, scale, depthScale) {
-    const z = (a.z + b.z) / 2;
-    const f = depthScale(z);
-    ctx.lineWidth = Math.max(1.5, 3 * f);
-    ctx.strokeStyle = `rgba(232, 236, 247, ${0.55 + 0.4 * f})`;
-
-    if (order === 1) {
-      ctx.beginPath();
-      ctx.moveTo(a.cx, a.cy);
-      ctx.lineTo(b.cx, b.cy);
-      ctx.stroke();
-    } else if (order === 2 || order === 3) {
-      const dx = b.cx - a.cx;
-      const dy = b.cy - a.cy;
-      const len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len;
-      const ny = dx / len;
-      const offsets = order === 2 ? [-3.5, 3.5] : [-5, 0, 5];
-      for (const off of offsets) {
-        ctx.beginPath();
-        ctx.moveTo(a.cx + nx * off, a.cy + ny * off);
-        ctx.lineTo(b.cx + nx * off, b.cy + ny * off);
-        ctx.stroke();
-      }
-    } else if (order === 1.5) {
-      ctx.beginPath();
-      ctx.moveTo(a.cx, a.cy);
-      ctx.lineTo(b.cx, b.cy);
-      ctx.stroke();
-      const dx = b.cx - a.cx;
-      const dy = b.cy - a.cy;
-      const len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len;
-      const ny = dx / len;
-      ctx.save();
-      ctx.setLineDash([5, 4]);
-      ctx.beginPath();
-      ctx.moveTo(a.cx + nx * 4, a.cy + ny * 4);
-      ctx.lineTo(b.cx + nx * 4, b.cy + ny * 4);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  function drawAtom(atomCanvas, scale, depthScale, showLabel) {
-    const f = depthScale(atomCanvas.z);
-    const info = elementInfo(atomCanvas.el);
-    const r = Math.max(8, info.radius * scale * 0.5 * f);
-
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = info.color;
-    ctx.beginPath();
-    ctx.arc(atomCanvas.cx, atomCanvas.cy, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    const grad = ctx.createRadialGradient(
-      atomCanvas.cx - r * 0.35, atomCanvas.cy - r * 0.35, r * 0.1,
-      atomCanvas.cx, atomCanvas.cy, r
-    );
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(atomCanvas.cx, atomCanvas.cy, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (showLabel && r >= 10) {
-      ctx.fillStyle = info.text;
-      ctx.font = `${Math.max(10, Math.floor(r * 0.9))}px system-ui, -apple-system, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(atomCanvas.el, atomCanvas.cx, atomCanvas.cy);
-    }
-    ctx.restore();
-  }
-
-  function render() {
-    const mol = MOLECULES[currentKey];
-    ctx.clearRect(0, 0, CW, CH);
-
-    const projected = mol.atoms.map((a) => project(a, rotation));
-    const xs = projected.map((p) => p.x);
-    const ys = projected.map((p) => p.y);
-    const zs = projected.map((p) => p.z);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
-    const minZ = Math.min(...zs), maxZ = Math.max(...zs);
-    const midX = (minX + maxX) / 2;
-    const midY = (minY + maxY) / 2;
-    const spanX = Math.max(maxX - minX, 1);
-    const spanY = Math.max(maxY - minY, 1);
-
-    const margin = 70;
-    const scale = Math.min(
-      (CW - margin * 2) / (spanX + 1.5),
-      (CH - margin * 2) / (spanY + 1.5)
-    );
-
-    const zRange = Math.max(maxZ - minZ, 0.0001);
-    const depthScale = (z) => {
-      const t = (z - minZ) / zRange;
-      return 0.65 + 0.45 * t;
-    };
-
-    const canvasAtoms = projected.map((p) => ({
-      ...p,
-      cx: CW / 2 + (p.x - midX) * scale,
-      cy: CH / 2 - (p.y - midY) * scale,
-    }));
-
-    const bondItems = mol.bonds.map(([i, j, order]) => ({
-      kind: 'bond',
-      a: canvasAtoms[i],
-      b: canvasAtoms[j],
-      order,
-      z: (canvasAtoms[i].z + canvasAtoms[j].z) / 2 - 0.001,
-    }));
-    const atomItems = canvasAtoms.map((a) => ({ kind: 'atom', a, z: a.z }));
-    const items = [...bondItems, ...atomItems].sort((p, q) => p.z - q.z);
-
-    const showLabels = labelsToggle.checked;
-    for (const it of items) {
-      if (it.kind === 'bond') drawBond(it.a, it.b, it.order, scale, depthScale);
-      else drawAtom(it.a, scale, depthScale, showLabels);
-    }
-  }
-
   function updateProperties() {
     const mol = MOLECULES[currentKey];
     prop.name.textContent = i18nText(mol.nameKey, mol.key);
@@ -337,115 +348,85 @@
     });
   }
 
+  function applyScene() {
+    if (!view) return;
+    const scene = buildScene();
+    view.setScene(scene);
+    view.fit(scene.radius);
+    view.setZoomRange(scene.radius * 0.8, scene.radius * 9);
+  }
+
   function selectMolecule(key) {
     if (!MOLECULES[key]) return;
     currentKey = key;
     highlightActive();
     updateProperties();
-    render();
+    applyScene();
   }
 
-  function tick(ts) {
-    if (!rotateToggle.checked) {
-      animId = null;
-      return;
-    }
-    if (!lastTs) lastTs = ts;
-    const dt = (ts - lastTs) / 1000;
-    lastTs = ts;
-    const speed = parseFloat(speedInput.value);
-    rotation += dt * speed;
-    render();
-    animId = requestAnimationFrame(tick);
-  }
-
-  function startRotation() {
-    if (animId !== null) return;
-    lastTs = 0;
-    animId = requestAnimationFrame(tick);
-  }
-
-  function stopRotation() {
-    if (animId !== null) cancelAnimationFrame(animId);
-    animId = null;
+  // ── Fallback when WebGL is unavailable ─────────────────────────────────
+  function showFallback() {
+    const host = canvas.parentElement;
+    if (!host) return;
+    const note = document.createElement('p');
+    note.className = 'hint-3d';
+    note.style.cssText = 'position:static;padding:2rem 1rem;text-align:center;text-transform:none;font-size:0.95rem;opacity:1';
+    note.textContent = i18nText('webglUnavailable', 'This 3D model needs WebGL, which this browser has disabled.');
+    note.setAttribute('data-i18n', 'webglUnavailable');
+    canvas.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    host.appendChild(note);
   }
 
   function wireEvents() {
     rotateToggle.addEventListener('change', () => {
-      if (rotateToggle.checked) startRotation();
-      else stopRotation();
+      if (view) view.autoRotate = rotateToggle.checked;
     });
     speedInput.addEventListener('input', () => {
-      speedValue.textContent = parseFloat(speedInput.value).toFixed(2);
+      const s = parseFloat(speedInput.value);
+      speedValue.textContent = s.toFixed(2);
+      if (view) view.speed = s;
     });
-    labelsToggle.addEventListener('change', render);
-
-    let dragging = false;
-    let lastX = 0;
-    const onDown = (clientX) => { dragging = true; lastX = clientX; };
-    const onMove = (clientX) => {
-      if (!dragging) return;
-      const dx = clientX - lastX;
-      lastX = clientX;
-      rotation += dx * 0.01;
-      render();
-    };
-    const onUp = () => { dragging = false; };
-
-    canvas.addEventListener('mousedown', (e) => onDown(e.clientX));
-    window.addEventListener('mousemove', (e) => onMove(e.clientX));
-    window.addEventListener('mouseup', onUp);
-    canvas.addEventListener('touchstart', (e) => {
-      if (e.touches[0]) {
-        onDown(e.touches[0].clientX);
-        e.preventDefault();
-      }
-    }, { passive: false });
-    canvas.addEventListener('touchmove', (e) => {
-      if (e.touches[0]) {
-        onMove(e.touches[0].clientX);
-        e.preventDefault();
-      }
-    }, { passive: false });
-    canvas.addEventListener('touchend', onUp);
+    labelsToggle.addEventListener('change', () => { if (view) view.draw(); });
   }
 
   document.addEventListener('langchange', () => {
     updateProperties();
+    buildList();
+    highlightActive();
   });
 
-  function resizeCanvas() {
-    // Un-pin the inline size from the previous pass before measuring —
-    // otherwise the canvas can never grow back when the window widens
-    // (it would keep re-measuring its own pinned width forever).
-    canvas.style.removeProperty('width');
-    canvas.style.removeProperty('height');
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    CW = Math.max(Math.round(rect.width), 300);
-    CH = Math.max(Math.round(rect.height), 300);
-    canvas.width = Math.round(CW * dpr);
-    canvas.height = Math.round(CH * dpr);
-    canvas.style.setProperty('width', CW + 'px', 'important');
-    canvas.style.setProperty('height', CH + 'px', 'important');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    render();
-  }
+  window.addEventListener('resize', () => {
+    if (!view) return;
+    view.resize();
+    const scene = buildScene();
+    view.fit(scene.radius);
+  });
 
+  // ── Boot ───────────────────────────────────────────────────────────────
   buildList();
   highlightActive();
   updateProperties();
   speedValue.textContent = parseFloat(speedInput.value).toFixed(2);
   wireEvents();
-  window.addEventListener('resize', resizeCanvas);
-  // Pause the 3D rotation loop while the tab is hidden so the WebGL
-  // context isn't redrawn from a background tab.
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopRotation();
-    else if (rotateToggle.checked) startRotation();
+
+  view = window.GL3D && window.GL3D.create({
+    canvas,
+    overlay,
+    height: 500,
+    minWidth: 260,
+    background: [0.039, 0.055, 0.125],
+    fov: 40,
+    pitch: 0.28,
   });
-  resizeCanvas();
-  startRotation();
+
+  if (!view) {
+    showFallback();
+  } else {
+    view.speed = parseFloat(speedInput.value);
+    view.autoRotate = rotateToggle.checked;
+    view.onOverlay = drawLabels;
+    applyScene();
+    view.start();
+  }
 })();

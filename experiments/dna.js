@@ -1,45 +1,40 @@
 /*
- * DNA Double Helix Studio.
+ * DNA Double Helix Studio — a real 3D B-form model.
  *
- * A 5'→3' input strand drives a parametric B-form double helix:
- *   strand A — bases at angle θ_i = ω·i + φ
- *   strand B — bases at angle θ_i + π (antiparallel, offset 180° around the
- *              helix axis so the major / minor groove geometry reads cleanly)
+ * The duplex is built from the actual B-DNA parameters rather than screen
+ * units, and rendered by the shared WebGL viewer in assets/gl3d.js:
  *
- * Each base is a 3D point P(i, strand) = (R·cosθ, y₀ + i·rise, R·sinθ); a
- * one-point perspective project lands it on screen at
- *   s = focal / (focal − z)
- *   (sx, sy) = (cx + x·s,  y)
- * so back-facing rungs shrink and dim, front-facing ones bloom. Backbone
- * segments, rungs, and base discs are batched into a single list, sorted by
- * z (back to front), and drawn in a single pass — no per-pixel work.
+ *   rise            3.4 Å per base pair along the helix axis
+ *   backbone radius 10 Å
+ *   twist           360° / 10.5 bp  ≈ 34.3° per base pair (right-handed)
+ *   strand offset   120°, measured across the minor groove
  *
- * Hydrogen bonds are tallied per pair: A·T → 2 ticks, G·C → 3 ticks, which
- * is also the only physically-meaningful asymmetry between the two pair
- * types and is what governs the melting-temperature formulas below.
+ * That last number is what makes the grooves real. Placing the second
+ * strand exactly 180° away — as this sim used to — puts the base pairs on
+ * diameters and leaves two identical channels, so there is no major or
+ * minor groove at all. Offsetting the strands by 120° makes each base pair
+ * a chord and opens one channel to 240° (major groove) while the other
+ * closes to 120° (minor groove), which is the asymmetry you can see in the
+ * model as it turns.
+ *
+ * Hydrogen bonds are tallied per pair: A·T → 2 rungs, G·C → 3, which is the
+ * only physically meaningful asymmetry between the pair types and is what
+ * governs the melting-temperature formulas below.
  */
 
 (() => {
-  // ── Canvas ─────────────────────────────────────────────────────────────
   const stage = document.getElementById("stage");
-  const ctx = stage.getContext("2d");
-  // Sized by resizeCanvas(): logical (CSS-pixel) coordinates, with the
-  // backing store scaled by devicePixelRatio for crisp discs on hiDPI.
-  let W = stage.width;
-  let H = stage.height;
-  let CX = W / 2;
+  const overlay = document.getElementById("overlay");
 
-  // ── B-form geometry, screen units ──────────────────────────────────────
-  // 10.5 bp/turn → 360 / 10.5 ≈ 34.286° per bp. Rise / radius tuned so a
-  // 30-bp duplex (~3 turns) fills the canvas height vertically.
-  const RISE   = 12;
-  const RADIUS = 56;
-  const OMEGA  = (2 * Math.PI) / 10.5;
-  const FOCAL  = 360;
+  // ── B-form geometry, in ångströms ──────────────────────────────────────
+  const RISE   = 3.4;
+  const RADIUS = 10.0;
+  const OMEGA  = (2 * Math.PI) / 10.5;        // twist per base pair
+  const MINOR_OFFSET = (120 * Math.PI) / 180; // strand B lead across the minor groove
 
   // ── Base palette + chemistry ───────────────────────────────────────────
   // Distinct hues for A / T / G / C, picked for accessibility on the dark
-  // backdrop. Disc letters render in near-black so the colour pops.
+  // backdrop.
   const COLORS = {
     A: "#ff8aa3", // adenine — salmon
     T: "#ffcf6e", // thymine — amber
@@ -47,9 +42,11 @@
     C: "#c79bff", // cytosine — violet
   };
   const COMPLEMENT = { A: "T", T: "A", G: "C", C: "G" };
-  const isPyrimidine = (b) => b === "T" || b === "C";
 
-  // ── DOM refs ───────────────────────────────────────────────────────────
+  const BACKBONE_A = "#8fb0e8";
+  const BACKBONE_B = "#e8b08f";
+  const HBOND = "#dfe6f5";
+
   const inputs = {
     seq:    document.getElementById("seq"),
     length: document.getElementById("length"),
@@ -76,13 +73,10 @@
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
-  // ── State ──────────────────────────────────────────────────────────────
   const DEFAULT_SEQ = "ATGGCATCTGAACGTTAACGT";
   let seq = sanitize(inputs.seq.value || DEFAULT_SEQ);
-  let phi = 0;                  // current rotation around helix axis
-  let lastTs = performance.now();
   let paused = false;
-  let raf = 0;
+  let view = null;
 
   // ── Helpers ────────────────────────────────────────────────────────────
   function sanitize(s) {
@@ -123,6 +117,135 @@
     return 64.9 + (41 * (g + c - 16.4)) / N;
   }
 
+  // ── Colour helpers ─────────────────────────────────────────────────────
+  const hexRGB = (hex) => {
+    const h = hex.replace("#", "");
+    return new Float32Array([
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255,
+    ]);
+  };
+  const rgbCache = new Map();
+  const rgb = (hex) => {
+    if (!rgbCache.has(hex)) rgbCache.set(hex, hexRGB(hex));
+    return rgbCache.get(hex);
+  };
+
+  // ── Vector helpers ─────────────────────────────────────────────────────
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const mulS = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+  // Backbone point for base i on either strand, centred on the origin.
+  function strandPoint(i, strand, n) {
+    const theta = OMEGA * i + (strand === "B" ? MINOR_OFFSET : 0);
+    const y = (i - (n - 1) / 2) * RISE;
+    return [RADIUS * Math.cos(theta), y, RADIUS * Math.sin(theta)];
+  }
+
+  // ── Scene construction ─────────────────────────────────────────────────
+  const BACKBONE_R = 1.5;
+  const STRUT_R = 0.9;
+  const HBOND_R = 0.35;
+
+  function buildScene() {
+    const n = seq.length;
+    const spheres = [];
+    const cylinders = [];
+    const labels = [];
+    if (!n) return { spheres, cylinders, labels, radius: RADIUS * 1.4 };
+
+    const cA = rgb(BACKBONE_A);
+    const cB = rgb(BACKBONE_B);
+    const cH = rgb(HBOND);
+
+    for (let i = 0; i < n; i++) {
+      const pA = strandPoint(i, "A", n);
+      const pB = strandPoint(i, "B", n);
+      const baseA = seq[i];
+      const baseB = COMPLEMENT[baseA] || "?";
+
+      // Sugar–phosphate backbone: a bead at every residue, joined into a
+      // continuous ribbon by struts to the next residue on the same strand.
+      spheres.push({ p: pA, r: BACKBONE_R, color: cA });
+      spheres.push({ p: pB, r: BACKBONE_R, color: cB });
+      if (i < n - 1) {
+        cylinders.push({ a: pA, b: strandPoint(i + 1, "A", n), r: BACKBONE_R * 0.62, color: cA });
+        cylinders.push({ a: pB, b: strandPoint(i + 1, "B", n), r: BACKBONE_R * 0.62, color: cB });
+      }
+
+      // Each base reaches in from its own backbone; the gap between them is
+      // spanned by the hydrogen bonds.
+      const mA = lerp(pA, pB, 0.36);
+      const mB = lerp(pB, pA, 0.36);
+      const colA = rgb(COLORS[baseA] || "#8899aa");
+      const colB = rgb(COLORS[baseB] || "#8899aa");
+      cylinders.push({ a: pA, b: mA, r: STRUT_R, color: colA });
+      cylinders.push({ a: pB, b: mB, r: STRUT_R, color: colB });
+
+      // 2 hydrogen bonds for A·T, 3 for G·C — stacked along the helix axis
+      // so you can count them directly off the model.
+      const nH = (baseA === "G" || baseA === "C") ? 3 : 2;
+      const offs = nH === 3 ? [-0.75, 0, 0.75] : [-0.55, 0.55];
+      for (const o of offs) {
+        const shift = [0, o, 0];
+        cylinders.push({ a: add(mA, shift), b: add(mB, shift), r: HBOND_R, color: cH });
+      }
+
+      labels.push({ p: lerp(pA, mA, 0.55), text: baseA, color: COLORS[baseA] || "#fff" });
+      labels.push({ p: lerp(pB, mB, 0.55), text: baseB, color: COLORS[baseB] || "#fff" });
+    }
+
+    // End markers. The strands are antiparallel: A runs 5'→3' as i grows,
+    // B runs 3'→5'.
+    const top = (n - 1) / 2 * RISE;
+    labels.push({ p: add(strandPoint(0, "A", n), [0, -2.6, 0]), text: "5'", color: BACKBONE_A, end: true });
+    labels.push({ p: add(strandPoint(n - 1, "A", n), [0, 2.6, 0]), text: "3'", color: BACKBONE_A, end: true });
+    labels.push({ p: add(strandPoint(0, "B", n), [0, -2.6, 0]), text: "3'", color: BACKBONE_B, end: true });
+    labels.push({ p: add(strandPoint(n - 1, "B", n), [0, 2.6, 0]), text: "5'", color: BACKBONE_B, end: true });
+
+    const radius = Math.hypot(RADIUS, top + 3);
+    return { spheres, cylinders, labels, radius };
+  }
+
+  let sceneLabels = [];
+
+  // ── Labels on the 2D overlay ───────────────────────────────────────────
+  function drawLabels(ctx2d, project, v) {
+    const focal = (v.H / 2) / Math.tan((v.fov * Math.PI) / 360);
+    const items = [];
+    for (const l of sceneLabels) {
+      const pr = project(l.p);
+      if (!pr.visible) continue;
+      // Scale text with perspective, using the backbone bead as the yardstick.
+      const size = (BACKBONE_R * focal) / pr.w;
+      items.push({ ...l, x: pr.x, y: pr.y, w: pr.w, size });
+    }
+    items.sort((a, b) => a.w - b.w);
+    const placed = [];
+    ctx2d.textAlign = "center";
+    ctx2d.textBaseline = "middle";
+    for (const it of items) {
+      const px = Math.max(8, Math.min(17, it.size * (it.end ? 1.1 : 1.35)));
+      if (px < 8.5) continue;
+      // Skip anything a nearer label already covers, so back-facing bases
+      // don't print through the front of the helix.
+      if (placed.some((p) => Math.hypot(p.x - it.x, p.y - it.y) < px * 0.85)) continue;
+      placed.push(it);
+      ctx2d.font = `700 ${px}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      ctx2d.fillStyle = it.end ? it.color : "rgba(12, 14, 26, 0.92)";
+      if (!it.end) {
+        ctx2d.strokeStyle = it.color;
+        ctx2d.lineWidth = Math.max(2.6, px * 0.42);
+        ctx2d.lineJoin = "round";
+        ctx2d.strokeText(it.text, it.x, it.y);
+      }
+      ctx2d.fillText(it.text, it.x, it.y);
+    }
+  }
+
   // ── Sync derived UI ────────────────────────────────────────────────────
   function syncReadouts() {
     const N = seq.length;
@@ -140,291 +263,37 @@
     out.turns.textContent   = (N / 10.5).toFixed(1);
     out.comp.textContent    = complementOf(seq) || "—";
     out.mrna.textContent    = mRNAOf(seq) || "—";
+    applyScene();
   }
 
   function syncLabels() {
     inputValues.length.textContent = inputs.length.value;
     inputValues.spin.textContent   = inputs.spin.value;
+    if (view) view.speed = (parseFloat(inputs.spin.value) * Math.PI) / 180;
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────
-  function background() {
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, "#0a0612");
-    bg.addColorStop(1, "#13091e");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    // Faint vertical guide along the helix axis — a printer's grid cue,
-    // not a real coordinate axis, kept low contrast so the helix dominates.
-    ctx.strokeStyle = "rgba(230, 200, 255, 0.05)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= W; x += 40) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-    }
+  function applyScene() {
+    if (!view) return;
+    const scene = buildScene();
+    sceneLabels = scene.labels;
+    view.setScene(scene);
+    view.fit(scene.radius, 1.12);
+    view.setZoomRange(scene.radius * 0.35, scene.radius * 6);
   }
 
-  function project(x, z) {
-    const f = FOCAL / (FOCAL - z);
-    return { sx: CX + x * f, scale: f };
+  // ── Fallback when WebGL is unavailable ─────────────────────────────────
+  function showFallback() {
+    const host = stage.parentElement;
+    if (!host) return;
+    const note = document.createElement("p");
+    note.className = "hint-3d";
+    note.style.cssText = "position:static;padding:2rem 1rem;text-align:center;text-transform:none;font-size:0.95rem;opacity:1";
+    note.textContent = i18nText("webglUnavailable", "This 3D model needs WebGL, which this browser has disabled.");
+    note.setAttribute("data-i18n", "webglUnavailable");
+    stage.style.display = "none";
+    if (overlay) overlay.style.display = "none";
+    host.appendChild(note);
   }
-
-  function strandPoint(i, strand) {
-    const baseTheta = OMEGA * i + phi;
-    const theta = strand === "A" ? baseTheta : baseTheta + Math.PI;
-    return {
-      x: RADIUS * Math.cos(theta),
-      z: RADIUS * Math.sin(theta),
-      theta,
-    };
-  }
-
-  function render() {
-    background();
-
-    const N = seq.length;
-    if (!N) return;
-    const totalH = (N - 1) * RISE;
-    const yTop = (H - totalH) / 2;
-
-    // Build paint list with z values for back-to-front sorting.
-    const items = [];
-
-    for (let i = 0; i < N; i++) {
-      const A = strandPoint(i, "A");
-      const B = strandPoint(i, "B");
-      const pA = project(A.x, A.z);
-      const pB = project(B.x, B.z);
-      const y = yTop + i * RISE;
-      const baseA = seq[i];
-      const baseB = COMPLEMENT[baseA] || "?";
-
-      // Backbone — link to previous bp on each strand
-      if (i > 0) {
-        const Ap = strandPoint(i - 1, "A");
-        const Bp = strandPoint(i - 1, "B");
-        const pAp = project(Ap.x, Ap.z);
-        const pBp = project(Bp.x, Bp.z);
-        const yPrev = yTop + (i - 1) * RISE;
-        items.push({
-          kind: "bb", z: (A.z + Ap.z) / 2,
-          from: { sx: pAp.sx, sy: yPrev, sc: pAp.scale },
-          to:   { sx: pA.sx,  sy: y,     sc: pA.scale  },
-        });
-        items.push({
-          kind: "bb", z: (B.z + Bp.z) / 2,
-          from: { sx: pBp.sx, sy: yPrev, sc: pBp.scale },
-          to:   { sx: pB.sx,  sy: y,     sc: pB.scale  },
-        });
-      }
-
-      // Rung — keep each base's own z so the disc pass can occlude
-      // the farther one behind the nearer one.
-      items.push({
-        kind: "rung",
-        z: (A.z + B.z) / 2,
-        A: { sx: pA.sx, sy: y, sc: pA.scale, base: baseA, z: A.z },
-        B: { sx: pB.sx, sy: y, sc: pB.scale, base: baseB, z: B.z },
-      });
-    }
-
-    // Back to front. z is in [−R, +R]; bigger z = nearer the viewer.
-    items.sort((a, b) => a.z - b.z);
-
-    // Two passes: first rungs + backbones (under), then base discs (over).
-    for (const it of items) {
-      if (it.kind === "bb") drawBackbone(it);
-      else if (it.kind === "rung") drawRung(it);
-    }
-    for (const it of items) {
-      if (it.kind === "rung") {
-        // Draw the farther base first so the nearer one paints over it.
-        // A fixed A-then-B order put the BACK disc on top whenever the
-        // rotation carried strand A in front — exactly at the edge-on
-        // moments where the two discs overlap on screen.
-        const aNear = it.A.z >= it.B.z;
-        drawBaseDisc(aNear ? it.B : it.A);
-        drawBaseDisc(aNear ? it.A : it.B);
-      }
-    }
-
-    drawStrandLabels(yTop, totalH);
-  }
-
-  function depthAlpha(z) {
-    // map z ∈ [−R, R] → α ∈ [0.32, 1]
-    return 0.32 + 0.68 * (0.5 + z / (2 * RADIUS));
-  }
-
-  function drawBackbone(it) {
-    const a = depthAlpha(it.z);
-    ctx.strokeStyle = `rgba(220, 200, 255, ${a * 0.9})`;
-    ctx.lineWidth = 2.2 + 1.8 * ((it.from.sc + it.to.sc) / 2 - 0.6);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(it.from.sx, it.from.sy);
-    ctx.lineTo(it.to.sx, it.to.sy);
-    ctx.stroke();
-  }
-
-  function drawRung(it) {
-    const a = depthAlpha(it.z);
-    const { A, B } = it;
-    // Rung body — soft pearl line
-    ctx.strokeStyle = `rgba(255, 248, 255, ${a * 0.35})`;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(A.sx, A.sy);
-    ctx.lineTo(B.sx, B.sy);
-    ctx.stroke();
-
-    // Hydrogen bonds — perpendicular ticks. A·T → 2, G·C → 3.
-    const ticks = (A.base === "A" || A.base === "T") ? 2 : 3;
-    const dx = B.sx - A.sx, dy = B.sy - A.sy;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len, ny = dx / len;
-    const tickLen = 3.8 * Math.max(A.sc, B.sc);
-    ctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.85})`;
-    ctx.lineWidth = 1.3;
-    for (let k = 1; k <= ticks; k++) {
-      const t = k / (ticks + 1);
-      const cxk = A.sx + dx * t, cyk = A.sy + dy * t;
-      ctx.beginPath();
-      ctx.moveTo(cxk - nx * tickLen, cyk - ny * tickLen);
-      ctx.lineTo(cxk + nx * tickLen, cyk + ny * tickLen);
-      ctx.stroke();
-    }
-  }
-
-  function drawBaseDisc(p) {
-    const color = COLORS[p.base] || "#999";
-    const r = 10 * p.sc;
-    // Aura — wider, dim radial behind the disc for premium gloss.
-    const aura = ctx.createRadialGradient(p.sx, p.sy, r * 0.4, p.sx, p.sy, r * 2.2);
-    aura.addColorStop(0, `${color}77`);
-    aura.addColorStop(1, `${color}00`);
-    ctx.fillStyle = aura;
-    ctx.beginPath();
-    ctx.arc(p.sx, p.sy, r * 2.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Disc with a soft top-light highlight (linear gradient).
-    const fill = ctx.createLinearGradient(p.sx, p.sy - r, p.sx, p.sy + r);
-    fill.addColorStop(0, lighten(color, 0.18));
-    fill.addColorStop(1, color);
-    ctx.fillStyle = fill;
-    ctx.beginPath();
-    ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Letter
-    ctx.fillStyle = "#0a0612";
-    ctx.font = `600 ${Math.round(11 * p.sc)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(p.base, p.sx, p.sy + 1);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-  }
-
-  function lighten(hex, k) {
-    // Lighten a #rrggbb hex toward white by factor k ∈ [0,1].
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-    if (!m) return hex;
-    const lerp = (v) => Math.round(v + (255 - v) * k);
-    const r = lerp(parseInt(m[1], 16));
-    const g = lerp(parseInt(m[2], 16));
-    const b = lerp(parseInt(m[3], 16));
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-
-  function drawStrandLabels(yTop, totalH) {
-    // DNA strands are antiparallel:
-    //   strand A — 5' at top, 3' at bottom
-    //   strand B — 3' at top, 5' at bottom
-    // Top of the helix uses index 0's x for both strands; bottom uses
-    // index N-1's x. Previously this drew strand A's bottom label at
-    // index 0's x and strand B's top label at index N-1's x, putting
-    // both bottom-strand labels in line with whichever strand happened
-    // to be in front at i=0 — anatomically wrong.
-    const N = seq.length;
-    const A0 = strandPoint(0,     "A"); const pA0 = project(A0.x, A0.z);
-    const An = strandPoint(N - 1, "A"); const pAn = project(An.x, An.z);
-    const B0 = strandPoint(0,     "B"); const pB0 = project(B0.x, B0.z);
-    const Bn = strandPoint(N - 1, "B"); const pBn = project(Bn.x, Bn.z);
-
-    // When the rotation brings both strand ends to nearly the same
-    // screen x (edge-on), the two labels land on top of each other —
-    // push the pair apart symmetrically to a minimum separation.
-    const MIN_GAP = 18;
-    function spread(xa, xb) {
-      const d = xb - xa;
-      if (Math.abs(d) >= MIN_GAP) return [xa, xb];
-      const mid = (xa + xb) / 2;
-      const s = (d >= 0 ? 1 : -1) * MIN_GAP / 2;
-      return [mid - s, mid + s];
-    }
-    const [topA, topB] = spread(pA0.sx, pB0.sx);
-    const [botA, botB] = spread(pAn.sx, pBn.sx);
-
-    ctx.fillStyle = "rgba(240, 230, 255, 0.70)";
-    ctx.font = "600 11px ui-monospace, monospace";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    ctx.fillText("5'",  topA, yTop - 14);
-    ctx.fillText("3'",  botA, yTop + totalH + 14);
-    ctx.fillText("3'",  topB, yTop - 14);
-    ctx.fillText("5'",  botB, yTop + totalH + 14);
-    ctx.textAlign = "left";
-  }
-
-  // ── Step ───────────────────────────────────────────────────────────────
-  function step(dt) {
-    const speedDegPerSec = parseFloat(inputs.spin.value);
-    phi += (speedDegPerSec * Math.PI) / 180 * dt;
-  }
-
-  function frame(ts) {
-    raf = requestAnimationFrame(frame);
-    const dt = Math.min((ts - lastTs) / 1000, 0.05);
-    lastTs = ts;
-    if (!paused && !dragging) step(dt);
-    render();
-  }
-
-  function start() {
-    cancelAnimationFrame(raf);
-    lastTs = performance.now();
-    raf = requestAnimationFrame(frame);
-  }
-
-  // ── Drag to spin ───────────────────────────────────────────────────────
-  // Horizontal drag on the canvas rotates the helix by hand — sensitivity
-  // tuned so a full canvas-width drag is roughly two turns.
-  let dragging = false;
-  let dragLastX = 0;
-  let dragSens = (Math.PI * 4) / W;
-
-  stage.addEventListener("pointerdown", (e) => {
-    dragging = true;
-    dragLastX = e.clientX;
-    stage.setPointerCapture(e.pointerId);
-    stage.style.cursor = "grabbing";
-  });
-  stage.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    phi += (e.clientX - dragLastX) * dragSens;
-    dragLastX = e.clientX;
-  });
-  const endDrag = (e) => {
-    if (!dragging) return;
-    dragging = false;
-    stage.style.cursor = "grab";
-    try { stage.releasePointerCapture(e.pointerId); } catch {}
-  };
-  stage.addEventListener("pointerup", endDrag);
-  stage.addEventListener("pointercancel", endDrag);
-  stage.style.cursor = "grab";
 
   // ── Wiring ─────────────────────────────────────────────────────────────
   // Each base has its own note, so typing a sequence plays a little melody.
@@ -440,9 +309,7 @@
     syncLabels();
     syncReadouts();
   });
-  inputs.length.addEventListener("input", () => {
-    syncLabels();
-  });
+  inputs.length.addEventListener("input", syncLabels);
   inputs.spin.addEventListener("input", syncLabels);
 
   randomBtn.addEventListener("click", () => {
@@ -457,6 +324,7 @@
   pauseBtn.addEventListener("click", () => {
     paused = !paused;
     window.SFX?.tone({ freq: paused ? 300 : 420, dur: 0.08, type: "sine", gain: 0.12 });
+    if (view) view.autoRotate = !paused;
     pauseBtn.textContent = paused
       ? i18nText("waveResumeBtn", "Resume")
       : i18nText("wavePauseBtn", "Pause");
@@ -467,8 +335,8 @@
     inputs.seq.value = seq;
     inputs.length.value = "21";
     inputs.spin.value = "18";
-    phi = 0;
     paused = false;
+    if (view) { view.autoRotate = true; view.yaw = 0.5; view.pitch = 0.12; }
     pauseBtn.textContent = i18nText("wavePauseBtn", "Pause");
     syncLabels();
     syncReadouts();
@@ -480,26 +348,33 @@
       : i18nText("wavePauseBtn", "Pause");
   });
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) cancelAnimationFrame(raf);
-    else start();
+  window.addEventListener("resize", () => {
+    if (!view) return;
+    view.resize();
+    view.fit(buildScene().radius, 1.12);
   });
 
-  function resizeCanvas() {
-    const rect = stage.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    W = Math.max(Math.round(rect.width), 300);
-    H = Math.max(Math.round(rect.height), 300);
-    stage.width = Math.round(W * dpr);
-    stage.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    CX = W / 2;
-    dragSens = (Math.PI * 4) / W;
-  }
-  window.addEventListener("resize", resizeCanvas);
+  // ── Boot ───────────────────────────────────────────────────────────────
+  view = window.GL3D && window.GL3D.create({
+    canvas: stage,
+    overlay,
+    height: 520,
+    minWidth: 260,
+    background: [0.055, 0.03, 0.10],
+    fov: 40,
+    yaw: 0.5,
+    pitch: 0.12,
+  });
 
-  resizeCanvas();
-  syncLabels();
-  syncReadouts();
-  start();
+  if (!view) {
+    showFallback();
+    syncLabels();
+    syncReadouts();
+  } else {
+    view.onOverlay = drawLabels;
+    view.autoRotate = true;
+    syncLabels();
+    syncReadouts();
+    view.start();
+  }
 })();
