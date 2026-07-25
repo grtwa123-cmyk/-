@@ -73,7 +73,7 @@
 
   const LATTICES = {
     sc: {
-      key: 'sc', nameKey: 'latticeSC',
+      key: 'sc', nameKey: 'latticeSC', sym: 'Po',
       atomsPerCell: '1',
       coord: '6',
       apf: '0.524',
@@ -82,7 +82,7 @@
       atoms: cubeCorners('A'),
     },
     bcc: {
-      key: 'bcc', nameKey: 'latticeBCC',
+      key: 'bcc', nameKey: 'latticeBCC', sym: 'Fe',
       atomsPerCell: '2',
       coord: '8',
       apf: '0.680',
@@ -91,7 +91,7 @@
       atoms: [...cubeCorners('A'), { el: 'A', x: 0.5, y: 0.5, z: 0.5 }],
     },
     fcc: {
-      key: 'fcc', nameKey: 'latticeFCC',
+      key: 'fcc', nameKey: 'latticeFCC', sym: 'Cu',
       atomsPerCell: '4',
       coord: '12',
       apf: '0.740',
@@ -191,7 +191,11 @@
 
     const spheres = atoms.map((a) => {
       const info = elementInfo(a.el);
-      return { p: shift(a), r: info.radius, color: info.rgb, el: a.el };
+      // 'A' is the internal palette key for a generic metal site, not an
+      // element — label it with the structure's representative element so
+      // the symbols match the Examples readout instead of printing "A".
+      return { p: shift(a), r: info.radius, color: info.rgb, el: a.el,
+               sym: a.el === 'A' ? (lat.sym || '') : a.el };
     });
 
     // Unit-cell wireframe: the 12 edges of every cube in the expansion,
@@ -233,7 +237,8 @@
     for (const s of view.spheres) {
       const pr = project(s.p);
       if (!pr.visible) continue;
-      items.push({ x: pr.x, y: pr.y, w: pr.w, rad: (s.r * focal) / pr.w, el: s.el });
+      if (!s.sym) continue;
+      items.push({ x: pr.x, y: pr.y, w: pr.w, rad: (s.r * focal) / pr.w, el: s.el, sym: s.sym });
     }
     items.sort((a, b) => a.w - b.w);
     const placed = [];
@@ -246,7 +251,7 @@
       const info = elementInfo(it.el);
       ctx2d.font = `700 ${Math.max(9, Math.min(16, it.rad * 0.8))}px ui-monospace, SFMono-Regular, Menlo, monospace`;
       ctx2d.fillStyle = info.text;
-      ctx2d.fillText(it.el, it.x, it.y);
+      ctx2d.fillText(it.sym, it.x, it.y);
     }
   }
 
