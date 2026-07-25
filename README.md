@@ -54,8 +54,8 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 
 | Experiment | Description |
 | --- | --- |
-| **Molecule Viewer** | Rotate common molecules (H₂O, CH₄, NH₃, C₆H₆, …) in 3D with CPK colors, bond orders, and hybridization info. |
-| **Crystal Lattice** | Browse SC, BCC, FCC, NaCl, CsCl, and diamond structures with optional 2×2×2 expansion. |
+| **Molecule Viewer** | A real 3D ball-and-stick model of H₂O, CH₄, NH₃, C₆H₆, … — orbit it freely, with CPK colours, split-colour bonds, bond orders, and hybridization info. |
+| **Crystal Lattice** | SC, BCC, FCC, NaCl, CsCl, and diamond as true 3D unit cells you can turn in any direction, with the cell drawn as real edge geometry and optional 2×2×2 expansion. |
 | **Acid–Base Titration** | Drip NaOH into HCl or acetic acid: exact charge-balance pH solver, live pH–V curve, buffer region, equivalence point, phenolphthalein colour change. |
 | **Ideal Gas & Kinetic Theory** | Particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT; drag the piston and ride the isotherm. |
 | **Radioactive Decay** | A grid of nuclei decays by pure per-nucleus chance and traces the exact exponential half-life curve N = N₀·2^(−t/T½); live activity and half-life markers. |
@@ -67,7 +67,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 
 | Experiment | Description |
 | --- | --- |
-| **DNA Double Helix** | Type a 5'→3' sequence and watch the antiparallel complement, hydrogen bonds, and B-form rotation snap into place; GC content, melting temperature, and an mRNA transcript update live. |
+| **DNA Double Helix** | Type a 5'→3' sequence and a true 3D B-form duplex builds itself — real 3.4 Å rise, 20 Å diameter, 10.5 bp/turn, and a 120° strand offset that opens genuine major and minor grooves. GC content, melting temperature, and an mRNA transcript update live. |
 | **Predator & Prey** | The Lotka–Volterra equations integrated with RK4: populations oscillate, a phase portrait traces the closed orbit, and the conserved invariant is shown live. |
 
 ---
@@ -106,6 +106,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ├── styles.css                  Shared hub / experiment styles + per-theme tokens
 ├── i18n.js                     EN / KO / ZH dictionary + data-i18n binding
 ├── assets/
+│   ├── gl3d.js                 WebGL ball-and-stick 3D viewer (orbit + lighting)
 │   ├── sfx.js                  Procedural Web Audio SFX engine + mute toggle
 │   └── index/                  Landing-page modules
 │       ├── index.css           Curved-grid HUD + cursor styles
@@ -149,6 +150,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
+- **Real 3D where the science is 3D.** `assets/gl3d.js` is a small ball-and-stick viewer written straight on WebGL — perspective camera, depth buffer, Blinn–Phong shading, and orbit on both axes — with no runtime dependency, so the molecule, crystal, and DNA models keep working offline. Scenes are just lists of spheres and cylinders; a 2D overlay canvas carries the labels, positioned by projecting world points back to CSS pixels.
 - **Procedural sound.** `assets/sfx.js` is a tiny Web Audio engine — every effect is synthesised from oscillators and noise buffers (no audio files, nothing to download), tied to each experiment's real events: a Geiger crackle per radioactive decay, the generator's hum rising with the wheel speed, a Doppler-shifted tone, electrolysis fizz, titration drips, and more. Audio unlocks on the first gesture and a floating 🔊 toggle (persisted to `localStorage`) mutes the whole site.
 - **WebGL black hole.** Vector Binet equation `a = −3Mh²x/r⁵` integrated with leapfrog (adaptive steps) for the exact photon-sphere shadow; Novikov–Thorne emissivity for the disk; bolometric beaming `I ∝ g⁴`.
 

@@ -82,13 +82,18 @@
       </section>
 
       <section class="stage" aria-label="Visualisation">
-        <canvas id="stage" width="800" height="600" aria-label="Crystal lattice"></canvas>
+        <div class="stage-3d">
+          <canvas id="stage" width="800" height="600" aria-label="Interactive 3D model of the selected crystal lattice — drag to rotate, scroll to zoom"></canvas>
+          <canvas id="overlay" class="overlay-2d" aria-hidden="true"></canvas>
+          <p class="hint-3d" data-i18n="hint3d">Drag to rotate · scroll to zoom</p>
+        </div>
       </section>
     </main>
   </div>
 
   <script src="../i18n.js" defer></script>
   <script src="../assets/sfx.js" defer></script>
-  <script src="crystal.js"></script>
+  <script src="../assets/gl3d.js" defer></script>
+  <script src="crystal.js" defer></script>
 </body>
 </html>

@@ -911,6 +911,12 @@ button.secondary:hover {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+  /* Several simulations need a minimum drawing width (their two-panel
+     layouts stop making sense below it), which is wider than a phone.
+     Let that canvas scroll inside its own stage instead of dragging the
+     whole page sideways — the body must never scroll horizontally. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
 canvas {
@@ -985,6 +991,44 @@ details.formulas code {
   background: rgba(255, 255, 255, 0.05);
   padding: 0.05rem 0.32rem;
   border-radius: 4px;
+}
+
+/* ── 3D viewer stage (WebGL canvas + 2D label overlay) ─────────────── */
+.stage-3d {
+  position: relative;
+  line-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: var(--glass-border);
+  box-shadow: var(--glass-spec-soft), var(--glass-shadow);
+}
+
+.stage-3d canvas {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  touch-action: none;
+}
+
+.stage-3d .overlay-2d {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage-3d .hint-3d {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.75;
+  pointer-events: none;
+  line-height: 1.4;
 }
 
 /* ── Sound toggle (injected by assets/sfx.js on every experiment) ──── */
