@@ -134,13 +134,79 @@
     const inShell = Math.min((SHELL_CAP[s] || 8), total - before);
     return { shell: s, idxInShell: rem, inShell };
   }
+  const shellRadius = (shell) =>
+    SHELL_R[shell] || (SHELL_R[SHELL_R.length - 1] + 40 * (shell - SHELL_R.length + 1));
+
   function electronHome(i, total) {
     const { shell, idxInShell, inShell } = shellInfo(i, total);
-    const r = SHELL_R[shell] || (SHELL_R[SHELL_R.length - 1] + 40 * (shell - SHELL_R.length + 1));
+    const r = shellRadius(shell);
     const dir = shell % 2 === 0 ? 1 : -1;
     // Gentle orbit — slow enough that the small electrons stay easy to grab.
     const ang = clock * 0.4 * dir + (idxInShell / Math.max(inShell, 1)) * Math.PI * 2;
     return { x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r };
+  }
+
+  // ── Electron cloud model ───────────────────────────────────────────────
+  // The whole point of the orbital picture is that an electron has no orbit:
+  // only a probability of being found somewhere. So in cloud mode electrons
+  // are not placed on a circle at all — each one repeatedly re-samples a
+  // position from the shell's radial probability distribution and drifts
+  // there, which is why the two models now look nothing alike.
+  //
+  // The radial spread per shell is what turns a sharp Bohr ring into a
+  // smeared shell; the density still peaks at the shell radius, and the gap
+  // between K and L stays visible, so the shell structure survives.
+  const SHELL_SPREAD = [15, 23];
+  const spreadOf = (shell) => SHELL_SPREAD[shell] || 26;
+
+  let gaussSpare = null;
+  function gauss() {
+    if (gaussSpare !== null) { const g = gaussSpare; gaussSpare = null; return g; }
+    let u = 0;
+    while (u === 0) u = Math.random();
+    const m = Math.sqrt(-2 * Math.log(u));
+    const t = 2 * Math.PI * Math.random();
+    gaussSpare = m * Math.sin(t);
+    return m * Math.cos(t);
+  }
+
+  function sampleCloudPoint(shell) {
+    const floor = nucleusRadius() + 14;
+    let r = shellRadius(shell) + gauss() * spreadOf(shell);
+    if (r < floor) r = floor + Math.random() * 8;
+    const a = Math.random() * Math.PI * 2;
+    return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+  }
+
+  // A fixed speckle field per shell, so the haze reads as a stable cloud
+  // instead of strobing noise. Offsets are normalised; the draw pass scales
+  // them by the shell radius/spread and rotates the whole field slowly.
+  const SPECKLES = [];
+  (function buildSpeckles() {
+    let seed = 20240611;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let s = 0; s < 3; s++) {
+      const pts = [];
+      for (let i = 0; i < 130; i++) {
+        // Box–Muller from the seeded stream keeps the radial profile right.
+        const u = Math.max(rnd(), 1e-6);
+        const g = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd());
+        pts.push({ dr: g, a: rnd() * Math.PI * 2, w: 0.35 + rnd() * 0.65 });
+      }
+      SPECKLES.push(pts);
+    }
+  })();
+
+  // How many electrons sit in each shell, given the total.
+  function shellOccupancy(total) {
+    const occ = [];
+    let left = total;
+    for (let s = 0; s < SHELL_R.length; s++) {
+      const cap = SHELL_CAP[s] || 8;
+      occ.push(Math.max(0, Math.min(cap, left)));
+      left -= cap;
+    }
+    return occ;
   }
 
   // ── Add / remove ───────────────────────────────────────────────────────
@@ -183,17 +249,44 @@
 
   function drawShellsOrCloud() {
     if (electronModel === "cloud") {
-      const e = electrons.length;
-      if (e > 0) {
-        const rad = SHELL_R[1] * 0.9;
-        const g = ctx.createRadialGradient(cx, cy, nucleusRadius(), cx, cy, rad);
-        const a = Math.min(0.05 + e * 0.03, 0.34);
-        g.addColorStop(0, `rgba(110, 168, 255, ${a})`);
+      const total = electrons.length;
+      if (!total) return;
+      const occ = shellOccupancy(total);
+      for (let s = 0; s < occ.length; s++) {
+        if (!occ[s]) continue;
+        const R = shellRadius(s);
+        const sd = spreadOf(s);
+        const cap = SHELL_CAP[s] || 8;
+        const fill = occ[s] / cap;
+
+        // Density peaked at the shell radius and fading both ways — the
+        // probability shell, rather than a line at a fixed radius.
+        const inner = Math.max(R - sd * 2.4, 0);
+        const outer = R + sd * 2.4;
+        const g = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+        const a = 0.05 + 0.17 * fill;
+        g.addColorStop(0, "rgba(110, 168, 255, 0)");
+        g.addColorStop(0.5, `rgba(110, 168, 255, ${a.toFixed(3)})`);
         g.addColorStop(1, "rgba(110, 168, 255, 0)");
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        ctx.arc(cx, cy, outer, 0, Math.PI * 2);
         ctx.fill();
+
+        // Speckle field: individual "where it might be" samples, drifting.
+        const pts = SPECKLES[s] || SPECKLES[0];
+        const spin = clock * (s % 2 === 0 ? 0.06 : -0.045);
+        const shown = Math.round(pts.length * (0.25 + 0.75 * fill));
+        for (let i = 0; i < shown; i++) {
+          const p = pts[i];
+          const r = R + p.dr * sd;
+          if (r < nucleusRadius() + 6) continue;
+          const ang = p.a + spin;
+          ctx.fillStyle = `rgba(150, 195, 255, ${(0.10 + 0.22 * p.w * fill).toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, 1.5 * p.w + 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       return;
     }
@@ -315,12 +408,29 @@
     for (let i = 0; i < protons.length; i++) ease(protons[i], nucleonHome(i));
     const off = protons.length;
     for (let i = 0; i < neutrons.length; i++) ease(neutrons[i], nucleonHome(off + i));
-    for (let i = 0; i < electrons.length; i++) ease(electrons[i], electronHome(i, electrons.length));
+    for (let i = 0; i < electrons.length; i++) {
+      const e = electrons[i];
+      if (electronModel === "cloud") {
+        // Re-roll a destination every second or so and drift toward it, so
+        // the electron wanders the shell instead of circling it.
+        e.ttl = (e.ttl || 0) - dt;
+        if (e.ttl <= 0 || e.hx === undefined) {
+          const p = sampleCloudPoint(shellInfo(i, electrons.length).shell);
+          e.hx = p.x; e.hy = p.y;
+          e.ttl = 0.8 + Math.random() * 1.4;
+        }
+        ease(e, { x: e.hx, y: e.hy }, 0.045);
+      } else {
+        e.ttl = 0;                       // force a fresh sample on the way back
+        ease(e, electronHome(i, electrons.length));
+      }
+    }
   }
-  function ease(o, home) {
+  function ease(o, home, k) {
     if (drag && drag.obj === o) return;
-    o.x += (home.x - o.x) * 0.18;
-    o.y += (home.y - o.y) * 0.18;
+    const f = k === undefined ? 0.18 : k;
+    o.x += (home.x - o.x) * f;
+    o.y += (home.y - o.y) * f;
   }
 
   // ── Readouts ───────────────────────────────────────────────────────────
