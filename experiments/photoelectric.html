@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Shine light on a metal and knock electrons out of it. Brightness never helps below the threshold frequency, but colour does — and the slope of the KE-vs-frequency line is Planck's constant." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M6 20h18l10-8v40l-10-8H6z' fill='%23a855f7'/&gt;&lt;circle cx='46' cy='22' r='4' fill='%236ea8ff'/&gt;&lt;circle cx='54' cy='34' r='4' fill='%236ea8ff'/&gt;&lt;circle cx='45' cy='44' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="pePageTitle">Photoelectric Effect · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount21">Physics · Photoelectric effect</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="peTitle">Photoelectric Effect</h1>
+      <p data-i18n="peIntro">Shine light on a metal plate and it can knock electrons straight out. Turn the brightness all the way up with red light and nothing happens — but a faint violet beam ejects electrons instantly. Light arrives in lumps, and only a lump with enough energy can free an electron.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="wavelength" data-i18n="peWavelengthLabel">Wavelength &lambda;</label>
+          <span class="value"><span id="wavelength-value">400</span> nm</span>
+          <input type="range" id="wavelength" min="180" max="700" step="1" value="400" />
+        </div>
+
+        <div class="control">
+          <label for="intensity" data-i18n="peIntensityLabel">Intensity</label>
+          <span class="value"><span id="intensity-value">60</span> %</span>
+          <input type="range" id="intensity" min="0" max="100" step="1" value="60" />
+        </div>
+
+        <div class="control">
+          <label for="voltage" data-i18n="peVoltageLabel">Collector voltage</label>
+          <span class="value"><span id="voltage-value">0.0</span> V</span>
+          <input type="range" id="voltage" min="-8" max="4" step="0.1" value="0" />
+        </div>
+
+        <div class="control" style="margin: 0.8rem 0 0.4rem;">
+          <label data-i18n="peMetal">Target metal</label>
+        </div>
+        <div class="molecule-list" id="metal-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.7rem;">
+          <button type="button" class="mol-btn active" data-key="Na"><span data-i18n="metalNa">Sodium</span><small>2.28 eV</small></button>
+          <button type="button" class="mol-btn" data-key="Ag"><span data-i18n="metalAg">Silver</span><small>4.26 eV</small></button>
+          <button type="button" class="mol-btn" data-key="Zn"><span data-i18n="metalZn">Zinc</span><small>4.33 eV</small></button>
+          <button type="button" class="mol-btn" data-key="Cu"><span data-i18n="metalCu">Copper</span><small>4.65 eV</small></button>
+          <button type="button" class="mol-btn" data-key="Pt"><span data-i18n="metalPt">Platinum</span><small>6.35 eV</small></button>
+        </div>
+
+        <div class="buttons">
+          <button id="clear-btn" type="button" data-i18n="peClearBtn">Clear graph</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="peFormulaPhoton">Photon energy</span>: <code>E = hf = hc / &lambda;</code></li>
+            <li><span data-i18n="peFormulaEinstein">Einstein</span>: <code>KE&#8340;&#8336;&#8339; = hf &minus; &phi;</code></li>
+            <li><span data-i18n="peFormulaThreshold">Threshold</span>: <code>f&#8320; = &phi; / h</code></li>
+            <li><span data-i18n="peFormulaStopping">Stopping voltage</span>: <code>eV&#8347; = KE&#8340;&#8336;&#8339;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="peNotes">Notes</summary>
+          <ul>
+            <li data-i18n="peNote1">Below the threshold frequency nothing comes out, no matter how bright the light gets. A wave theory says a dim beam should just take longer to shake an electron loose — it never does.</li>
+            <li data-i18n="peNote2">Brightness sets how many electrons come out, never how fast. Only the colour — the energy of one photon — decides the maximum kinetic energy.</li>
+            <li data-i18n="peNote3">Push the collector negative and you repel the electrons. The voltage that just stops the fastest of them measures KEₘₐₓ directly, and the slope of that line against frequency is Planck's constant.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="540" style="touch-action: none;" aria-label="Light striking a metal plate and ejecting electrons toward a collector, with a graph of maximum kinetic energy against frequency"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="peOutPhoton">Photon energy</div>
+            <div class="num"><span id="out-photon">&mdash;</span> eV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutWork">Work function &phi;</div>
+            <div class="num"><span id="out-work">&mdash;</span> eV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutKE">Max kinetic energy</div>
+            <div class="num"><span id="out-ke">&mdash;</span> eV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutStopping">Stopping voltage</div>
+            <div class="num"><span id="out-stopping">&mdash;</span> V</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutThreshold">Threshold &lambda;&#8320;</div>
+            <div class="num"><span id="out-threshold">&mdash;</span> nm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutCurrent">Photocurrent</div>
+            <div class="num" id="out-current">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="photoelectric.js" defer></script>
+</body>
+</html>
