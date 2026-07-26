@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Excite a hydrogen atom and watch it fall back down, emitting a photon at every jump. Each transition's wavelength comes straight from the Rydberg formula, and the Balmer lines land exactly where a real spectrometer sees them." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;rect x='12' y='14' width='4' height='36' fill='%23ff4d4d'/&gt;&lt;rect x='24' y='14' width='4' height='36' fill='%2367e8f9'/&gt;&lt;rect x='36' y='14' width='4' height='36' fill='%235b8cff'/&gt;&lt;rect x='48' y='14' width='4' height='36' fill='%23a855f7'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="spectraPageTitle">Hydrogen Spectrum · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount20">Chemistry · Hydrogen spectrum</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="spectraTitle">Hydrogen Spectrum</h1>
+      <p data-i18n="spectraIntro">Lift the electron to a higher shell and let go. It falls back down one jump at a time, and every jump throws out a photon whose colour is fixed by the energy it lost. Collect enough of them and the bright lines of the Balmer series appear — the same four colours you see through a real spectroscope.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="level" data-i18n="spectraExciteLabel">Excite to shell n</label>
+          <span class="value"><span id="level-value">6</span></span>
+          <input type="range" id="level" min="2" max="8" step="1" value="6" />
+        </div>
+
+        <div class="buttons">
+          <button id="excite-btn" type="button" data-i18n="spectraExciteBtn">Excite</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <div class="control" style="margin-top: 0.9rem;">
+          <label for="auto-toggle" data-i18n="spectraAutoLabel">Keep exciting</label>
+          <span class="value"><input type="checkbox" id="auto-toggle" checked /></span>
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="spectraSpeedLabel">Speed</label>
+          <span class="value"><span id="speed-value">1.0</span>&times;</span>
+          <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1" />
+        </div>
+
+        <div class="control" style="margin: 0.8rem 0 0.4rem;">
+          <label data-i18n="spectraSeries">Highlight series</label>
+        </div>
+        <div class="molecule-list" id="series-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.7rem;">
+          <button type="button" class="mol-btn active" data-key="all"><span data-i18n="spectraSeriesAll">All</span></button>
+          <button type="button" class="mol-btn" data-key="lyman"><span data-i18n="spectraSeriesLyman">Lyman</span></button>
+          <button type="button" class="mol-btn" data-key="balmer"><span data-i18n="spectraSeriesBalmer">Balmer</span></button>
+          <button type="button" class="mol-btn" data-key="paschen"><span data-i18n="spectraSeriesPaschen">Paschen</span></button>
+        </div>
+
+        <div class="buttons">
+          <button id="clear-btn" type="button" class="secondary" data-i18n="spectraClearBtn">Clear spectrum</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="spectraFormulaEnergy">Energy level</span>: <code>E&#8345; = &minus;13.6 eV / n&sup2;</code></li>
+            <li><span data-i18n="spectraFormulaPhoton">Photon</span>: <code>&Delta;E = E&#8345;&#8322; &minus; E&#8345;&#8321; = hc / &lambda;</code></li>
+            <li><span data-i18n="spectraFormulaRydberg">Rydberg</span>: <code>1/&lambda; = R&#8341;(1/n&#8321;&sup2; &minus; 1/n&#8322;&sup2;)</code></li>
+            <li><span data-i18n="spectraFormulaSeries">Series</span>: <code>n&#8321; = 1 Lyman, 2 Balmer, 3 Paschen</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="spectraNotes">Notes</summary>
+          <ul>
+            <li data-i18n="spectraNote1">The electron can only sit on the rungs, never between them, so only certain energies can ever be released — that is why the spectrum is sharp lines instead of a smooth rainbow.</li>
+            <li data-i18n="spectraNote2">Only the Balmer series (landing on n = 2) falls in visible light. Lyman jumps land on n = 1 and are far into the ultraviolet; Paschen jumps land on n = 3, out in the infrared.</li>
+            <li data-i18n="spectraNote3">The rungs crowd together as n grows because the energy goes as 1/n². Above the n = ∞ limit the electron is free and the atom is ionised, which takes 13.6 eV from the ground state.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="520" style="touch-action: none;" aria-label="Hydrogen energy-level diagram with an electron dropping between shells, emitting photons that build up an emission spectrum"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutTransition">Transition</div>
+            <div class="num" id="out-transition">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutEnergy">Photon energy</div>
+            <div class="num"><span id="out-energy">&mdash;</span> eV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutWavelength">Wavelength &lambda;</div>
+            <div class="num"><span id="out-wavelength">&mdash;</span> nm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutFrequency">Frequency</div>
+            <div class="num"><span id="out-frequency">&mdash;</span> THz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutSeries">Series</div>
+            <div class="num" id="out-series">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="spectraOutLines">Lines recorded</div>
+            <div class="num" id="out-lines">0</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="spectra.js" defer></script>
+</body>
+</html>
