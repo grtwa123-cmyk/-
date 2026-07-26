@@ -1,8 +1,8 @@
 {
   "name": "science-lab",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "private": true,
-  "description": "Browser-based science sandbox: hands-on physics and chemistry simulations rendered with vanilla HTML, CSS, Canvas, and WebGL. No build step, no runtime dependencies.",
+  "description": "Browser-based science sandbox: 24 hands-on physics, chemistry and biology simulations rendered with vanilla HTML, CSS, Canvas and WebGL — including real 3D molecule, crystal and DNA models and procedural Web Audio sound. No build step, no runtime dependencies.",
   "homepage": "https://grtwa123-cmyk.github.io/-/",
   "repository": {
     "type": "git",
@@ -18,10 +18,16 @@
   "keywords": [
     "physics",
     "chemistry",
+    "biology",
     "simulation",
     "education",
+    "interactive",
     "webgl",
     "canvas",
+    "3d",
+    "web-audio",
+    "i18n",
+    "no-build",
     "three.js"
   ]
 }
