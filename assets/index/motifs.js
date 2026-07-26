@@ -408,6 +408,22 @@ const RENDERERS = {
   },
 
   // Hydrogen spectrum: crowding energy rungs on the left, emission lines right.
+  // Photoelectric: a beam striking a plate, electrons flying off it.
+  photoelectric(p, s) {
+    // Incoming light, drawn as three converging rays.
+    for (let i = -1; i <= 1; i++) {
+      p.line(-s * 1.7, s * i * 0.42, -s * 0.34, s * i * 0.16);
+    }
+    // The metal plate.
+    p.line(-s * 0.3, -s * 1.0, -s * 0.3, s * 1.0);
+    // Ejected electrons scattering to the upper right.
+    p.dot(s * 0.28, -s * 0.62, 3.2);
+    p.dot(s * 0.92, -s * 0.24, 3.2);
+    p.dot(s * 0.62, s * 0.5, 2.8);
+    p.line(-s * 0.22, -s * 0.3, s * 0.86, -s * 0.32);
+    p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
+  },
+
   spectra(p, s) {
     // Rungs bunch toward the top the way 1/n² levels do.
     for (let n = 1; n <= 5; n++) {

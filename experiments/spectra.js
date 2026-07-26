@@ -59,7 +59,7 @@
   // ── Physical constants ─────────────────────────────────────────────────
   const R_H = 1.0967758e7;      // m⁻¹, hydrogen (reduced-mass corrected)
   const E_RYD = 13.605693;      // eV, −E₁
-  const HC = 1239.84198;        // eV·nm
+  const HC = 1239.841984;       // eV·nm  (= h·c)
   const C_LIGHT = 299792458;    // m/s
   const N_MAX = 8;              // highest shell drawn
 
