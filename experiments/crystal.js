@@ -371,6 +371,9 @@
     showFallback();
   } else {
     view.speed = parseFloat(rotateSpeed.value);
+    // Honour prefers-reduced-motion: don't spin at a reader who asked
+    // for stillness. The checkbox reflects it, so they can opt back in.
+    if (window.GL3D.prefersReducedMotion()) rotateToggle.checked = false;
     view.autoRotate = rotateToggle.checked;
     view.onOverlay = drawLabels;
     applyScene();

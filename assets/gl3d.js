@@ -178,6 +178,14 @@
     return s;
   }
 
+  // Readers who ask for reduced motion should not get a model spinning at
+  // them forever. The CSS media query in styles.css can only reach CSS
+  // animations, so the idle auto-rotate has to check this itself.
+  const reduceQuery = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : null;
+  const prefersReducedMotion = () => !!(reduceQuery && reduceQuery.matches);
+
   function create(opts) {
     const canvas = opts.canvas;
     const overlay = opts.overlay || null;
@@ -249,17 +257,27 @@
       _raf: 0, _last: 0, _proj: null, _viewM: null, _cam: [0, 0, 1],
     };
 
+    // Redraw only when something actually changed. With auto-rotate off and
+    // no input, the image is static, so re-rendering it 60 times a second is
+    // pure battery burn — a few frames of margin lets the overlay settle.
+    let dirty = 3;
+    const invalidate = () => { dirty = 3; };
+    view.invalidate = invalidate;
+
     view.setScene = (scene) => {
       view.spheres = scene.spheres || [];
       view.cylinders = scene.cylinders || [];
+      invalidate();
     };
 
     // Frame the camera so a sphere of the given radius fills the viewport.
     view.fit = (radius, pad) => {
       const p = pad === undefined ? 1.28 : pad;
+      view._fitRadius = radius; view._fitPad = p;
       const vFov = (view.fov * Math.PI) / 180;
       const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(view.W / view.H, 0.35));
       view.dist = (radius * p) / Math.sin(Math.min(vFov, hFov) / 2);
+      invalidate();
     };
 
     view.resize = () => {
@@ -281,6 +299,7 @@
         octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       gl.viewport(0, 0, canvas.width, canvas.height);
+      invalidate();
     };
 
     // Recompute the camera basis + matrices for the current orbit state.
@@ -358,15 +377,20 @@
         if (view.onOverlay) view.onOverlay(octx, view.project, view);
       }
     }
-    view.draw = draw;
+    // Callers use this to request a repaint after changing something the
+    // engine can't see (a label toggle, say); the next frame picks it up.
+    view.draw = invalidate;
 
     function frame(ts) {
       view._raf = requestAnimationFrame(frame);
       const dt = Math.max(0, Math.min((ts - view._last) / 1000, 0.05));
       view._last = ts;
-      if (view.autoRotate && !dragging) view.yaw += view.speed * dt;
+      if (view.autoRotate && !dragging && view.speed > 0) {
+        view.yaw += view.speed * dt;
+        invalidate();
+      }
       if (view.onTick) view.onTick(dt);
-      draw();
+      if (dirty > 0) { dirty--; draw(); }
     }
     view.start = () => {
       cancelAnimationFrame(view._raf);
@@ -397,12 +421,14 @@
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (pinchDist > 0) view.dist = Math.max(view._minD || 1, Math.min(view._maxD || 1e4, view.dist * (pinchDist / (d || 1))));
         pinchDist = d;
+        invalidate();
         return;
       }
       if (!dragging) return;
       view.yaw -= (e.clientX - lastX) * 0.01;
       view.pitch = Math.max(-1.45, Math.min(1.45, view.pitch + (e.clientY - lastY) * 0.01));
       lastX = e.clientX; lastY = e.clientY;
+      invalidate();
     });
     const release = (e) => {
       pointers.delete(e.pointerId);
@@ -414,7 +440,36 @@
     canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       view.dist = Math.max(view._minD || 1, Math.min(view._maxD || 1e4, view.dist * (1 + Math.sign(e.deltaY) * 0.12)));
+      invalidate();
     }, { passive: false });
+
+    // ── Keyboard control ─────────────────────────────────────────────────
+    // The model is a real interactive surface, so it has to be operable
+    // without a pointer: focus it and drive it with the arrow keys.
+    const zoomBy = (f) => {
+      view.dist = Math.max(view._minD || 1, Math.min(view._maxD || 1e4, view.dist * f));
+      invalidate();
+    };
+    canvas.tabIndex = 0;
+    canvas.addEventListener("keydown", (e) => {
+      const step = e.shiftKey ? 0.24 : 0.09;
+      let handled = true;
+      switch (e.key) {
+        case "ArrowLeft":  view.yaw -= step; break;
+        case "ArrowRight": view.yaw += step; break;
+        case "ArrowUp":    view.pitch = Math.min(1.45, view.pitch + step); break;
+        case "ArrowDown":  view.pitch = Math.max(-1.45, view.pitch - step); break;
+        case "+": case "=": zoomBy(0.88); break;
+        case "-": case "_": zoomBy(1.14); break;
+        case "0":
+          view.yaw = opts.yaw !== undefined ? opts.yaw : 0.6;
+          view.pitch = opts.pitch !== undefined ? opts.pitch : 0.35;
+          if (view._fitRadius) view.fit(view._fitRadius, view._fitPad);
+          break;
+        default: handled = false;
+      }
+      if (handled) { e.preventDefault(); invalidate(); }
+    });
 
     view.setZoomRange = (min, max) => { view._minD = min; view._maxD = max; };
     view.isDragging = () => dragging;
@@ -427,5 +482,5 @@
     return view;
   }
 
-  window.GL3D = { create };
+  window.GL3D = { create, prefersReducedMotion };
 })();

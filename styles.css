@@ -1011,6 +1011,14 @@ details.formulas code {
   touch-action: none;
 }
 
+/* The model is keyboard-operable (arrows orbit, +/- zoom, 0 resets), so it
+   takes focus and needs a visible ring when reached by keyboard. */
+.stage-3d canvas:focus { outline: none; }
+.stage-3d canvas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
 .stage-3d .overlay-2d {
   position: absolute;
   inset: 0;

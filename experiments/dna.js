@@ -372,7 +372,11 @@
     syncReadouts();
   } else {
     view.onOverlay = drawLabels;
-    view.autoRotate = true;
+    // Honour prefers-reduced-motion: start held still rather than spinning,
+    // and show that in the button so the reader can start it themselves.
+    paused = window.GL3D.prefersReducedMotion();
+    view.autoRotate = !paused;
+    if (paused) pauseBtn.textContent = i18nText("waveResumeBtn", "Resume");
     syncLabels();
     syncReadouts();
     view.start();
