@@ -408,27 +408,23 @@ const RENDERERS = {
   },
 
   // Hydrogen spectrum: crowding energy rungs on the left, emission lines right.
-  spectra(p, s, ctx) {
-    const x0 = p(0.14), x1 = p(0.44);
-    // Rungs bunch up toward the top the way 1/n^2 levels do.
+  spectra(p, s) {
+    // Rungs bunch toward the top the way 1/n² levels do.
     for (let n = 1; n <= 5; n++) {
-      const y = p(0.82 - 0.62 * (1 - 1 / (n * n)) / (1 - 1 / 25));
-      s(x0, y, x1, y);
+      const t = (1 - 1 / (n * n)) / (1 - 1 / 25);      // 0 at n=1, 1 at n=5
+      const y = s * (1.0 - 1.85 * t);
+      p.line(-s * 1.55, y, -s * 0.6, y);
     }
-    // The electron dropping between two of them.
-    const xm = (x0 + x1) / 2;
-    s(xm, p(0.30), xm, p(0.68));
-    s(xm, p(0.68), xm - p(0.03), p(0.60));
-    s(xm, p(0.68), xm + p(0.03), p(0.60));
-    // Emission lines of differing strength.
-    const lx = [0.60, 0.68, 0.76, 0.86];
-    const lh = [0.34, 0.24, 0.30, 0.18];
+    // The electron dropping between two rungs.
+    p.line(-s * 1.07, -s * 0.5, -s * 1.07, s * 0.98);
+    p.dot(-s * 1.07, s * 0.98, 3.4);
+    // Emission lines of differing strength, standing on a baseline.
+    const lx = [0.2, 0.6, 1.0, 1.45];
+    const lh = [0.9, 0.55, 0.75, 0.4];
     for (let i = 0; i < lx.length; i++) {
-      s(p(lx[i]), p(0.62 + lh[i] / 2), p(lx[i]), p(0.62 - lh[i] / 2));
+      p.line(s * lx[i], s * (0.95 - lh[i] * 1.6), s * lx[i], s * 0.95);
     }
-    // Baseline the lines stand on.
-    s(p(0.56), p(0.78), p(0.90), p(0.78));
-    ctx;
+    p.line(s * 0.05, s * 0.95, s * 1.6, s * 0.95);
   },
 
   atom(p, s, ctx) {
