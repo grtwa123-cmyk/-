@@ -1,11 +1,12 @@
 # Science Lab
 
-> A browser-based science sandbox — a collection of hands-on physics and chemistry simulations rendered with **vanilla HTML, CSS, Canvas, and WebGL**. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **24 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
     <img alt="Live demo" src="https://img.shields.io/badge/demo-live-2ea44f?style=flat-square" />
   </a>
+  <img alt="Experiments" src="https://img.shields.io/badge/experiments-24-8957e5?style=flat-square" />
   <img alt="Dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue?style=flat-square" />
   <img alt="No build" src="https://img.shields.io/badge/build-none-lightgrey?style=flat-square" />
   <img alt="Languages" src="https://img.shields.io/badge/i18n-EN%20%C2%B7%20KO%20%C2%B7%20ZH-orange?style=flat-square" />
@@ -31,7 +32,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 
 ## Experiments
 
-### Physics
+### Physics (14)
 
 | Experiment | Description |
 | --- | --- |
@@ -50,7 +51,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Refraction & TIR** | A ray bends across an interface by Snell's law, with the critical angle, total internal reflection, and Fresnel reflectance. |
 | **Electromagnetic Generator** | A water wheel spins a bar magnet inside a pickup coil; Faraday's law EMF = N·B·A·ω·sin(ωt) lights a bulb, with the live rotating dipole field. |
 
-### Chemistry
+### Chemistry (8)
 
 | Experiment | Description |
 | --- | --- |
@@ -63,7 +64,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Reaction Rates & Collision Theory** | A+B→C only when the line-of-centres collision energy beats Ea; the measured per-collision success converges exactly to e^(−Ea/kT). |
 | **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
 
-### Biology
+### Biology (2)
 
 | Experiment | Description |
 | --- | --- |
@@ -102,6 +103,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ├── index.html                  Curved-grid landing (Three.js wall)
 ├── physics.html                Physics hub (grid view)
 ├── chemistry.html              Chemistry hub (grid view)
+├── biology.html                Biology hub (grid view)
 ├── 404.html                    Graceful not-found fallback
 ├── styles.css                  Shared hub / experiment styles + per-theme tokens
 ├── i18n.js                     EN / KO / ZH dictionary + data-i18n binding
