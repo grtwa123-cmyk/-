@@ -308,6 +308,22 @@
       : i18nText('launchBtn', 'Launch');
   });
 
+  // Position here is a closed form of absolute elapsed time, so a hidden tab
+  // used to advance the flight in the background and the shot reappeared
+  // already landed. Freeze the clock while hidden and shift the launch time
+  // forward on return, so the trajectory resumes where the eye left it.
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hiddenAt = performance.now();
+      if (animId) { cancelAnimationFrame(animId); animId = null; }
+    } else if (running && !animId) {
+      if (hiddenAt && startTs) startTs += performance.now() - hiddenAt;
+      hiddenAt = 0;
+      animId = requestAnimationFrame(step);
+    }
+  });
+
   window.addEventListener('resize', resizeCanvas);
   wireInputs();
   resizeCanvas();

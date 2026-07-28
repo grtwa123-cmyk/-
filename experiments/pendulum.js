@@ -348,6 +348,16 @@
     }
   }
 
+  // Only resume if the swing was running — a tab switch must not undo Pause.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (animId) { cancelAnimationFrame(animId); animId = null; }
+    } else if (running && !animId) {
+      lastTs = 0;
+      animId = requestAnimationFrame(step);
+    }
+  });
+
   window.addEventListener('resize', resizeCanvas);
   wireInputs();
   resizeCanvas();
