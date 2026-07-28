@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Give three genotypes different survival odds and watch an allele sweep, vanish, or settle into a balanced polymorphism — a finite Wright-Fisher population running against the infinite-population curve." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='16' cy='44' r='7' fill='%235fe0c8'/&gt;&lt;circle cx='32' cy='30' r='7' fill='%23b98cff'/&gt;&lt;circle cx='48' cy='16' r='7' fill='%23ff7aa8'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="nsPageTitle">Natural Selection · Biology</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount23">Biology · Natural selection</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="nsTitle">Natural Selection &amp; Genetic Drift</h1>
+      <p data-i18n="nsIntro">One gene, two alleles, and three genotypes that survive at different rates. Give them equal odds and the allele frequencies never move &mdash; that is Hardy&ndash;Weinberg. Tilt the odds and an allele sweeps to fixation, or vanishes, or, if the heterozygote is the fittest, settles at a balanced frequency and stays there. A real population of finite size runs alongside the infinite-population curve, so you can see selection as the trend and drift as the wobble around it.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="nsPreset">Scenario</label>
+        </div>
+        <div class="molecule-list" id="preset-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="neutral" aria-pressed="true"><span data-i18n="nsPresetNeutral">No selection</span><small>1 · 1 · 1</small></button>
+          <button type="button" class="mol-btn" data-key="directional" aria-pressed="false"><span data-i18n="nsPresetDirectional">Directional</span><small>1 · 0.95 · 0.90</small></button>
+          <button type="button" class="mol-btn" data-key="recessive" aria-pressed="false"><span data-i18n="nsPresetRecessive">Recessive lethal</span><small>1 · 1 · 0</small></button>
+          <button type="button" class="mol-btn" data-key="over" aria-pressed="false"><span data-i18n="nsPresetOver">Heterozygote advantage</span><small>0.80 · 1 · 0.70</small></button>
+          <button type="button" class="mol-btn" data-key="under" aria-pressed="false"><span data-i18n="nsPresetUnder">Underdominance</span><small>1 · 0.70 · 0.90</small></button>
+        </div>
+
+        <div class="control">
+          <label for="waa" data-i18n="nsWAALabel">Fitness of AA</label>
+          <span class="value"><span id="waa-value">1.00</span></span>
+          <input type="range" id="waa" min="0" max="1" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="wab" data-i18n="nsWAaLabel">Fitness of Aa</label>
+          <span class="value"><span id="wab-value">1.00</span></span>
+          <input type="range" id="wab" min="0" max="1" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="wbb" data-i18n="nsWaaLabel">Fitness of aa</label>
+          <span class="value"><span id="wbb-value">1.00</span></span>
+          <input type="range" id="wbb" min="0" max="1" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="p0" data-i18n="nsP0Label">Starting frequency of A</label>
+          <span class="value"><span id="p0-value">0.50</span></span>
+          <input type="range" id="p0" min="0.01" max="0.99" step="0.01" value="0.5" />
+        </div>
+
+        <div class="control">
+          <label for="popn" data-i18n="nsNLabel">Population size N</label>
+          <span class="value"><span id="popn-value">200</span></span>
+          <input type="range" id="popn" min="10" max="500" step="10" value="200" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="nsSpeedLabel">Generations per second</label>
+          <span class="value"><span id="speed-value">6</span></span>
+          <input type="range" id="speed" min="1" max="30" step="1" value="6" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="step-btn" type="button" class="secondary" data-i18n="nsStepBtn">Step</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="nsFormulaHW">Hardy&ndash;Weinberg</span>: <code>p&sup2; : 2pq : q&sup2;</code></li>
+            <li><span data-i18n="nsFormulaMean">Mean fitness</span>: <code>w&#772; = p&sup2;w&#8329;&#8329; + 2pq&middot;w&#8329;&#8330; + q&sup2;w&#8330;&#8330;</code></li>
+            <li><span data-i18n="nsFormulaRecur">Next generation</span>: <code>p&prime; = (p&sup2;w&#8329;&#8329; + pq&middot;w&#8329;&#8330;) / w&#772;</code></li>
+            <li><span data-i18n="nsFormulaDelta">Change</span>: <code>&Delta;p = pq[p(w&#8329;&#8329;&minus;w&#8329;&#8330;) + q(w&#8329;&#8330;&minus;w&#8330;&#8330;)] / w&#772;</code></li>
+            <li><span data-i18n="nsFormulaEq">Equilibrium</span>: <code>p* = (w&#8329;&#8330;&minus;w&#8330;&#8330;) / (2w&#8329;&#8330;&minus;w&#8329;&#8329;&minus;w&#8330;&#8330;)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="nsNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="nsNote1">With equal fitnesses the smooth curve is a flat line &mdash; Hardy&ndash;Weinberg. The real population still wanders off it, and in a small enough population it wanders all the way to fixation. That wandering is genetic drift, and it is the only thing happening here.</li>
+            <li data-i18n="nsNote2">Set aa lethal and A still never quite finishes the job: the recessive allele hides inside heterozygotes, so its frequency falls as q&#8340; = q&#8320;/(1 + tq&#8320;) &mdash; hyperbolic, not exponential. Removing the last copies takes longer than removing the first ones.</li>
+            <li data-i18n="nsNote3">Make the heterozygote fittest and neither allele can win. Both are dragged to p* and held there, which is how a harmful allele stays common &mdash; the sickle-cell case. Make the heterozygote the worst instead and p* flips into a watershed: start either side of it and the population runs away from it.</li>
+            <li data-i18n="nsNote4">Mean fitness never falls while the fitnesses are held constant, so the population climbs its own fitness landscape. The readout tracks it live, and the faint lines are five more populations under identical rules &mdash; same selection, different luck.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="560" style="touch-action: none;" aria-label="A population of individuals coloured by genotype, with observed and Hardy-Weinberg genotype proportions, above a graph of allele frequency against generation"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="nsOutGen">Generation</div>
+            <div class="num" id="out-gen">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nsOutP">Frequency of A (population)</div>
+            <div class="num" id="out-p">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nsOutPDet">Frequency of A (infinite N)</div>
+            <div class="num" id="out-pdet">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nsOutGeno">Observed AA &middot; Aa &middot; aa</div>
+            <div class="num" id="out-geno">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nsOutHW">Hardy&ndash;Weinberg expected</div>
+            <div class="num" id="out-hw">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nsOutWbar">Mean fitness w&#772;</div>
+            <div class="num" id="out-wbar">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="selection.js" defer></script>
+</body>
+</html>
