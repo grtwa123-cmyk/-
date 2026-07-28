@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
@@ -151,7 +151,28 @@
 
 <div id="stage"></div>
 
-<div id="loading"><div class="spin"></div><div>행성 표면 생성 중…</div></div>
+<div id="loading"><div class="spin"></div><div id="loadingCap">행성 표면 생성 중…</div></div>
+
+<script>
+  // This page needs three.js from a CDN. If the CDN is blocked (offline,
+  // strict firewall, corporate proxy) the spinner would otherwise sit on
+  // "행성 표면 생성 중…" forever with no way out — the same dead end the
+  // landing wall used to have. After 8 s without a canvas, say so and offer
+  // the way back instead.
+  setTimeout(function () {
+    var el = document.getElementById("loading");
+    if (!el || el.classList.contains("done") || document.querySelector("#stage canvas")) return;
+    el.innerHTML =
+      '<div style="text-align:center;line-height:1.7">' +
+      '<div style="font-size:15px;margin-bottom:10px">3D 뷰를 불러오지 못했습니다</div>' +
+      '<div style="font-size:12px;opacity:.7;margin-bottom:14px">three.js를 CDN에서 받지 못했습니다. 네트워크를 확인해 주세요.</div>' +
+      '<div style="display:flex;gap:14px;justify-content:center;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase">' +
+      '<a href="../physics.html" style="color:#8cbaff">Physics</a>' +
+      '<a href="../index.html" style="color:#8cbaff">Home</a>' +
+      '<a href="solar.html" style="color:#8cbaff">2D 태양계</a>' +
+      "</div></div>";
+  }, 8000);
+</script>
 
 <header class="topbar">
   <div>

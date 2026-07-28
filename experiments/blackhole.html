@@ -103,11 +103,11 @@
   </div>
 
   <div class="overlay controls">
-    <span class="ctrl">Mass M <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></span>
-    <span class="ctrl">Disk <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></span>
-    <span class="ctrl">Glow <input type="range" id="ui-glow" min="0" max="1.5" step="0.05" value="0.8" /><span class="val" id="ui-glow-val">0.80</span></span>
+    <label class="ctrl" for="ui-mass">Mass M <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></label>
+    <label class="ctrl" for="ui-disk">Disk <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></label>
+    <label class="ctrl" for="ui-glow">Glow <input type="range" id="ui-glow" min="0" max="1.5" step="0.05" value="0.8" /><span class="val" id="ui-glow-val">0.80</span></label>
     <span class="ctrl"><label><input type="checkbox" id="ui-doppler-on" checked /> Doppler</label>
-      <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" /><span class="val" id="ui-doppler-val">1.00</span></span>
+      <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" aria-label="Doppler strength" /><span class="val" id="ui-doppler-val">1.00</span></span>
     <span class="ctrl"><button type="button" id="ui-spin">Spin: CCW</button></span>
     <span class="ctrl">Quality
       <select id="ui-quality">
@@ -372,6 +372,31 @@
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
       }
     }
+  </script>
+
+  <script>
+    /*
+     * The renderer needs three.js from a CDN. When the CDN is blocked the
+     * module below simply never runs: no canvas appears, no error surfaces,
+     * and the controls sit there looking functional while doing nothing.
+     * Fail loudly instead, and give the reader a way out.
+     */
+    setTimeout(function () {
+      if (document.querySelector("canvas")) return;
+      var d = document.createElement("div");
+      d.setAttribute("role", "status");
+      d.style.cssText =
+        "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;" +
+        "background:#05060b;color:#e8ecf8;z-index:99;font:14px/1.7 system-ui,sans-serif;text-align:center";
+      d.innerHTML =
+        '<div><div style="font-size:15px;margin-bottom:10px">WebGL 렌더러를 불러오지 못했습니다</div>' +
+        '<div style="font-size:12px;opacity:.7;margin-bottom:14px">three.js를 CDN에서 받지 못했거나 WebGL을 쓸 수 없습니다.</div>' +
+        '<div style="display:flex;gap:14px;justify-content:center;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase">' +
+        '<a href="../physics.html" style="color:#8cbaff">Physics</a>' +
+        '<a href="../index.html" style="color:#8cbaff">Home</a>' +
+        "</div></div>";
+      document.body.appendChild(d);
+    }, 8000);
   </script>
   <script type="module">
     import * as THREE from "three";

@@ -458,5 +458,17 @@
   updateCount();
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
+  // A hidden tab should not keep a physics loop alive, and coming back
+  // should not hand the integrator one enormous dt. Drop the frame request
+  // while hidden and restart from a fresh timestamp on return.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (animId) { cancelAnimationFrame(animId); animId = null; }
+    } else if (!animId) {
+      lastTs = 0;
+      animId = requestAnimationFrame(tick);
+    }
+  });
+
   animId = requestAnimationFrame(tick);
 })();
