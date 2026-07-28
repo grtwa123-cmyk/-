@@ -37,7 +37,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | Experiment | Description |
 | --- | --- |
 | **Projectile Motion** | Launch a projectile with adjustable velocity, angle, and gravity; live readouts for range, max height, and time of flight. |
-| **Pendulum** | Single or coupled wave-pendulum; tune length, gravity, initial angle, and damping. |
+| **Pendulums** | Three of them. A wave pendulum whose row of slightly different periods drifts in and out of step; Foucault's pendulum, solved in the rotating frame so the plane precesses at Ω·sin φ — 23.93 h at the pole, 31.8 h in Paris, never at the equator; and Newton's cradle, where k balls in gives exactly k out because equal-mass elastic collisions leave no other option. |
 | **Wave Interference** | Two coherent point sources radiate circular waves; adjust spacing, wavelength, amplitudes, and phase to watch fringes form and shift. |
 | **Doppler Effect** | A moving source emits circular wavefronts that compress ahead and stretch behind; cross the wave speed and the rings collapse into a Mach cone. |
 | **Newton's Cannon** | Fire a cannonball horizontally and find the speed where falling turns into orbiting. |

@@ -29,7 +29,15 @@
 
     // Mode pickers keep their selection in a class, not a value, so record
     // which button was lit in each group.
+    //
+    // A group marked data-reset="keep" is opted out. The distinction that
+    // matters is whether the picker chooses a *parameter* of one experiment
+    // (series vs parallel, one fitness preset vs another — Reset should
+    // restore those) or *which apparatus you are looking at*, the tell being
+    // that it swaps out the control set entirely. Throwing a reader back to a
+    // different apparatus because they pressed Reset is not a reset.
     snapshot.active = [...document.querySelectorAll(".molecule-list, .mode-list")]
+      .filter((group) => group.dataset.reset !== "keep")
       .map((group) => ({ group, btn: group.querySelector(".mol-btn.active") }))
       .filter((g) => g.btn);
   }

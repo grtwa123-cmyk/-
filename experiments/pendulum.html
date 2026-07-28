@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0b0f1e" />
-  <meta name="description" content="Swing a pendulum with adjustable length, gravity, initial angle, and damping." />
+  <meta name="description" content="Three pendulums: a wave pendulum built from slightly different periods, Foucault's pendulum precessing at Ω·sin φ as the ground turns under it, and Newton's cradle where k balls in gives exactly k balls out." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='18' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;circle cx='32' cy='32' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
-  <title data-i18n="pendulumPageTitle">Pendulum · Science Experiments</title>
+  <title data-i18n="pendulumPageTitle">Pendulums · Physics</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="physics">
@@ -20,46 +20,79 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount2">Experiment 2 of 4</span><span class="version-tag">v1.0.0</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount2">Physics · Pendulums</span><span class="version-tag">v1.0.0</span></span>
     </div>
 
     <header class="site-header">
-      <h1 data-i18n="pendulumTitle">Pendulum</h1>
-      <p data-i18n="pendulumIntro">Adjust the length, gravity, initial angle, and damping. Press Start to set it swinging.</p>
+      <h1 data-i18n="pendulumTitle">Pendulums</h1>
+      <p data-i18n="pendulumIntro">Three pendulums that each show something different. A wave pendulum turns a row of slightly different periods into a travelling pattern; Foucault's pendulum keeps swinging in one plane while the ground turns under it; Newton's cradle passes a collision straight through a row of touching balls.</p>
     </header>
 
     <main class="experiment">
       <section class="panel" aria-label="Controls">
         <h2 data-i18n="controls">Controls</h2>
 
-        <div class="control">
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="penMode">Pendulum</label>
+        </div>
+        <div class="molecule-list" id="mode-list" data-reset="keep" style="grid-template-columns: 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="wave" aria-pressed="true"><span data-i18n="penModeWave">Simple &amp; wave pendulum</span><small data-i18n="penModeWaveSub">θ̈ = −(g/L)·sin θ</small></button>
+          <button type="button" class="mol-btn" data-key="foucault" aria-pressed="false"><span data-i18n="penModeFoucault">Foucault's pendulum</span><small data-i18n="penModeFoucaultSub">the ground turns beneath it</small></button>
+          <button type="button" class="mol-btn" data-key="newton" aria-pressed="false"><span data-i18n="penModeNewton">Newton's cradle</span><small data-i18n="penModeNewtonSub">elastic collisions in a row</small></button>
+        </div>
+
+        <div class="control" data-modes="wave foucault newton">
           <label for="length" data-i18n="lengthLabel">Length L</label>
           <span class="value"><span id="length-value">1.50</span> m</span>
           <input type="range" id="length" min="0.30" max="3.00" step="0.01" value="1.50" />
         </div>
 
-        <div class="control">
+        <div class="control" data-modes="wave foucault newton">
           <label for="gravity" data-i18n="gravityLabel">Gravity g</label>
           <span class="value"><span id="gravity-value">9.81</span> m/s&sup2;</span>
           <input type="range" id="gravity" min="1" max="25" step="0.01" value="9.81" />
         </div>
 
-        <div class="control">
-          <label for="angle" data-i18n="initialAngleLabel">Initial angle θ₀</label>
+        <div class="control" data-modes="wave foucault newton">
+          <label for="angle" id="angle-label" data-i18n="initialAngleLabel">Initial angle θ₀</label>
           <span class="value"><span id="angle-value">30</span>&deg;</span>
           <input type="range" id="angle" min="-90" max="90" step="1" value="30" />
         </div>
 
-        <div class="control">
+        <div class="control" data-modes="wave newton">
           <label for="damping" data-i18n="dampingLabel">Damping b</label>
           <span class="value"><span id="damping-value">0.00</span></span>
           <input type="range" id="damping" min="0" max="1" step="0.01" value="0.00" />
         </div>
 
-        <div class="control">
+        <div class="control" data-modes="wave">
           <label for="count" data-i18n="countLabel">Number of pendulums N</label>
           <span class="value"><span id="count-value">15</span></span>
           <input type="range" id="count" min="1" max="20" step="1" value="15" />
+        </div>
+
+        <div class="control" data-modes="foucault">
+          <label for="latitude" data-i18n="penLatitudeLabel">Latitude φ</label>
+          <span class="value"><span id="latitude-value">37.6</span>&deg;</span>
+          <input type="range" id="latitude" min="-90" max="90" step="0.1" value="37.6" />
+        </div>
+
+        <div class="control" data-modes="foucault">
+          <label for="timescale" data-i18n="penTimescaleLabel">Time acceleration</label>
+          <span class="value">&times;<span id="timescale-value">1800</span></span>
+          <input type="range" id="timescale" min="1" max="7200" step="1" value="1800" />
+        </div>
+
+        <div class="control" data-modes="newton">
+          <label for="balls" data-i18n="penBallsLabel">Number of balls</label>
+          <span class="value"><span id="balls-value">5</span></span>
+          <input type="range" id="balls" min="3" max="7" step="1" value="5" />
+        </div>
+
+        <div class="control" data-modes="newton">
+          <label for="pulled" data-i18n="penPulledLabel">Balls pulled back</label>
+          <span class="value"><span id="pulled-value">1</span></span>
+          <input type="range" id="pulled" min="1" max="6" step="1" value="1" />
         </div>
 
         <div class="buttons">
@@ -72,6 +105,35 @@
           <ul>
             <li><span data-i18n="formulaPeriod">Period (small angle)</span>: <code>T = 2π · √(L / g)</code></li>
             <li><span data-i18n="formulaEom">Equation of motion</span>: <code>θ̈ = −(g/L)·sin(θ) − b·θ̇</code></li>
+            <li><span data-i18n="penFormulaCoriolis">Foucault (rotating frame)</span>: <code>ζ̈ + 2iΩ&#8338;ζ̇ + ω²ζ = 0</code></li>
+            <li><span data-i18n="penFormulaPrecess">Precession</span>: <code>T&#8346; = T&#8337;&#8342;&#8340;&#8342;&#8341;&#8342;&#8337;&#8338; / |sin φ|</code></li>
+            <li><span data-i18n="penFormulaCollision">Equal-mass elastic collision</span>: <code>v&#8321;&prime; = v&#8322;, v&#8322;&prime; = v&#8321;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open id="notes-wave">
+          <summary data-i18n="penNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="penNoteWave1">Each pendulum is a little shorter than the last, so each runs at a slightly higher frequency. Nothing is choreographed — the travelling wave, the split into two counter-rotating strands, and the moment they all line up again are just those frequencies drifting in and out of step.</li>
+            <li data-i18n="penNoteWave2">The period depends on length and gravity but not on mass, and only weakly on amplitude. Push θ₀ past about 30° and the real period creeps above the small-angle 2π√(L/g).</li>
+          </ul>
+        </details>
+
+        <details class="formulas" id="notes-foucault">
+          <summary data-i18n="penNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="penNoteFou1">The pendulum keeps swinging in one plane; it is the ground that turns. Seen from above, the plane creeps clockwise in the northern hemisphere and counter-clockwise in the southern, knocking over the ring of pegs one by one.</li>
+            <li data-i18n="penNoteFou2">Only the vertical part of Earth's rotation counts, so the plane turns at Ω·sin φ and a full turn takes one sidereal day divided by |sin φ| — 23.93 h at the pole, 31.8 h in Paris, and never at the equator. Slide the latitude to zero and the precession stops dead.</li>
+            <li data-i18n="penNoteFou3">Real time runs far too slowly to watch, so the clock is accelerated; the readouts show simulated time, not yours. At high acceleration the swing itself blurs into a bar — that bar is the plane.</li>
+          </ul>
+        </details>
+
+        <details class="formulas" id="notes-newton">
+          <summary data-i18n="penNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="penNoteNew1">Pull back one ball and one ball leaves; pull back three and exactly three leave. Nothing here counts balls — the collision rule is only that two equal masses hitting head-on elastically swap velocities, and the count comes out of it.</li>
+            <li data-i18n="penNoteNew2">That result needs the collisions to happen one after another, which is why the balls rest a hair apart rather than in perfect contact — real cradles do too. A genuinely simultaneous multi-ball collision has no unique answer.</li>
+            <li data-i18n="penNoteNew3">Momentum and kinetic energy are both conserved at every strike, which is what forces k in to give k out: any other number would satisfy one law and break the other. The energy drift readout is the integrator checking itself.</li>
           </ul>
         </details>
       </section>
@@ -81,20 +143,28 @@
 
         <div class="readouts">
           <div class="readout">
-            <div class="label" data-i18n="outPeriod">Period</div>
-            <div class="num"><span id="out-period">0.00</span> s</div>
+            <div class="label" id="lab-period" data-i18n="outPeriod">Period</div>
+            <div class="num"><span id="out-period">0.00</span> <span id="unit-period">s</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outAngle">Angle</div>
-            <div class="num"><span id="out-angle">0.00</span>&deg;</div>
+            <div class="label" id="lab-angle" data-i18n="outAngle">Angle</div>
+            <div class="num"><span id="out-angle">0.00</span> <span id="unit-angle">&deg;</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outAngVel">Angular velocity</div>
-            <div class="num"><span id="out-angvel">0.00</span>&deg;/s</div>
+            <div class="label" id="lab-angvel" data-i18n="outAngVel">Angular velocity</div>
+            <div class="num"><span id="out-angvel">0.00</span> <span id="unit-angvel">&deg;/s</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outElapsedTime">Elapsed time</div>
-            <div class="num"><span id="out-time">0.00</span> s</div>
+            <div class="label" id="lab-time" data-i18n="outElapsedTime">Elapsed time</div>
+            <div class="num"><span id="out-time">0.00</span> <span id="unit-time">s</span></div>
+          </div>
+          <div class="readout" id="slot-x1" hidden>
+            <div class="label" id="lab-x1">&mdash;</div>
+            <div class="num"><span id="out-x1">&mdash;</span> <span id="unit-x1"></span></div>
+          </div>
+          <div class="readout" id="slot-x2" hidden>
+            <div class="label" id="lab-x2">&mdash;</div>
+            <div class="num"><span id="out-x2">&mdash;</span> <span id="unit-x2"></span></div>
           </div>
         </div>
       </section>
