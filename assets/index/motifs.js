@@ -424,6 +424,21 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Natural selection: a logistic sweep from rare to fixed, with a finite
+  // population drifting either side of the deterministic curve.
+  selection(p, s) {
+    const X = (t) => s * t * 1.5;
+    const Y = (t) => s * (0.92 - 1.84 / (1 + Math.exp(-4.4 * t)));
+    for (let i = 0; i < 16; i++) {
+      const a = -1 + (2 * i) / 16, b = -1 + (2 * (i + 1)) / 16;
+      p.line(X(a), Y(a), X(b), Y(b));
+    }
+    p.line(-s * 1.5, s * 0.92, s * 1.5, s * 0.92);      // generation axis
+    p.line(-s * 1.5, s * 0.92, -s * 1.5, -s * 0.92);    // frequency axis
+    const drift = [[-0.72, -0.16], [-0.3, 0.2], [0.06, -0.22], [0.42, 0.18], [0.8, 0.12]];
+    for (const [t, dy] of drift) p.dot(X(t), Y(t) + s * dy, 3.2);
+  },
+
   // Circuits: one loop, a cell on the left, a zigzag resistor across the top,
   // and carriers drifting back along the return wire.
   circuit(p, s) {

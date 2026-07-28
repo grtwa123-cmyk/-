@@ -41,4 +41,5 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "atomTitle",        url: "experiments/atom.html",          cat: "Chemistry", tags: ["ELEMENT", "ISOTOPE"],   colors: ["#0a1424", "#6ea8ff"], motif: "atom" },
   { titleKey: "spectraTitle",     url: "experiments/spectra.html",       cat: "Chemistry", tags: ["QUANTUM", "SPECTRUM"],  colors: ["#12081f", "#ff5ea8"], motif: "spectra" },
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], motif: "lotka" },
+  { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], motif: "selection" },
 ]);

@@ -1,12 +1,12 @@
 # Science Lab
 
-> A browser-based science sandbox — **27 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **28 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
     <img alt="Live demo" src="https://img.shields.io/badge/demo-live-2ea44f?style=flat-square" />
   </a>
-  <img alt="Experiments" src="https://img.shields.io/badge/experiments-27-8957e5?style=flat-square" />
+  <img alt="Experiments" src="https://img.shields.io/badge/experiments-28-8957e5?style=flat-square" />
   <img alt="Dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue?style=flat-square" />
   <img alt="No build" src="https://img.shields.io/badge/build-none-lightgrey?style=flat-square" />
   <img alt="Languages" src="https://img.shields.io/badge/i18n-EN%20%C2%B7%20KO%20%C2%B7%20ZH-orange?style=flat-square" />
@@ -67,12 +67,13 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
 | **Hydrogen Spectrum** | Excite the electron and let it cascade back down; every jump emits one photon, drawn in its true colour. The Balmer lines land on 656.5 / 486.3 / 434.2 / 410.3 nm (vacuum) straight from the Rydberg formula. |
 
-### Biology (2)
+### Biology (3)
 
 | Experiment | Description |
 | --- | --- |
 | **DNA Double Helix** | Type a 5'→3' sequence and a true 3D B-form duplex builds itself — real 3.4 Å rise, 20 Å diameter, 10.5 bp/turn, and a 120° strand offset that opens genuine major and minor grooves. GC content, melting temperature, and an mRNA transcript update live. |
 | **Predator & Prey** | The Lotka–Volterra equations integrated with RK4: populations oscillate, a phase portrait traces the closed orbit, and the conserved invariant is shown live. |
+| **Natural Selection & Genetic Drift** | One locus, two alleles, three tunable fitnesses. A finite Wright–Fisher population runs against the infinite-population recursion, so selection shows as the trend and drift as the wobble. Recessive lethals decay as qₜ = q₀/(1 + tq₀), heterozygote advantage holds a balanced polymorphism at p*, and mean fitness never falls. |
 
 ---
 
@@ -117,7 +118,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
-│       ├── motifs.js           27 line-art glyphs, one per experiment
+│       ├── motifs.js           28 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
     ├── projectile.{html,js}
@@ -146,7 +147,8 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── kinetics.{html,js}
     ├── atom.{html,js}
     ├── spectra.{html,js}
-    └── lotka.{html,js}
+    ├── lotka.{html,js}
+    └── selection.{html,js}
 ```
 
 ---
@@ -154,7 +156,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (27 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (28 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
@@ -178,7 +180,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 27 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 28 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift, CSS animations are short-circuited via a media query in `styles.css`, and the 3D viewers start held still — a JS animation loop can't be reached by the media query, so `gl3d.js` checks the preference itself and the on-screen control reflects it, leaving the reader free to start the rotation.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.
