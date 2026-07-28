@@ -86,6 +86,11 @@
 
   <div class="hint" id="hint" data-i18n="indexHint">Drag to explore · Hover to reveal · Tap a card to enter</div>
 
+  <div class="ui-switch" id="uiSwitch" role="group" aria-label="View">
+    <button type="button" class="ui-btn active" data-ui="wall" aria-pressed="true" data-i18n="uiWall">Wall</button>
+    <button type="button" class="ui-btn" data-ui="table" aria-pressed="false" data-i18n="uiTable">Table</button>
+  </div>
+
   <div class="lang-switch" role="group" aria-label="Language">
     <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
     <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한</button>
@@ -94,6 +99,9 @@
 
   <div class="cursor" id="cursor" aria-hidden="true"><span class="lbl">Enter</span></div>
   <div class="nav-fade" id="navFade" aria-hidden="true"></div>
+
+  <main id="tableView" class="table-view" hidden></main>
+  <p id="uiFallbackNote" class="ui-note" role="status" hidden data-i18n="uiWallUnavailable">The 3D wall could not load, so here is the plain view.</p>
 
   <div id="loader" role="status" aria-live="polite">
     <div class="num" id="ldNum">0%</div>
@@ -109,6 +117,10 @@
     setTimeout(function () {
       var loader = document.getElementById("loader");
       if (!loader || loader.classList.contains("gone")) return;
+      // The plain view needs no CDN at all, so switching to it is a real
+      // recovery rather than a consolation prize.
+      var btn = document.querySelector('#uiSwitch [data-ui="table"]');
+      if (btn) { btn.click(); return; }
       loader.innerHTML =
         '<div class="cap">The 3D wall could not load</div>' +
         '<nav aria-label="Category hubs" style="display:flex;gap:14px;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:0.12em;text-transform:uppercase">' +
@@ -164,7 +176,6 @@
   </noscript>
 
   <script src="i18n.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-  <script type="module" src="assets/index/main.js"></script>
+  <script type="module" src="assets/index/boot.js"></script>
 </body>
 </html>

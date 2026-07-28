@@ -14,7 +14,7 @@
 
 **Live demo:** https://grtwa123-cmyk.github.io/-/
 
-The landing page is a curved phantom-style index — drag horizontally to scroll infinitely through cards, drag vertically to nudge rows, **press and hold a card to enter** the experiment.
+The landing page offers two ways in, remembered between visits. **Wall** is the curved phantom-style index — drag horizontally to scroll infinitely through cards, drag vertically to nudge rows, **press and hold a card to enter**. **Table** is one ordinary table of every experiment, filterable by category: no WebGL, no CDN, no gesture, and it doubles as the fallback if the wall cannot start.
 
 ---
 
@@ -118,6 +118,8 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
+│       ├── boot.js            Picks wall vs table, loads the CDN only for the wall
+│       ├── table-view.js      Plain table of the catalogue (no dependencies)
 │       ├── motifs.js           28 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
@@ -156,7 +158,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (28 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page is split into `boot.js` (picks the view), `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (28 small line-art glyphs), `table-view.js` (the plain view), and `experiments.js` (the catalogue). `table-view.js` imports only the catalogue, so choosing Table means Three.js and gsap are never requested at all. Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
