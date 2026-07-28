@@ -26,9 +26,14 @@ const i18n = window.i18n;
 
 // ── Tuning ─────────────────────────────────────────────────────────────────
 const Rc = 9.5;              // Cylinder radius (how much the wall curves)
-const COLS = 13;             // Number of columns (recycled horizontally)
-const ROWS = 2;              // 13 × 2 = 26 slots, exactly fills the
-                             // 26-experiment catalogue.
+const ROWS = 2;              // Two rows, recycled horizontally.
+                             // Columns are derived from the catalogue rather
+                             // than hard-coded: a hard-coded count silently
+                             // drops every card past COLS × ROWS, so adding an
+                             // experiment used to mean remembering to widen the
+                             // wall by hand. Deriving it makes that impossible.
+const COLS = Math.ceil(EXPERIMENTS.length / ROWS);
+const SPARE = COLS * ROWS - EXPERIMENTS.length;   // 0 or 1 for an odd catalogue
 const CARD_W = 3.0;          // Card width in world units
 const CARD_H = 3.62;         // Card height in world units (matches canvas ratio)
 const D_ANG = 0.40;          // Angular gap between columns (radians)
@@ -145,7 +150,10 @@ for (let cIdx = 0; cIdx < COLS; cIdx++) {
     });
     patchDesaturate(mat);
     const mesh = new THREE.Mesh(geo, mat);
-    mesh.userData = { exp, index, col: cIdx, row: r };
+    // An odd catalogue leaves one slot over. Rather than a hole in the wall,
+    // the card left alone in its column sits centred between the two rows.
+    const solo = SPARE > 0 && cIdx === COLS - 1;
+    mesh.userData = { exp, index, col: cIdx, row: r, y: solo ? 0 : ROW_Y[r] };
     group.add(mesh);
     cards.push(mesh);
   }
@@ -173,7 +181,7 @@ function layout() {
   for (const m of cards) {
     const rel = mod(m.userData.col - st.s + COLS / 2, COLS) - COLS / 2;
     const th = rel * D_ANG;
-    const yy = ROW_Y[m.userData.row] + st.y;
+    const yy = m.userData.y + st.y;
     m.position.set(Math.sin(th) * Rc, yy, -Math.cos(th) * Rc);
     m.lookAt(0, yy, 0);
     m.userData.theta = th;

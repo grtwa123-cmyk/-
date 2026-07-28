@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Wire three resistors in series or in parallel and watch Ohm's law do the rest — per-resistor current, voltage drop and power, with charge carriers moving at a speed set by the real current in each wire." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 32h10l4-10 6 20 6-20 6 20 4-10h12' fill='none' stroke='%23ffe14a' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="circuitPageTitle">Circuits · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount22">Physics · Circuits</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="circuitTitle">Ohm's Law &mdash; Series &amp; Parallel</h1>
+      <p data-i18n="circuitIntro">Three resistors, one cell, and a choice of how to wire them. In series there is a single path, so the same current is forced through every resistor and the voltages add up. In parallel each resistor bridges the same two nodes, so each gets the full cell voltage and the currents add up instead. The charge carriers move at a speed set by the real current in each wire, so you can see the rail slow down as every branch takes its share.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="circuitWiring">Wiring</label>
+        </div>
+        <div class="molecule-list" id="mode-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="series" aria-pressed="true"><span data-i18n="circuitSeries">Series</span></button>
+          <button type="button" class="mol-btn" data-key="parallel" aria-pressed="false"><span data-i18n="circuitParallel">Parallel</span></button>
+        </div>
+
+        <div class="control">
+          <label for="emf" data-i18n="circuitEmfLabel">Cell voltage</label>
+          <span class="value"><span id="emf-value">6.0</span> V</span>
+          <input type="range" id="emf" min="0" max="12" step="0.1" value="6" />
+        </div>
+
+        <div class="control">
+          <label for="r1" data-i18n="circuitR1Label">R&#8321;</label>
+          <span class="value"><span id="r1-value">100</span> &Omega;</span>
+          <input type="range" id="r1" min="10" max="1000" step="10" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="r2" data-i18n="circuitR2Label">R&#8322;</label>
+          <span class="value"><span id="r2-value">220</span> &Omega;</span>
+          <input type="range" id="r2" min="10" max="1000" step="10" value="220" />
+        </div>
+
+        <div class="control">
+          <label for="r3" data-i18n="circuitR3Label">R&#8323;</label>
+          <span class="value"><span id="r3-value">330</span> &Omega;</span>
+          <input type="range" id="r3" min="10" max="1000" step="10" value="330" />
+        </div>
+
+        <div class="control">
+          <label for="r3-on" data-i18n="circuitR3On">Include R&#8323;</label>
+          <span class="value"><input type="checkbox" id="r3-on" checked /></span>
+        </div>
+
+        <div class="control">
+          <label for="switch-on" data-i18n="circuitSwitch">Switch closed</label>
+          <span class="value"><input type="checkbox" id="switch-on" checked /></span>
+        </div>
+
+        <div class="buttons">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="circuitFormulaOhm">Ohm's law</span>: <code>V = I R</code></li>
+            <li><span data-i18n="circuitFormulaSeries">Series</span>: <code>R = R&#8321;+R&#8322;+R&#8323;</code>, <code>I</code> shared</li>
+            <li><span data-i18n="circuitFormulaParallel">Parallel</span>: <code>1/R = 1/R&#8321;+1/R&#8322;+1/R&#8323;</code>, <code>V</code> shared</li>
+            <li><span data-i18n="circuitFormulaPower">Power</span>: <code>P = V I = I&sup2;R</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="circuitNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="circuitNote1">In series there is only one path, so every resistor carries the same current and the voltage divides between them in proportion to resistance. Adding a resistor always raises the total.</li>
+            <li data-i18n="circuitNote2">In parallel every resistor sees the full cell voltage and draws its own current. Adding a resistor always lowers the total &mdash; the combined resistance is smaller than the smallest branch on its own.</li>
+            <li data-i18n="circuitNote3">Watch the top rail in parallel: each segment carries only the current that has not yet been tapped off, so the carriers visibly slow down from left to right. The bodies warm with the power they dissipate, on an absolute scale.</li>
+            <li data-i18n="circuitNote4">Both arrangements are the same two Kirchhoff rules seen from different sides &mdash; voltages around a loop sum to zero, currents into a node sum to zero. Both residuals are printed under the circuit and stay at zero as you drag.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="480" style="touch-action: none;" aria-label="A battery driving three resistors wired in series or in parallel, with charge carriers flowing and per-resistor readouts"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutTotalR">Total resistance</div>
+            <div class="num"><span id="out-rtotal">&mdash;</span> &Omega;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutCurrent">Cell current</div>
+            <div class="num"><span id="out-current">&mdash;</span> mA</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutPower">Total power</div>
+            <div class="num"><span id="out-power">&mdash;</span> mW</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutR1">R&#8321; current &middot; drop</div>
+            <div class="num" id="out-r1">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutR2">R&#8322; current &middot; drop</div>
+            <div class="num" id="out-r2">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="circuitOutR3">R&#8323; current &middot; drop</div>
+            <div class="num" id="out-r3">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="circuit.js" defer></script>
+</body>
+</html>

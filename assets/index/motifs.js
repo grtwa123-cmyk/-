@@ -424,6 +424,27 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Circuits: one loop, a cell on the left, a zigzag resistor across the top,
+  // and carriers drifting back along the return wire.
+  circuit(p, s) {
+    const zig = [[-0.46, -0.86], [-0.33, -1.16], [-0.11, -0.56],
+                 [0.11, -1.16], [0.33, -0.56], [0.46, -0.86]];
+    for (let i = 1; i < zig.length; i++) {
+      p.line(s * zig[i - 1][0], s * zig[i - 1][1], s * zig[i][0], s * zig[i][1]);
+    }
+    p.line(-s * 1.4, -s * 0.86, -s * 0.46, -s * 0.86);   // top rail, left of it
+    p.line(s * 0.46, -s * 0.86, s * 1.4, -s * 0.86);     // top rail, right of it
+    p.line(s * 1.4, -s * 0.86, s * 1.4, s * 0.86);       // far side
+    p.line(s * 1.4, s * 0.86, -s * 1.4, s * 0.86);       // return wire
+    p.line(-s * 1.4, -s * 0.86, -s * 1.4, -s * 0.24);    // up to the + plate
+    p.line(-s * 1.4, s * 0.24, -s * 1.4, s * 0.86);      // down from the − plate
+    p.line(-s * 1.7, -s * 0.24, -s * 1.1, -s * 0.24);    // long plate  (+)
+    p.line(-s * 1.56, s * 0.24, -s * 1.24, s * 0.24);    // short plate (−)
+    p.dot(-s * 0.6, s * 0.86, 3.2);
+    p.dot(s * 0.1, s * 0.86, 3.2);
+    p.dot(s * 0.8, s * 0.86, 3.2);
+  },
+
   spectra(p, s) {
     // Rungs bunch toward the top the way 1/n² levels do.
     for (let n = 1; n <= 5; n++) {
