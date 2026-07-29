@@ -481,6 +481,28 @@ const RENDERERS = {
     p.dot(-s * 1.5, 0, 3);
   },
 
+  // Enzyme kinetics: the Michaelis–Menten hyperbola drawn from the real
+  // expression, with Kₘ marked at the half-maximum and Vmax as the asymptote.
+  enzyme(p, s, ctx) {
+    const Km = 0.8;
+    const V = (S) => S / (Km + S);
+    const X = (S) => s * (S * 0.62 - 1.5);
+    const Y = (v) => s * (0.92 - 1.8 * v);
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * 4.6, b = ((i + 1) / 40) * 4.6;
+      p.line(X(a), Y(V(a)), X(b), Y(V(b)));
+    }
+    p.line(-s * 1.5, s * 0.92, s * 1.6, s * 0.92);       // [S] axis
+    p.line(-s * 1.5, s * 0.92, -s * 1.5, -s * 0.95);     // v axis
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(-s * 1.5, Y(1), s * 1.6, Y(1));               // Vmax asymptote
+    p.line(X(Km), s * 0.92, X(Km), Y(0.5));              // Kₘ at half-maximum
+    ctx.restore();
+    ctx.setLineDash([]);
+    p.dot(X(Km), Y(0.5), 3.4);
+  },
+
   // Natural selection: a logistic sweep from rare to fixed, with a finite
   // population drifting either side of the deterministic curve.
   selection(p, s) {

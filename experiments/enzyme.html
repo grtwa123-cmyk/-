@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Every enzyme molecule is simulated as its own state machine — free, bound, catalysing, inhibited. Count the turnovers and the Michaelis-Menten curve appears on its own, with each inhibitor moving exactly the constant it should." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 48C8 24 22 16 32 16s24 4 24 4' fill='none' stroke='%237be0d0' stroke-width='4' stroke-linecap='round'/&gt;&lt;circle cx='20' cy='34' r='4' fill='%23e58fff'/&gt;&lt;circle cx='40' cy='19' r='4' fill='%23e58fff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="mmPageTitle">Enzyme Kinetics · Biology</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount27">Biology · Enzyme kinetics</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="mmTitle">Enzyme Kinetics &mdash; Michaelis&ndash;Menten</h1>
+      <p data-i18n="mmIntro">Nothing here knows the Michaelis&ndash;Menten equation. Each enzyme molecule is its own little state machine &mdash; free, holding a substrate, releasing a product, blocked by an inhibitor &mdash; and it changes state at random with the rate constants of the mechanism. Count the products and divide by the time, and the hyperbola draws itself. Add an inhibitor and watch which of the two constants moves.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="substrate" data-i18n="mmSubstrateLabel">Substrate [S]</label>
+          <span class="value"><span id="substrate-value">25</span> &micro;M</span>
+          <input type="range" id="substrate" min="2" max="250" step="1" value="25" />
+        </div>
+
+        <div class="control">
+          <label for="km" data-i18n="mmKmLabel">Michaelis constant K&#8344;</label>
+          <span class="value"><span id="km-value">25</span> &micro;M</span>
+          <input type="range" id="km" min="10" max="100" step="1" value="25" />
+        </div>
+
+        <div class="control">
+          <label for="kcat" data-i18n="mmKcatLabel">Turnover number k&#8344;&#8336;&#8348;</label>
+          <span class="value"><span id="kcat-value">20</span> s&#8315;&sup1;</span>
+          <input type="range" id="kcat" min="5" max="40" step="1" value="20" />
+        </div>
+
+        <div class="control">
+          <label for="enzymes" data-i18n="mmEnzymesLabel">Enzyme molecules</label>
+          <span class="value"><span id="enzymes-value">12</span></span>
+          <input type="range" id="enzymes" min="2" max="24" step="1" value="12" />
+        </div>
+
+        <div class="control" style="margin: 0.8rem 0 0.4rem;">
+          <label data-i18n="mmInhibitor">Inhibitor</label>
+        </div>
+        <div class="molecule-list" id="inhibitor-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="none" aria-pressed="true"><span data-i18n="mmInhNone">None</span></button>
+          <button type="button" class="mol-btn" data-key="competitive" aria-pressed="false"><span data-i18n="mmInhComp">Competitive</span><small data-i18n="mmInhCompSub">binds free E</small></button>
+          <button type="button" class="mol-btn" data-key="noncompetitive" aria-pressed="false"><span data-i18n="mmInhNon">Non-competitive</span><small data-i18n="mmInhNonSub">binds E and ES</small></button>
+          <button type="button" class="mol-btn" data-key="uncompetitive" aria-pressed="false"><span data-i18n="mmInhUn">Uncompetitive</span><small data-i18n="mmInhUnSub">binds ES only</small></button>
+        </div>
+
+        <div class="control" id="ratio-control">
+          <label for="iratio" data-i18n="mmRatioLabel">Inhibitor [I]/K&#8305;</label>
+          <span class="value"><span id="iratio-value">2.0</span></span>
+          <input type="range" id="iratio" min="0" max="5" step="0.1" value="2" />
+        </div>
+
+        <div class="control">
+          <label for="lb-on" data-i18n="mmLineweaver">Lineweaver&ndash;Burk plot</label>
+          <span class="value"><input type="checkbox" id="lb-on" /></span>
+        </div>
+
+        <div class="buttons">
+          <button id="sweep-btn" type="button" data-i18n="mmSweepBtn">Run assay series</button>
+          <button id="record-btn" type="button" class="secondary" data-i18n="mmRecordBtn">Record this point</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="mmFormulaMech">Mechanism</span>: <code>E + S &#8652; ES &rarr; E + P</code></li>
+            <li><span data-i18n="mmFormulaRate">Rate</span>: <code>v = V&#8344;&#8336;&#8339;[S] / (K&#8344; + [S])</code></li>
+            <li><span data-i18n="mmFormulaConsts">Constants</span>: <code>V&#8344;&#8336;&#8339; = k&#8344;&#8336;&#8348;[E]&#8348;</code>, <code>K&#8344; = (k&#8331;&#8321;+k&#8344;&#8336;&#8348;)/k&#8321;</code></li>
+            <li><span data-i18n="mmFormulaLB">Lineweaver&ndash;Burk</span>: <code>1/v = (K&#8344;/V&#8344;&#8336;&#8339;)(1/[S]) + 1/V&#8344;&#8336;&#8339;</code></li>
+            <li><span data-i18n="mmFormulaInh">Inhibition</span>: <code>&alpha; = 1 + [I]/K&#8305;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="mmNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="mmNote1">No line of code computes the rate law. Each molecule sits in one of four states and jumps between them at random with the mechanism's own rate constants; the products are counted and divided by the elapsed time. The hyperbola the points land on is what that bookkeeping comes to, which is exactly how Michaelis and Menten got it.</li>
+            <li data-i18n="mmNote2">At [S] = K&#8344; the rate is exactly half its maximum &mdash; that is the definition of K&#8344;, not a coincidence, and it is why the constant is worth measuring. Below K&#8344; the rate is nearly proportional to [S]; far above it, every enzyme is already busy and adding more substrate buys nothing.</li>
+            <li data-i18n="mmNote3">The three inhibitors each move exactly one thing, and the Lineweaver&ndash;Burk plot is built to show which. A competitive inhibitor raises K&#8344; and leaves V&#8344;&#8336;&#8339; alone, so the lines pivot about a shared y-intercept. A non-competitive one lowers V&#8344;&#8336;&#8339; and leaves K&#8344;, so they share the x-intercept. An uncompetitive one divides both, so the slope never changes and the lines run parallel.</li>
+            <li data-i18n="mmNote4">Watch the scatter, not just the curve. Every point is a finite count of random events, so it carries real noise that shrinks as √N &mdash; and the straight-line fit recovers K&#8344; and V&#8344;&#8336;&#8339; from those noisy points, which is the whole reason the plot was invented.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="560" style="touch-action: none;" aria-label="Enzyme molecules changing state as they bind substrate and release product, above a plot of reaction rate against substrate concentration"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="mmOutRate">Rate v, counted</div>
+            <div class="num"><span id="out-rate">&mdash;</span> &micro;M/s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mmOutPredicted">Michaelis&ndash;Menten</div>
+            <div class="num"><span id="out-predicted">&mdash;</span> &micro;M/s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mmOutTurnovers">Turnovers counted</div>
+            <div class="num" id="out-turnovers">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mmOutVmax">V&#8344;&#8336;&#8339; apparent</div>
+            <div class="num"><span id="out-vmax">&mdash;</span> &micro;M/s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mmOutKm">K&#8344; apparent</div>
+            <div class="num"><span id="out-km">&mdash;</span> &micro;M</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mmOutFit">Fitted from the points</div>
+            <div class="num" id="out-fit">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="enzyme.js" defer></script>
+</body>
+</html>
