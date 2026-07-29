@@ -424,6 +424,26 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Diffraction: a slit mask on the left, and the fringe pattern it throws —
+  // bar heights follow the real (sin α/α)²·cos²β with a = d/3, so the third
+  // order is missing exactly as it should be.
+  diffraction(p, s) {
+    for (const y of [-0.95, -0.32, 0.32, 0.95]) {
+      p.line(-s * 1.5, s * y, -s * 1.5, s * (y + (y < 0 ? 0.42 : -0.42)));
+    }
+    for (let m = -4; m <= 4; m++) {
+      const beta = (Math.PI / 3) * m;                    // d·sinθ = mλ
+      const al = beta / 3;                               // a = d/3
+      const env = al === 0 ? 1 : Math.sin(al) / al;
+      const h = env * env;                               // cos²β = 1 at maxima
+      if (h < 0.012) continue;                           // the missing order
+      const x = s * (m * 0.36 + 0.3);
+      p.line(x, s * 0.95, x, s * (0.95 - 1.75 * h));
+    }
+    p.line(-s * 0.42, s * 0.95, s * 1.72, s * 0.95);
+    p.dot(-s * 1.5, 0, 3);
+  },
+
   // Natural selection: a logistic sweep from rare to fixed, with a finite
   // population drifting either side of the deterministic curve.
   selection(p, s) {
