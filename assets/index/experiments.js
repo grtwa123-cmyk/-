@@ -32,6 +32,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "circuitTitle",     url: "experiments/circuit.html",       cat: "Physics",   tags: ["CIRCUIT", "OHM"],       colors: ["#0a1a1c", "#5fd6c0"], motif: "circuit" },
   { titleKey: "diffTitle",        url: "experiments/diffraction.html",   cat: "Physics",   tags: ["OPTICS", "QUANTUM"],    colors: ["#101024", "#8ab4ff"], motif: "diffraction" },
   { titleKey: "lensTitle",        url: "experiments/lens.html",          cat: "Physics",   tags: ["OPTICS", "IMAGE"],      colors: ["#0b1526", "#7fd4ff"], motif: "lens" },
+  { titleKey: "resTitle",         url: "experiments/resonance.html",     cat: "Physics",   tags: ["OSCILLATE", "RESONANCE"], colors: ["#24101a", "#ff8aa3"], motif: "resonance" },
   { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#0d0a1e", "#e0a24a"], motif: "solar" },
   { titleKey: "moleculeTitle",    url: "experiments/molecule.html",      cat: "Chemistry", tags: ["3D", "MODEL"],          colors: ["#0a1f15", "#6fbf8a"], motif: "molecule" },
   { titleKey: "crystalTitle",     url: "experiments/crystal.html",       cat: "Chemistry", tags: ["LATTICE", "3D"],        colors: ["#0a1822", "#6fc4d4"], motif: "crystal" },

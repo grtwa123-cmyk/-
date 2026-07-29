@@ -424,6 +424,23 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Resonance: the amplitude curve A/X₀ = 1/√((1−r²)²+(2ζr)²) for ζ = 0.12,
+  // drawn from the real expression, with the peak marked and the drive line
+  // standing on it.
+  resonance(p, s) {
+    const A = (r) => 1 / Math.hypot(1 - r * r, 2 * 0.12 * r);
+    const peak = A(Math.sqrt(1 - 2 * 0.12 * 0.12));
+    const X = (r) => s * (r * 1.15 - 1.55);
+    const Y = (g) => s * (0.95 - 1.85 * (g / peak));
+    for (let i = 0; i < 46; i++) {
+      const r0 = (i / 46) * 2.7, r1 = ((i + 1) / 46) * 2.7;
+      p.line(X(r0), Y(A(r0)), X(r1), Y(A(r1)));
+    }
+    p.line(-s * 1.6, s * 0.95, s * 1.6, s * 0.95);          // frequency axis
+    p.dot(X(Math.sqrt(1 - 2 * 0.12 * 0.12)), Y(peak), 3.4); // the peak
+    p.line(X(1), s * 0.95, X(1), Y(peak) - s * 0.12);       // f₀
+  },
+
   // Lens: a biconvex outline with the two rays that define an image — the
   // one arriving parallel leaving through the far focus, and the one through
   // the centre carrying straight on. They cross where the image is.
