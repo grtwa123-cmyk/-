@@ -1,12 +1,12 @@
 # Science Lab
 
-> A browser-based science sandbox — **29 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **30 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
     <img alt="Live demo" src="https://img.shields.io/badge/demo-live-2ea44f?style=flat-square" />
   </a>
-  <img alt="Experiments" src="https://img.shields.io/badge/experiments-29-8957e5?style=flat-square" />
+  <img alt="Experiments" src="https://img.shields.io/badge/experiments-30-8957e5?style=flat-square" />
   <img alt="Dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue?style=flat-square" />
   <img alt="No build" src="https://img.shields.io/badge/build-none-lightgrey?style=flat-square" />
   <img alt="Languages" src="https://img.shields.io/badge/i18n-EN%20%C2%B7%20KO%20%C2%B7%20ZH-orange?style=flat-square" />
@@ -32,7 +32,7 @@ The landing page offers two ways in, remembered between visits. **Wall** is the 
 
 ## Experiments
 
-### Physics (17)
+### Physics (18)
 
 | Experiment | Description |
 | --- | --- |
@@ -52,6 +52,7 @@ The landing page offers two ways in, remembered between visits. **Wall** is the 
 | **Electromagnetic Generator** | A water wheel spins a bar magnet inside a pickup coil; Faraday's law EMF = N·B·A·ω·sin(ωt) lights a bulb, with the live rotating dipole field. |
 | **Photoelectric Effect** | Red light at full brightness does nothing; a faint violet beam ejects electrons instantly. Sweep the wavelength and the KEₘₐₓ-vs-frequency line plots itself — slope h, intercept the threshold frequency. |
 | **Double-Slit Interference & Diffraction** | One formula does all of it: I = I₀(sin α/α)²(sin Nβ/sin β)². Fringes at d·sinθ = mλ ride inside the single-slit envelope, and where d/a is a whole number every p-th order lands on a zero and is simply absent. Add slits and the peaks narrow as 1/N. Switch on the photon counter and each dot is drawn from that same curve by rejection sampling, so the pattern rebuilds one photon at a time. |
+| **Lenses & Image Formation** | A fan of rays leaves the object and each is bent by the one rule a thin lens has, θ′ = θ − y/f. The image is wherever they cross — and that they cross at all *is* 1/v − 1/u = 1/f falling out of the algebra. Newton's x·x′ = f² agrees independently, and the readout reports how far any traced ray misses the image point by: 1e-14 cm. |
 | **Ohm's Law — Series & Parallel** | Three resistors wired end to end or side by side, solved from the closed forms. Carriers move at the real current in each wire, so a parallel rail visibly slows as every branch taps its share; bodies warm with dissipated power, and both Kirchhoff residuals stay printed at zero. |
 
 ### Chemistry (9)
@@ -121,7 +122,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
 │       ├── boot.js            Picks wall vs table, loads the CDN only for the wall
 │       ├── table-view.js      Plain table of the catalogue (no dependencies)
-│       ├── motifs.js           29 line-art glyphs, one per experiment
+│       ├── motifs.js           30 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
     ├── projectile.{html,js}
@@ -141,6 +142,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── generator.{html,js}
     ├── photoelectric.{html,js}
     ├── diffraction.{html,js}
+    ├── lens.{html,js}
     ├── circuit.{html,js}
     ├── molecule.{html,js}
     ├── crystal.{html,js}
@@ -160,7 +162,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page is split into `boot.js` (picks the view), `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (29 small line-art glyphs), `table-view.js` (the plain view), and `experiments.js` (the catalogue). `table-view.js` imports only the catalogue, so choosing Table means Three.js and gsap are never requested at all. Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page is split into `boot.js` (picks the view), `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (30 small line-art glyphs), `table-view.js` (the plain view), and `experiments.js` (the catalogue). `table-view.js` imports only the catalogue, so choosing Table means Three.js and gsap are never requested at all. Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
@@ -184,7 +186,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 29 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 30 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift, CSS animations are short-circuited via a media query in `styles.css`, and the 3D viewers start held still — a JS animation loop can't be reached by the media query, so `gl3d.js` checks the preference itself and the on-screen control reflects it, leaving the reader free to start the rotation.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

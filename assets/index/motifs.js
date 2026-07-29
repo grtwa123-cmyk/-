@@ -424,6 +424,26 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Lens: a biconvex outline with the two rays that define an image — the
+  // one arriving parallel leaving through the far focus, and the one through
+  // the centre carrying straight on. They cross where the image is.
+  lens(p, s, ctx) {
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 1.05);
+    ctx.quadraticCurveTo(s * 0.42, 0, 0, s * 1.05);
+    ctx.quadraticCurveTo(-s * 0.42, 0, 0, -s * 1.05);
+    ctx.stroke();
+    p.line(-s * 1.8, 0, s * 1.8, 0);                 // optical axis
+    p.line(-s * 1.35, -s * 0.62, 0, -s * 0.62);      // parallel in
+    p.line(0, -s * 0.62, s * 1.5, s * 0.7);          // out through the far focus
+    p.line(-s * 1.35, -s * 0.62, s * 1.5, s * 0.7);  // straight through the centre
+    p.line(-s * 1.35, 0, -s * 1.35, -s * 0.62);      // object
+    p.line(s * 0.9, 0, s * 0.9, s * 0.42);           // image, where they cross
+    p.dot(s * 0.9, s * 0.42, 3.2);
+    p.dot(s * 0.62, 0, 2.6);                         // focus
+    p.dot(-s * 0.62, 0, 2.6);
+  },
+
   // Diffraction: a slit mask on the left, and the fringe pattern it throws —
   // bar heights follow the real (sin α/α)²·cos²β with a = d/3, so the third
   // order is missing exactly as it should be.
