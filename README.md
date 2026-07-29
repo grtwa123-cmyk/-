@@ -100,7 +100,32 @@ npm run serve            # python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
-Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -m http.server`, etc.). There is nothing to install — `package.json` is metadata only.
+Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -m http.server`, etc.). There is nothing to install — `package.json` declares no dependencies.
+
+### Checks
+
+Both run on Node's standard library alone, so there is still nothing to install:
+
+```bash
+npm run lint             # syntax + .editorconfig, every tracked file
+npm test                 # catalogue, i18n parity, and page loads
+```
+
+`npm run lint` parses all 40 JavaScript files and checks the whole tree against
+`.editorconfig`. ES modules are copied to a `.mjs` temporary first, because
+`node --check` reports success without fully parsing a `.js` file that contains
+`export`.
+
+`npm test` checks the invariants that break quietly: every catalogue entry
+resolves to a real file and a defined title key, `en` / `ko` / `zh` carry
+identical key sets, and every experiment is linked from its category hub. It
+then loads the landing page, the three hubs and one experiment per category in
+Chromium and fails on any console error, starting and stopping its own server
+so it cannot collide with `npm run serve`. The browser section needs
+`CHROMIUM_PATH`; without it that part skips and the rest still runs.
+
+In [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web),
+`.claude/hooks/session-start.sh` exports that variable automatically.
 
 ---
 
