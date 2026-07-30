@@ -294,10 +294,37 @@ await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
   const pts = await page.evaluate(()=>window.__mm.getPoints());
   chk('"Run assay series" records a full 12-point series', pts.length===12,
       `${pts.length} points`);
-  const fit = await page.evaluate(()=>window.__mm.fitFromPoints());
-  chk('the series fit lands on the true constants (Kₘ 25, Vₘₐₓ 24)',
-      fit && Math.abs(fit.Km-25)/25 < 0.3 && Math.abs(fit.Vmax-24)/24 < 0.2,
-      fit ? `Kₘ ${fit.Km.toFixed(1)}, Vₘₐₓ ${fit.Vmax.toFixed(2)}` : 'no fit');
+  // A six-second assay per point is a small number of random events, and a
+  // least-squares fit on 1/v weights the noisiest of them most heavily — that
+  // is the standard objection to the Lineweaver-Burk plot, and the page says
+  // as much. Measured over 25 sweeps the estimator is unbiased but wide:
+  // Kₘ mean 25.4 against a true 25, sd 3.0, worst single run 39% out. A single
+  // fit held to 30% is therefore a test that fails on correct behaviour, which
+  // is how this first went red on CI.
+  //
+  // So the claim under test is the one that is actually true: repeat the assay
+  // and the average converges on the real constants. sd/√5 is 5.4% for Kₘ, so
+  // 18% is better than three sigma while still catching a genuinely broken
+  // fit, and each individual run only has to be sane.
+  const fits = [await page.evaluate(()=>window.__mm.fitFromPoints())];
+  for (let i = 0; i < 4; i++) {
+    await page.click('#reset-btn'); await page.waitForTimeout(150);
+    await page.click('#sweep-btn');
+    await page.waitForFunction(()=>window.__mm.getPoints().length>=12,{timeout:60000}).catch(()=>{});
+    fits.push(await page.evaluate(()=>window.__mm.fitFromPoints()));
+  }
+  const ok = fits.every((f) => f && Number.isFinite(f.Km) && Number.isFinite(f.Vmax));
+  const mean = (pick) => fits.reduce((a, f) => a + pick(f), 0) / fits.length;
+  const mKm = ok ? mean((f)=>f.Km) : NaN, mVmax = ok ? mean((f)=>f.Vmax) : NaN;
+  chk('the series fit is unbiased: 5 assays average onto Kₘ 25, Vₘₐₓ 24',
+      ok && Math.abs(mKm-25)/25 < 0.18 && Math.abs(mVmax-24)/24 < 0.12,
+      ok ? `mean Kₘ ${mKm.toFixed(1)}, mean Vₘₐₓ ${mVmax.toFixed(2)} ` +
+           `(runs: ${fits.map(f=>f.Km.toFixed(1)).join(', ')})` : 'a sweep produced no fit');
+  chk('no single assay is wildly off (each within 60%)',
+      ok && fits.every((f)=>Math.abs(f.Km-25)/25 < 0.6 && Math.abs(f.Vmax-24)/24 < 0.5),
+      ok ? fits.map(f=>`${f.Km.toFixed(1)}/${f.Vmax.toFixed(1)}`).join(' ') : '');
+  await page.click('#sweep-btn');
+  await page.waitForFunction(()=>window.__mm.getPoints().length>=12,{timeout:60000}).catch(()=>{});
   chk('the fit readout is filled in once there are points',
       /K/.test(await txt('out-fit')), await txt('out-fit'));
   const rising = pts.every((q,k)=>k===0 || q.v > pts[k-1].v*0.92);
