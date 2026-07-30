@@ -275,7 +275,11 @@
       window.SFX?.tone({ freq: 1980, dur: 0.12, type: "sine", gain: 0.08, release: 0.18 });
     }
     prevTir = sol.tir;
-    render(p, sol, performance.now() / 1000);
+    // The travelling dashes along the ray are the only motion here, and this
+    // loop reads the clock directly rather than taking the frame timestamp,
+    // so reduced-motion has to be honoured explicitly.
+    render(p, sol, window.ReducedMotion ? window.ReducedMotion.clock()
+                                        : performance.now() / 1000);
     updateReadouts(p, sol);
   }
   function start() {
