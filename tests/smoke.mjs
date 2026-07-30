@@ -86,6 +86,41 @@ for (const [cat, hub] of Object.entries(hubs)) {
 check("every experiment is linked from its category hub",
   unlinked.length === 0, unlinked.join(", "));
 
+// ── SEO assets ────────────────────────────────────────────────────────────
+// sitemap.xml is generated from the catalogue by tools/build-seo.mjs. A
+// catalogue that grows and a sitemap that does not is the usual way these
+// start lying, so the drift is a test failure rather than a silent omission.
+{
+  const sitemapPath = path.join(root, "sitemap.xml");
+  if (!fs.existsSync(sitemapPath)) {
+    check("sitemap.xml exists", false, "run node tools/build-seo.mjs");
+  } else {
+    const xml = fs.readFileSync(sitemapPath, "utf8");
+    const missing = EXPERIMENTS.filter((e) => !xml.includes(`/${e.url}<`));
+    const hubsMissing = Object.values(hubs).filter((h) => !xml.includes(`/${h}<`));
+    check("sitemap.xml lists every experiment and hub",
+      missing.length === 0 && hubsMissing.length === 0,
+      [...missing.map((e) => e.url), ...hubsMissing].join(", ") +
+      " — run node tools/build-seo.mjs");
+  }
+  check("robots.txt exists and points at the sitemap",
+    fs.existsSync(path.join(root, "robots.txt")) &&
+    fs.readFileSync(path.join(root, "robots.txt"), "utf8").includes("sitemap.xml"));
+
+  const card = path.join(root, "assets/og-cover.jpg");
+  check("the social card exists and is a sane size",
+    fs.existsSync(card) && fs.statSync(card).size > 10_000 &&
+    fs.statSync(card).size < 1_000_000,
+    fs.existsSync(card) ? `${(fs.statSync(card).size / 1024) | 0} KB` : "missing");
+
+  const noCard = [];
+  for (const p of ["index.html", ...Object.values(hubs),
+                   ...EXPERIMENTS.map((e) => e.url)]) {
+    if (!fs.readFileSync(path.join(root, p), "utf8").includes("og:image")) noCard.push(p);
+  }
+  check("every page declares og:image", noCard.length === 0, noCard.slice(0, 4).join(", "));
+}
+
 // ── Browser ───────────────────────────────────────────────────────────────
 const chromiumPath = process.env.CHROMIUM_PATH;
 let browserRan = false;
