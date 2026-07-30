@@ -44,20 +44,23 @@ const dupes = EXPERIMENTS.map((e) => e.url).filter((u, i, a) => a.indexOf(u) !==
 check("no duplicate entries in the catalogue", dupes.length === 0, dupes.join(", "));
 
 // ── i18n parity ───────────────────────────────────────────────────────────
-// The dictionaries live inside an IIFE that assigns to window, so they are
-// read as source rather than imported.
-const i18nSrc = fs.readFileSync(path.join(root, "i18n.js"), "utf8");
-const blocks = [...i18nSrc.matchAll(/^\s{4}(en|ko|zh):\s*\{/gm)];
-const bounds = blocks.map((b) => b.index).concat([i18nSrc.length]);
+// Each dictionary is a call to window.i18nRegister, so they are read as
+// source rather than imported. Parity is what lets the runtime drop
+// cross-language fallback: if this check goes, missing keys go silent.
+const LANGS = ["en", "ko", "zh"];
 const dict = {};
-blocks.forEach((b, i) => {
-  dict[b[1]] = new Set(
-    [...i18nSrc.slice(bounds[i], bounds[i + 1])
-      .matchAll(/^\s{6}([A-Za-z_][A-Za-z0-9_]*):/gm)].map((m) => m[1]));
-});
+const presentLangs = [];
+for (const lang of LANGS) {
+  const file = path.join(root, "i18n", `${lang}.js`);
+  if (!fs.existsSync(file)) continue;
+  presentLangs.push(lang);
+  dict[lang] = new Set(
+    [...fs.readFileSync(file, "utf8")
+      .matchAll(/^\s{2}([A-Za-z_][A-Za-z0-9_]*):/gm)].map((m) => m[1]));
+}
 
-check("all three language blocks are present", blocks.length === 3,
-  `found ${blocks.map((b) => b[1]).join(",")}`);
+check("all three language dictionaries are present", presentLangs.length === 3,
+  `found ${presentLangs.join(",")}`);
 
 const drift = [];
 for (const lang of ["ko", "zh"]) {
