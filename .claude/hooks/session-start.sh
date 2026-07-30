@@ -70,10 +70,4 @@ else
   echo "  warning: no chromium under $BROWSERS_ROOT — browser tests will skip" >&2
 fi
 
-# ── Static server ─────────────────────────────────────────────────────────
-# The pages load their siblings by relative URL, so file:// will not do. The
-# port is exported rather than fixed in the tests; the test runner owns the
-# server's lifetime, which keeps the hook free of background processes.
-emit "export SCIENCE_LAB_PORT=8901"
-
 echo "session-start: done"

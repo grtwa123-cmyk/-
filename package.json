@@ -11,8 +11,8 @@
   "scripts": {
     "serve": "python3 -m http.server 8000",
     "lint": "node tests/lint.mjs",
-    "test": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/smoke.mjs",
-    "format:check": "echo 'No formatter configured. Run: npx prettier --check \\\"**/*.{html,css,js,md}\\\"'"
+    "test": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/run.mjs",
+    "test:smoke": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tests/smoke.mjs"
   },
   "engines": {
     "node": ">=18"

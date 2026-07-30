@@ -107,10 +107,12 @@ if (!chromiumPath || !fs.existsSync(chromiumPath)) {
     fs.createReadStream(file).pipe(res);
   });
 
-  const port = Number(process.env.SCIENCE_LAB_PORT) || 8901;
+  // Port 0: the OS picks a free one. A fixed port collides with whatever the
+  // reader happens to have left running, and a test that fails because of
+  // that is a test that cries wolf.
   await new Promise((ok, no) => {
     server.once("error", no);
-    server.listen(port, "127.0.0.1", ok);
+    server.listen(0, "127.0.0.1", ok);
   });
   const base = `http://127.0.0.1:${server.address().port}`;
 

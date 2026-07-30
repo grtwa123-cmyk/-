@@ -108,7 +108,8 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # catalogue, i18n parity, and page loads
+npm test                 # 11 suites, 346 checks
+npm test -- enzyme lens  # just the suites whose path matches
 ```
 
 `npm run lint` parses all 40 JavaScript files and checks the whole tree against
@@ -116,16 +117,23 @@ npm test                 # catalogue, i18n parity, and page loads
 `node --check` reports success without fully parsing a `.js` file that contains
 `export`.
 
-`npm test` checks the invariants that break quietly: every catalogue entry
-resolves to a real file and a defined title key, `en` / `ko` / `zh` carry
-identical key sets, and every experiment is linked from its category hub. It
-then loads the landing page, the three hubs and one experiment per category in
-Chromium and fails on any console error, starting and stopping its own server
-so it cannot collide with `npm run serve`. The browser section needs
-`CHROMIUM_PATH`; without it that part skips and the rest still runs.
+`npm test` runs every suite in its own process, each serving the repo on an
+ephemeral port for as long as it needs — nothing to start first, and no fixed
+port to collide with `npm run serve`.
 
-In [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web),
-`.claude/hooks/session-start.sh` exports that variable automatically.
+| Suite | What it holds to |
+| --- | --- |
+| `smoke` | Catalogue entries resolve to real files and defined title keys, `en`/`ko`/`zh` key sets are identical, every experiment is linked from its hub, and the landing page, hubs and one experiment per category load with no console error. |
+| `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
+| `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
+| `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
+| `circuit`, `diffraction`, `enzyme`, `lens`, `pendulum`, `resonance`, `selection` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, the thin-lens equation from traced rays, Foucault precession at Ω·sin φ, the resonant amplitude and phase measured back out of the motion, and Wright–Fisher against the infinite-population recursion. |
+
+The browser suites need `CHROMIUM_PATH`. In
+[Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web),
+`.claude/hooks/session-start.sh` exports it automatically; CI resolves it from
+Playwright. `smoke` alone will skip its browser section and still run the rest
+(`npm run test:smoke`).
 
 ---
 

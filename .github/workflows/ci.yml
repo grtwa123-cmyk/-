@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch makes the first run irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # The browser suites drive 11 processes and take a few minutes; this is a
+    # ceiling against a hang, not a target.
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The project declares no dependencies, so there is nothing to install
+      # and no lockfile to cache. Playwright is the one tool the browser half
+      # of the suite needs, and it is not in package.json precisely because it
+      # is a harness rather than something the site ships.
+      - name: Install Chromium for Playwright
+        run: |
+          npm install --no-save playwright@1.61.1
+          npx playwright install --with-deps chromium
+
+      - name: Lint
+        run: npm run lint
+
+      # tests/smoke.mjs skips its browser section unless CHROMIUM_PATH points
+      # at a real binary, so it is resolved here rather than left to chance —
+      # a silently skipped browser section would look like a passing run.
+      - name: Resolve Chromium
+        run: |
+          CHROMIUM_PATH="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          test -x "$CHROMIUM_PATH"
+          echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> "$GITHUB_ENV"
+
+      - name: Test
+        run: npm test
