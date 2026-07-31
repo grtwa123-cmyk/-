@@ -281,7 +281,12 @@ await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
 }
 {
   await page.click('#reset-btn'); await page.waitForTimeout(200);
-  await page.waitForTimeout(1500);
+  // Wait on the count, not on the clock. A fixed sleep gives however much
+  // simulated time the machine happened to manage, and under a loaded runner
+  // that can be a few hundred turnovers — enough sampling noise to miss a 25%
+  // band on a rate that is otherwise correct.
+  await page.waitForFunction(
+    () => window.__mm.stats().turnovers > 3000, { timeout: 30000 }).catch(()=>{});
   const live = parseFloat(await txt('out-rate'));
   const want = parseFloat(await txt('out-predicted'));
   chk('the live counted readout tracks the Michaelis–Menten readout',

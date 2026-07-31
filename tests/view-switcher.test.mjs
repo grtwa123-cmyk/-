@@ -1,5 +1,15 @@
 import { browser, chk, rows, BASE, url, finish } from './lib/harness.mjs';
 import { installCdnCache } from './lib/cdn-cache.mjs';
+import { pathToFileURL } from 'node:url';
+import path from 'node:path';
+
+// Counts come from the catalogue, not from a number typed here. Hard-coding
+// them means every new experiment turns this suite red for no reason, which
+// is exactly what happened when the 33rd was added.
+const { EXPERIMENTS } = await import(
+  pathToFileURL(path.resolve(import.meta.dirname, '..', 'assets/index/experiments.js')).href);
+const TOTAL = EXPERIMENTS.length;
+const CATS = EXPERIMENTS.reduce((a, e) => ((a[e.cat] = (a[e.cat] || 0) + 1), a), {});
 
 const B = url('index.html');
 
@@ -44,9 +54,9 @@ const B = url('index.html');
     saved: localStorage.getItem('ui-mode') }));
   chk('switching shows the table and hides the scene',
       st.tableShown && st.sceneHidden && st.bodyClass.includes('ui-table'), JSON.stringify(st.bodyClass));
-  chk('table lists every experiment', st.rows === 32, `${st.rows} rows`);
+  chk('table lists every experiment', st.rows === TOTAL, `${st.rows} rows`);
   chk('every row links to a real experiment page',
-      st.links.length===32 && st.links.every(h=>/^experiments\/.+\.html$/.test(h)), st.links.slice(0,2).join(','));
+      st.links.length===TOTAL && st.links.every(h=>/^experiments\/.+\.html$/.test(h)), st.links.slice(0,2).join(','));
   chk('choice is persisted', st.saved === 'table', String(st.saved));
 
   // reload: table must come back WITHOUT touching the CDN
@@ -60,7 +70,7 @@ const B = url('index.html');
     active: document.querySelector('#uiSwitch .ui-btn.active')?.dataset.ui,
     rows: document.querySelectorAll('.tv-table tbody tr').length,
     canvas: !!document.querySelector('#scene canvas') }));
-  chk('reload restores the table view', st2.tableShown && st2.active==='table' && st2.rows===32,
+  chk('reload restores the table view', st2.tableShown && st2.active==='table' && st2.rows===TOTAL,
       JSON.stringify(st2));
   chk('table mode requests NO CDN scripts at all', cdnHits.length===0,
       cdnHits.slice(0,2).join(' | '));
@@ -84,12 +94,12 @@ const B = url('index.html');
     counts[cat] = await p.evaluate(()=>document.querySelectorAll('.tv-table tbody tr').length);
   }
   chk('category filters split the catalogue exactly',
-      all===32 && counts.Physics===19 && counts.Chemistry===9 && counts.Biology===4 &&
+      all===TOTAL && counts.Physics===CATS.Physics && counts.Chemistry===CATS.Chemistry && counts.Biology===CATS.Biology &&
       counts.Physics+counts.Chemistry+counts.Biology===all,
       `all=${all} ${JSON.stringify(counts)}`);
   await p.click('.tv-filter[data-cat="All"]'); await p.waitForTimeout(250);
   chk('"All" restores the full list',
-      (await p.evaluate(()=>document.querySelectorAll('.tv-table tbody tr').length))===32);
+      (await p.evaluate(()=>document.querySelectorAll('.tv-table tbody tr').length))===TOTAL);
   await ctx.close();
 }
 
@@ -106,7 +116,7 @@ const B = url('index.html');
     note: !document.getElementById('uiFallbackNote').hidden,
     stuck: /Building the wall/.test(document.body.innerText) }));
   chk('CDN blocked: lands on the full table, not a dead spinner',
-      st.tableShown && st.rows===32 && !st.stuck, JSON.stringify(st));
+      st.tableShown && st.rows===TOTAL && !st.stuck, JSON.stringify(st));
   await p.close();
 }
 
