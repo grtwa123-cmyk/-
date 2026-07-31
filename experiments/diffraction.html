@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Send light through one slit, two, or ten and watch the far-field pattern build. Interference maxima at d·sinθ = mλ ride inside a single-slit envelope, and where the two coincide an order goes missing." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Double-Slit Diffraction · Physics" />
+  <meta property="og:description" content="Send light through one slit, two, or ten and watch the far-field pattern build. Interference maxima at d·sinθ = mλ ride inside a single-slit envelope, and where the two coincide an order goes missing." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/diffraction.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;rect x='26' y='6' width='4' height='18' fill='%236ea8ff'/&gt;&lt;rect x='26' y='30' width='4' height='8' fill='%236ea8ff'/&gt;&lt;rect x='26' y='44' width='4' height='14' fill='%236ea8ff'/&gt;&lt;path d='M44 8v48' stroke='%23ffe14a' stroke-width='3'/&gt;&lt;circle cx='50' cy='32' r='4' fill='%23ffe14a'/&gt;&lt;circle cx='50' cy='18' r='2' fill='%23ffe14a'/&gt;&lt;circle cx='50' cy='46' r='2' fill='%23ffe14a'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="diffPageTitle">Double-Slit Diffraction · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount24">Physics · Diffraction</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="diffTitle">Double-Slit Interference &amp; Diffraction</h1>
+      <p data-i18n="diffIntro">Light through a pair of slits does not make two bright lines. It makes a row of them, evenly spaced, fading in and out under a broader envelope set by the width of a single slit. Both patterns come from the same sum over paths, and where a bright fringe lands on a dark point of the envelope, that order vanishes entirely. Turn on the photon counter and the whole pattern rebuilds itself one dot at a time.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="wavelength" data-i18n="diffWavelengthLabel">Wavelength &lambda;</label>
+          <span class="value"><span id="wavelength-value">550</span> nm</span>
+          <input type="range" id="wavelength" min="380" max="750" step="1" value="550" />
+        </div>
+
+        <div class="control">
+          <label for="slits" data-i18n="diffSlitsLabel">Number of slits N</label>
+          <span class="value"><span id="slits-value">2</span></span>
+          <input type="range" id="slits" min="1" max="10" step="1" value="2" />
+        </div>
+
+        <div class="control">
+          <label for="width" data-i18n="diffWidthLabel">Slit width a</label>
+          <span class="value"><span id="width-value">20</span> &micro;m</span>
+          <input type="range" id="width" min="5" max="100" step="1" value="20" />
+        </div>
+
+        <div class="control" id="sep-control">
+          <label for="sep" data-i18n="diffSepLabel">Slit separation d</label>
+          <span class="value"><span id="sep-value">100</span> &micro;m</span>
+          <input type="range" id="sep" min="20" max="400" step="5" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="dist" data-i18n="diffDistLabel">Screen distance L</label>
+          <span class="value"><span id="dist-value">2.0</span> m</span>
+          <input type="range" id="dist" min="0.5" max="5" step="0.1" value="2" />
+        </div>
+
+        <div class="control">
+          <label for="photons-on" data-i18n="diffPhotonsOn">Count photons one by one</label>
+          <span class="value"><input type="checkbox" id="photons-on" /></span>
+        </div>
+
+        <div class="control" id="rate-control">
+          <label for="rate" data-i18n="diffRateLabel">Photons per second</label>
+          <span class="value"><span id="rate-value">400</span></span>
+          <input type="range" id="rate" min="20" max="4000" step="20" value="400" />
+        </div>
+
+        <div class="buttons">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="diffFormulaI">Far-field intensity</span>: <code>I = I&#8320;(sin&alpha;/&alpha;)&sup2;(sin N&beta;/sin &beta;)&sup2;</code></li>
+            <li><code>&alpha; = &pi;a&middot;sin&theta;/&lambda;</code>, <code>&beta; = &pi;d&middot;sin&theta;/&lambda;</code></li>
+            <li><span data-i18n="diffFormulaMax">Interference maxima</span>: <code>d&middot;sin&theta; = m&lambda;</code></li>
+            <li><span data-i18n="diffFormulaMin">Envelope minima</span>: <code>a&middot;sin&theta; = m&lambda;</code>, <code>m &ne; 0</code></li>
+            <li><span data-i18n="diffFormulaSpacing">Fringe spacing</span>: <code>&Delta;y &asymp; &lambda;L/d</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="diffNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="diffNote1">Two patterns at once. The narrow, evenly spaced fringes come from the slits interfering with each other and depend only on the separation d. The broad hump they sit inside comes from each slit's own width a. Widen a single slit and the envelope narrows; move the slits apart and the fringes crowd together.</li>
+            <li data-i18n="diffNote2">Set d to an exact multiple of a and watch orders disappear. A bright fringe wants to be at d·sinθ = mλ and the envelope is zero at a·sinθ = mλ; when d/a is a whole number p, every p-th order lands exactly on a zero and is simply not there. The readout names the missing orders.</li>
+            <li data-i18n="diffNote3">Add slits and the bright fringes stay in the same places but get sharper — with N slits there are N−1 zeros between neighbouring maxima, so the peaks narrow as 1/N while the peak height climbs as N². That sharpening is what makes a diffraction grating a measuring instrument.</li>
+            <li data-i18n="diffNote4">Switch on the photon counter and the pattern arrives one dot at a time, each landing at a random place drawn from the same curve. No single photon has a fringe; the fringes are what a great many of them add up to.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="560" style="touch-action: none;" aria-label="A slit mask, the pattern it throws on a distant screen, and the intensity curve of that pattern"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="diffOutSpacing">Fringe spacing &Delta;y</div>
+            <div class="num"><span id="out-spacing">&mdash;</span> mm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutEnvelope">First envelope zero</div>
+            <div class="num"><span id="out-envelope">&mdash;</span> mm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutFringes">Fringes in the envelope</div>
+            <div class="num" id="out-fringes">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutMissing">Missing orders</div>
+            <div class="num" id="out-missing">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutAngle">First-order angle</div>
+            <div class="num"><span id="out-angle">&mdash;</span>&deg;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutPhotons">Photons counted</div>
+            <div class="num" id="out-photons">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="diffraction.js" defer></script>
+</body>
+</html>

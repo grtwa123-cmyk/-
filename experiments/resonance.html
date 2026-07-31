@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Drive a damped oscillator and sweep the frequency. The response is integrated from the equation of motion, and the amplitude it settles at is measured back out and checked against the closed form." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Driven Oscillation &amp; Resonance · Physics" />
+  <meta property="og:description" content="Drive a damped oscillator and sweep the frequency. The response is integrated from the equation of motion, and the amplitude it settles at is measured back out and checked against the closed form." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/resonance.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M6 52c8 0 8-4 12-4s6 4 14 4 10-40 14-40 6 40 12 40' fill='none' stroke='%23ff8aa3' stroke-width='3' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="resPageTitle">Driven Oscillation &amp; Resonance · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount26">Physics · Resonance</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="resTitle">Driven Oscillation &amp; Resonance</h1>
+      <p data-i18n="resIntro">Push a spring at the wrong rate and almost nothing happens. Push it at its own rate and the swing builds until damping alone holds it back &mdash; by a factor of Q, which for a lightly damped system is a large number. The mass here is integrated straight from its equation of motion; the amplitude it settles at is then measured back out of the motion and compared with the textbook curve, so the two are never assumed to agree.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="resPreset">Damping</label>
+        </div>
+        <div class="molecule-list" id="preset-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn" data-key="light" aria-pressed="false"><span data-i18n="resPresetLight">Very light</span><small>&zeta; = 0.03</small></button>
+          <button type="button" class="mol-btn active" data-key="moderate" aria-pressed="true"><span data-i18n="resPresetModerate">Moderate</span><small>&zeta; = 0.15</small></button>
+          <button type="button" class="mol-btn" data-key="heavy" aria-pressed="false"><span data-i18n="resPresetHeavy">Heavy</span><small>&zeta; = 0.60</small></button>
+          <button type="button" class="mol-btn" data-key="critical" aria-pressed="false"><span data-i18n="resPresetCritical">Critical</span><small>&zeta; = 1.00</small></button>
+        </div>
+
+        <div class="control">
+          <label for="natural" data-i18n="resNaturalLabel">Natural frequency f&#8320;</label>
+          <span class="value"><span id="natural-value">1.00</span> Hz</span>
+          <input type="range" id="natural" min="0.3" max="2" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="drive" data-i18n="resDriveLabel">Drive frequency f</label>
+          <span class="value"><span id="drive-value">0.60</span> Hz</span>
+          <input type="range" id="drive" min="0.05" max="5" step="0.01" value="0.6" />
+        </div>
+
+        <div class="control">
+          <label for="zeta" data-i18n="resZetaLabel">Damping ratio &zeta;</label>
+          <span class="value"><span id="zeta-value">0.15</span></span>
+          <input type="range" id="zeta" min="0.02" max="1.5" step="0.01" value="0.15" />
+        </div>
+
+        <div class="control">
+          <label for="static" data-i18n="resStaticLabel">Static deflection X&#8320;</label>
+          <span class="value"><span id="static-value">1.0</span> cm</span>
+          <input type="range" id="static" min="0.2" max="3" step="0.1" value="1" />
+        </div>
+
+        <div class="buttons">
+          <button id="tune-btn" type="button" data-i18n="resTuneBtn">Tune to resonance</button>
+          <button id="pause-btn" type="button" class="secondary" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="resFormulaEom">Equation of motion</span>: <code>x&#776; + 2&zeta;&omega;&#8320;x&#775; + &omega;&#8320;&sup2;x = X&#8320;&omega;&#8320;&sup2;cos &omega;t</code></li>
+            <li><span data-i18n="resFormulaAmp">Amplitude</span>: <code>A = X&#8320; / &radic;((1&minus;r&sup2;)&sup2; + (2&zeta;r)&sup2;)</code>, <code>r = &omega;/&omega;&#8320;</code></li>
+            <li><span data-i18n="resFormulaPhase">Phase lag</span>: <code>tan &phi; = 2&zeta;r / (1&minus;r&sup2;)</code></li>
+            <li><span data-i18n="resFormulaPeak">Amplitude resonance</span>: <code>r = &radic;(1&minus;2&zeta;&sup2;)</code></li>
+            <li><span data-i18n="resFormulaQ">Quality factor</span>: <code>Q = 1/2&zeta; = &omega;&#8320;/&Delta;&omega;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="resNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="resNote1">At resonance the amplitude is Q times what the same force produces pushed slowly. Nothing amplifies the force &mdash; each push simply arrives while the mass is already moving the right way, and the energy accumulates until damping carries it off as fast as it arrives.</li>
+            <li data-i18n="resNote2">Watch the phase, not just the size. Well below resonance the mass moves with the force; well above it moves against it; and at f&#8320; exactly it lags by a quarter cycle, for every damping value there is. That 90&deg; crossing is the sharpest way to find a resonance in a real measurement.</li>
+            <li data-i18n="resNote3">The peak is not quite at f&#8320;. Amplitude peaks at &radic;(1&minus;2&zeta;&sup2;) &mdash; slightly below &mdash; and past &zeta; = 1/&radic;2 there is no peak at all, just a curve sliding downhill. Velocity and absorbed power, by contrast, always peak exactly at f&#8320;.</li>
+            <li data-i18n="resNote4">Press Reset and watch the start. The mass does not jump to its final swing: the transient beats against the drive and dies away as e<sup>&minus;&zeta;&omega;&#8320;t</sup>, which is why a high-Q system is both the most dramatic at resonance and the slowest to get there.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="560" style="touch-action: none;" aria-label="A driven mass on a spring, its displacement over time, and the resonance curve of amplitude against drive frequency"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="resOutAmp">Amplitude A / X&#8320;</div>
+            <div class="num" id="out-amp">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="resOutMeasured">Measured from the motion</div>
+            <div class="num" id="out-measured">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="resOutPhase">Phase lag &phi;</div>
+            <div class="num"><span id="out-phase">&mdash;</span>&deg;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="resOutQ">Quality factor Q</div>
+            <div class="num" id="out-q">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="resOutPeak">Resonant frequency</div>
+            <div class="num"><span id="out-peak">&mdash;</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="resOutError">Measured vs theory</div>
+            <div class="num" id="out-error">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="resonance.js" defer></script>
+</body>
+</html>

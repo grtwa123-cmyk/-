@@ -424,6 +424,85 @@ const RENDERERS = {
     p.line(-s * 0.22, s * 0.16, s * 0.56, s * 0.44);
   },
 
+  // Resonance: the amplitude curve A/X₀ = 1/√((1−r²)²+(2ζr)²) for ζ = 0.12,
+  // drawn from the real expression, with the peak marked and the drive line
+  // standing on it.
+  resonance(p, s) {
+    const A = (r) => 1 / Math.hypot(1 - r * r, 2 * 0.12 * r);
+    const peak = A(Math.sqrt(1 - 2 * 0.12 * 0.12));
+    const X = (r) => s * (r * 1.15 - 1.55);
+    const Y = (g) => s * (0.95 - 1.85 * (g / peak));
+    for (let i = 0; i < 46; i++) {
+      const r0 = (i / 46) * 2.7, r1 = ((i + 1) / 46) * 2.7;
+      p.line(X(r0), Y(A(r0)), X(r1), Y(A(r1)));
+    }
+    p.line(-s * 1.6, s * 0.95, s * 1.6, s * 0.95);          // frequency axis
+    p.dot(X(Math.sqrt(1 - 2 * 0.12 * 0.12)), Y(peak), 3.4); // the peak
+    p.line(X(1), s * 0.95, X(1), Y(peak) - s * 0.12);       // f₀
+  },
+
+  // Lens: a biconvex outline with the two rays that define an image — the
+  // one arriving parallel leaving through the far focus, and the one through
+  // the centre carrying straight on. They cross where the image is.
+  lens(p, s, ctx) {
+    ctx.beginPath();
+    ctx.moveTo(0, -s * 1.05);
+    ctx.quadraticCurveTo(s * 0.42, 0, 0, s * 1.05);
+    ctx.quadraticCurveTo(-s * 0.42, 0, 0, -s * 1.05);
+    ctx.stroke();
+    p.line(-s * 1.8, 0, s * 1.8, 0);                 // optical axis
+    p.line(-s * 1.35, -s * 0.62, 0, -s * 0.62);      // parallel in
+    p.line(0, -s * 0.62, s * 1.5, s * 0.7);          // out through the far focus
+    p.line(-s * 1.35, -s * 0.62, s * 1.5, s * 0.7);  // straight through the centre
+    p.line(-s * 1.35, 0, -s * 1.35, -s * 0.62);      // object
+    p.line(s * 0.9, 0, s * 0.9, s * 0.42);           // image, where they cross
+    p.dot(s * 0.9, s * 0.42, 3.2);
+    p.dot(s * 0.62, 0, 2.6);                         // focus
+    p.dot(-s * 0.62, 0, 2.6);
+  },
+
+  // Diffraction: a slit mask on the left, and the fringe pattern it throws —
+  // bar heights follow the real (sin α/α)²·cos²β with a = d/3, so the third
+  // order is missing exactly as it should be.
+  diffraction(p, s) {
+    for (const y of [-0.95, -0.32, 0.32, 0.95]) {
+      p.line(-s * 1.5, s * y, -s * 1.5, s * (y + (y < 0 ? 0.42 : -0.42)));
+    }
+    for (let m = -4; m <= 4; m++) {
+      const beta = (Math.PI / 3) * m;                    // d·sinθ = mλ
+      const al = beta / 3;                               // a = d/3
+      const env = al === 0 ? 1 : Math.sin(al) / al;
+      const h = env * env;                               // cos²β = 1 at maxima
+      if (h < 0.012) continue;                           // the missing order
+      const x = s * (m * 0.36 + 0.3);
+      p.line(x, s * 0.95, x, s * (0.95 - 1.75 * h));
+    }
+    p.line(-s * 0.42, s * 0.95, s * 1.72, s * 0.95);
+    p.dot(-s * 1.5, 0, 3);
+  },
+
+  // Enzyme kinetics: the Michaelis–Menten hyperbola drawn from the real
+  // expression, with Kₘ marked at the half-maximum and Vmax as the asymptote.
+  enzyme(p, s, ctx) {
+    const Km = 0.8;
+    const V = (S) => S / (Km + S);
+    const X = (S) => s * (S * 0.62 - 1.5);
+    const Y = (v) => s * (0.92 - 1.8 * v);
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * 4.6, b = ((i + 1) / 40) * 4.6;
+      p.line(X(a), Y(V(a)), X(b), Y(V(b)));
+    }
+    p.line(-s * 1.5, s * 0.92, s * 1.6, s * 0.92);       // [S] axis
+    p.line(-s * 1.5, s * 0.92, -s * 1.5, -s * 0.95);     // v axis
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(-s * 1.5, Y(1), s * 1.6, Y(1));               // Vmax asymptote
+    p.line(X(Km), s * 0.92, X(Km), Y(0.5));              // Kₘ at half-maximum
+    ctx.restore();
+    ctx.setLineDash([]);
+    p.dot(X(Km), Y(0.5), 3.4);
+  },
+
   // Natural selection: a logistic sweep from rare to fixed, with a finite
   // population drifting either side of the deterministic curve.
   selection(p, s) {

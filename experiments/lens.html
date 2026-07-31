@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="Move an object past a converging or diverging lens and watch the image form. A whole fan of rays is refracted one by one and they all meet at the point the lens equation predicts — nothing is drawn to the answer." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Lenses &amp; Image Formation · Physics" />
+  <meta property="og:description" content="Move an object past a converging or diverging lens and watch the image form. A whole fan of rays is refracted one by one and they all meet at the point the lens equation predicts — nothing is drawn to the answer." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/lens.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M32 8c9 8 9 40 0 48-9-8-9-40 0-48z' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;path d='M4 32h56' stroke='%23ffe14a' stroke-width='2' stroke-dasharray='4 4'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="lensPageTitle">Lenses &amp; Image Formation · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount25">Physics · Lenses</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="lensTitle">Lenses &amp; Image Formation</h1>
+      <p data-i18n="lensIntro">Put an object in front of a lens and an image appears somewhere — real or virtual, upright or inverted, bigger or smaller. Nothing here is drawn to the answer: a whole fan of rays leaves the object, each one is bent by the same thin-lens rule, and where they cross is the image. Slide the object toward the focal point and watch them stop converging altogether.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="lensKind">Lens</label>
+        </div>
+        <div class="molecule-list" id="kind-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="convex" aria-pressed="true"><span data-i18n="lensConvex">Converging</span><small data-i18n="lensConvexSub">convex, f &gt; 0</small></button>
+          <button type="button" class="mol-btn" data-key="concave" aria-pressed="false"><span data-i18n="lensConcave">Diverging</span><small data-i18n="lensConcaveSub">concave, f &lt; 0</small></button>
+        </div>
+
+        <div class="control">
+          <label for="focal" data-i18n="lensFocalLabel">Focal length |f|</label>
+          <span class="value"><span id="focal-value">10</span> cm</span>
+          <input type="range" id="focal" min="3" max="30" step="0.5" value="10" />
+        </div>
+
+        <div class="control">
+          <label for="objdist" data-i18n="lensObjDistLabel">Object distance</label>
+          <span class="value"><span id="objdist-value">30</span> cm</span>
+          <input type="range" id="objdist" min="1" max="80" step="0.5" value="30" />
+        </div>
+
+        <div class="control">
+          <label for="objheight" data-i18n="lensObjHeightLabel">Object height</label>
+          <span class="value"><span id="objheight-value">4.0</span> cm</span>
+          <input type="range" id="objheight" min="0.5" max="6" step="0.1" value="4" />
+        </div>
+
+        <div class="control">
+          <label for="rays" data-i18n="lensRaysLabel">Rays traced</label>
+          <span class="value"><span id="rays-value">13</span></span>
+          <input type="range" id="rays" min="3" max="31" step="2" value="13" />
+        </div>
+
+        <div class="control">
+          <label for="principal-on" data-i18n="lensPrincipalOn">Highlight the three principal rays</label>
+          <span class="value"><input type="checkbox" id="principal-on" checked /></span>
+        </div>
+
+        <div class="buttons">
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="lensFormulaThin">Thin lens</span>: <code>1/v &minus; 1/u = 1/f</code></li>
+            <li><span data-i18n="lensFormulaMag">Magnification</span>: <code>m = v/u</code></li>
+            <li><span data-i18n="lensFormulaRay">Refraction of one ray</span>: <code>&theta;&prime; = &theta; &minus; y/f</code></li>
+            <li><span data-i18n="lensFormulaNewton">Newton's form</span>: <code>x&middot;x&prime; = f&sup2;</code></li>
+            <li><span data-i18n="lensFormulaMaker">Lensmaker</span>: <code>1/f = (n&minus;1)(1/R&#8321; &minus; 1/R&#8322;)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="lensNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="lensNote1">Every ray in the fan is bent by the same one-line rule — a ray crossing the lens at height y has its slope changed by −y/f, and that is the whole of the lens. The image is simply where they all end up crossing. Turn the ray count up and they keep landing on the same point.</li>
+            <li data-i18n="lensNote2">The three rays from the textbook are not special rules, just three members of that fan whose paths are easy to draw: the one arriving parallel leaves through the far focus, the one through the centre carries straight on, and the one through the near focus leaves parallel.</li>
+            <li data-i18n="lensNote3">Walk the object in from far away with a converging lens. The image starts small and inverted just past the focus, grows as the object nears 2f, is exactly life-size at 2f, and runs away to infinity as the object reaches f. Cross inside f and the rays stop converging — the image flips to virtual, upright and magnified. That is a magnifying glass.</li>
+            <li data-i18n="lensNote4">A diverging lens never converges anything: for any real object the rays spread, and only their backward extensions meet. The image is always virtual, upright and smaller, which is why the readout stays on the same side as the object.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="470" style="touch-action: none;" aria-label="A lens on an optical axis with an object, a fan of refracted rays, and the image they form"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="lensOutImageDist">Image distance v</div>
+            <div class="num"><span id="out-v">&mdash;</span> cm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lensOutMag">Magnification m</div>
+            <div class="num" id="out-m">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lensOutHeight">Image height</div>
+            <div class="num"><span id="out-height">&mdash;</span> cm</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lensOutType">Image</div>
+            <div class="num" id="out-type">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lensOutNewton">Newton x&middot;x&prime;</div>
+            <div class="num" id="out-newton">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lensOutResidual">Ray convergence error</div>
+            <div class="num"><span id="out-residual">&mdash;</span> cm</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="lens.js" defer></script>
+</body>
+</html>

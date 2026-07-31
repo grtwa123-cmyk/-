@@ -354,3 +354,198 @@ canvas { display: block; }
     background: rgba(20, 20, 28, 0.85);
   }
 }
+
+/* ── View switcher + plain view ───────────────────────────────────────
+   The wall is the front door; the table is the other way in. Everything
+   below is deliberately flat — no backdrop-filter, no glass, no custom
+   cursor — because the point of the plain view is that it costs nothing
+   to render and nothing to read. */
+
+.ui-switch {
+  position: fixed;
+  z-index: 6;
+  left: 24px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  border: var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
+}
+
+.ui-btn {
+  background: transparent;
+  color: #b9b8c0;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ui-btn:hover { color: #f3f1ea; background: var(--glass-tint-2); }
+.ui-btn:focus-visible { color: #f3f1ea; outline: 2px solid #f3f1ea; outline-offset: 2px; }
+.ui-btn.active {
+  background: linear-gradient(180deg, #ffffff 0%, #e6e3d8 100%);
+  color: #0a0a0d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 12px rgba(255, 255, 255, 0.18);
+}
+
+/* In the plain view the page scrolls, the pointer is a pointer, and the
+   wall's decoration gets out of the way. */
+body.ui-table { cursor: auto; overflow: auto; }
+body.ui-table .vignette,
+body.ui-table .cursor,
+body.ui-table .hint,
+body.ui-table .nav-fade,
+body.ui-table .clock,
+body.ui-table .tagline { display: none !important; }
+/* The bar joins the flow instead of floating over the scene, so the page
+   below it no longer needs to leave room for a fixed header. */
+body.ui-table .topbar { position: static; background: none; }
+body.ui-table .table-view { padding-top: 28px; }
+
+.ui-note {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(60, 30, 30, 0.9);
+  border: 1px solid rgba(255, 140, 160, 0.35);
+  color: #ffd7dd;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-view {
+  position: relative;
+  z-index: 4;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 96px 24px calc(96px + env(safe-area-inset-bottom));
+}
+
+.tv-head h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+.tv-head p  { margin-top: 8px; color: #9a99a4; font-size: 0.95rem; }
+
+.tv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 18px; }
+
+.tv-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #c9c8d1;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tv-filter small {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #86858f;
+  font-variant-numeric: tabular-nums;
+}
+.tv-filter:hover { background: rgba(255, 255, 255, 0.09); color: #f3f1ea; }
+.tv-filter:focus-visible { outline: 2px solid #f3f1ea; outline-offset: 2px; }
+.tv-filter.active {
+  background: #f3f1ea;
+  border-color: #f3f1ea;
+  color: #0a0a0d;
+}
+.tv-filter.active small { color: #55545c; }
+
+.tv-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+
+.tv-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #86858f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  white-space: nowrap;
+}
+
+.tv-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  vertical-align: top;
+}
+
+.tv-table tbody tr { cursor: pointer; transition: background 0.12s; }
+.tv-table tbody tr:hover { background: rgba(255, 255, 255, 0.05); }
+.tv-table tbody tr:focus-within { background: rgba(255, 255, 255, 0.07); }
+
+.tv-num {
+  width: 3.4rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: #6f6e78;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-link { color: #f3f1ea; text-decoration: none; font-weight: 600; }
+.tv-link:hover { text-decoration: underline; }
+.tv-link:focus-visible { outline: 2px solid #f3f1ea; outline-offset: 3px; border-radius: 3px; }
+
+.tv-desc { margin-top: 5px; color: #9a99a4; font-size: 0.85rem; line-height: 1.5; max-width: 62ch; }
+
+.tv-cat {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.tv-cat-physics   { background: rgba(110, 168, 255, 0.16); color: #8cbaff; }
+.tv-cat-chemistry { background: rgba(196, 123, 255, 0.16); color: #c47bff; }
+.tv-cat-biology   { background: rgba(229, 143, 255, 0.16); color: #e58fff; }
+
+.tv-tags {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: #7c7b85;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .ui-switch {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: calc(62px + env(safe-area-inset-bottom));
+  }
+  .table-view { padding: 78px 14px calc(120px + env(safe-area-inset-bottom)); }
+  .tv-head h1 { font-size: 1.5rem; }
+  /* Topics and the row number are the first things to go when space is
+     tight — the title, its description and the category still carry the
+     whole table. */
+  .tv-table .tv-tags, .tv-table .tv-num { display: none; }
+  .tv-table td { padding: 12px 8px; }
+}

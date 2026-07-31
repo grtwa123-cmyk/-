@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://grtwa123-cmyk.github.io/-/sitemap.xml

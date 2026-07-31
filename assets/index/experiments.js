@@ -30,6 +30,9 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "generatorTitle",   url: "experiments/generator.html",     cat: "Physics",   tags: ["INDUCTION", "FARADAY"], colors: ["#1d1405", "#ffe14a"], motif: "generator" },
   { titleKey: "peTitle",          url: "experiments/photoelectric.html", cat: "Physics",   tags: ["QUANTUM", "PHOTON"],    colors: ["#160b2a", "#b98cff"], motif: "photoelectric" },
   { titleKey: "circuitTitle",     url: "experiments/circuit.html",       cat: "Physics",   tags: ["CIRCUIT", "OHM"],       colors: ["#0a1a1c", "#5fd6c0"], motif: "circuit" },
+  { titleKey: "diffTitle",        url: "experiments/diffraction.html",   cat: "Physics",   tags: ["OPTICS", "QUANTUM"],    colors: ["#101024", "#8ab4ff"], motif: "diffraction" },
+  { titleKey: "lensTitle",        url: "experiments/lens.html",          cat: "Physics",   tags: ["OPTICS", "IMAGE"],      colors: ["#0b1526", "#7fd4ff"], motif: "lens" },
+  { titleKey: "resTitle",         url: "experiments/resonance.html",     cat: "Physics",   tags: ["OSCILLATE", "RESONANCE"], colors: ["#24101a", "#ff8aa3"], motif: "resonance" },
   { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#0d0a1e", "#e0a24a"], motif: "solar" },
   { titleKey: "moleculeTitle",    url: "experiments/molecule.html",      cat: "Chemistry", tags: ["3D", "MODEL"],          colors: ["#0a1f15", "#6fbf8a"], motif: "molecule" },
   { titleKey: "crystalTitle",     url: "experiments/crystal.html",       cat: "Chemistry", tags: ["LATTICE", "3D"],        colors: ["#0a1822", "#6fc4d4"], motif: "crystal" },
@@ -42,4 +45,5 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "spectraTitle",     url: "experiments/spectra.html",       cat: "Chemistry", tags: ["QUANTUM", "SPECTRUM"],  colors: ["#12081f", "#ff5ea8"], motif: "spectra" },
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], motif: "lotka" },
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], motif: "selection" },
+  { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], motif: "enzyme" },
 ]);

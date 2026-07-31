@@ -1,12 +1,12 @@
 # Science Lab
 
-> A browser-based science sandbox — **28 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **32 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
     <img alt="Live demo" src="https://img.shields.io/badge/demo-live-2ea44f?style=flat-square" />
   </a>
-  <img alt="Experiments" src="https://img.shields.io/badge/experiments-28-8957e5?style=flat-square" />
+  <img alt="Experiments" src="https://img.shields.io/badge/experiments-32-8957e5?style=flat-square" />
   <img alt="Dependencies" src="https://img.shields.io/badge/runtime%20deps-0-blue?style=flat-square" />
   <img alt="No build" src="https://img.shields.io/badge/build-none-lightgrey?style=flat-square" />
   <img alt="Languages" src="https://img.shields.io/badge/i18n-EN%20%C2%B7%20KO%20%C2%B7%20ZH-orange?style=flat-square" />
@@ -14,7 +14,7 @@
 
 **Live demo:** https://grtwa123-cmyk.github.io/-/
 
-The landing page is a curved phantom-style index — drag horizontally to scroll infinitely through cards, drag vertically to nudge rows, **press and hold a card to enter** the experiment.
+The landing page offers two ways in, remembered between visits. **Wall** is the curved phantom-style index — drag horizontally to scroll infinitely through cards, drag vertically to nudge rows, **press and hold a card to enter**. **Table** is one ordinary table of every experiment, filterable by category: no WebGL, no CDN, no gesture, and it doubles as the fallback if the wall cannot start.
 
 ---
 
@@ -32,7 +32,7 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 
 ## Experiments
 
-### Physics (16)
+### Physics (19)
 
 | Experiment | Description |
 | --- | --- |
@@ -51,6 +51,9 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Refraction & TIR** | A ray bends across an interface by Snell's law, with the critical angle, total internal reflection, and Fresnel reflectance. |
 | **Electromagnetic Generator** | A water wheel spins a bar magnet inside a pickup coil; Faraday's law EMF = N·B·A·ω·sin(ωt) lights a bulb, with the live rotating dipole field. |
 | **Photoelectric Effect** | Red light at full brightness does nothing; a faint violet beam ejects electrons instantly. Sweep the wavelength and the KEₘₐₓ-vs-frequency line plots itself — slope h, intercept the threshold frequency. |
+| **Double-Slit Interference & Diffraction** | One formula does all of it: I = I₀(sin α/α)²(sin Nβ/sin β)². Fringes at d·sinθ = mλ ride inside the single-slit envelope, and where d/a is a whole number every p-th order lands on a zero and is simply absent. Add slits and the peaks narrow as 1/N. Switch on the photon counter and each dot is drawn from that same curve by rejection sampling, so the pattern rebuilds one photon at a time. |
+| **Lenses & Image Formation** | A fan of rays leaves the object and each is bent by the one rule a thin lens has, θ′ = θ − y/f. The image is wherever they cross — and that they cross at all *is* 1/v − 1/u = 1/f falling out of the algebra. Newton's x·x′ = f² agrees independently, and the readout reports how far any traced ray misses the image point by: 1e-14 cm. |
+| **Driven Oscillation & Resonance** | The mass is integrated from ẍ + 2ζω₀ẋ + ω₀²x = X₀ω₀²cos ωt with RK4, transient and all, and the amplitude and phase it settles into are then *measured back out* of the motion by Fourier component and compared with the closed form — agreeing to a few parts in 10⁴. Amplitude peaks at √(1−2ζ²), the phase lag is exactly 90° at f₀ for every damping, and past ζ = 1/√2 there is no peak at all. |
 | **Ohm's Law — Series & Parallel** | Three resistors wired end to end or side by side, solved from the closed forms. Carriers move at the real current in each wire, so a parallel rail visibly slows as every branch taps its share; bodies warm with dissipated power, and both Kirchhoff residuals stay printed at zero. |
 
 ### Chemistry (9)
@@ -67,13 +70,14 @@ The landing page is a curved phantom-style index — drag horizontally to scroll
 | **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
 | **Hydrogen Spectrum** | Excite the electron and let it cascade back down; every jump emits one photon, drawn in its true colour. The Balmer lines land on 656.5 / 486.3 / 434.2 / 410.3 nm (vacuum) straight from the Rydberg formula. |
 
-### Biology (3)
+### Biology (4)
 
 | Experiment | Description |
 | --- | --- |
 | **DNA Double Helix** | Type a 5'→3' sequence and a true 3D B-form duplex builds itself — real 3.4 Å rise, 20 Å diameter, 10.5 bp/turn, and a 120° strand offset that opens genuine major and minor grooves. GC content, melting temperature, and an mRNA transcript update live. |
 | **Predator & Prey** | The Lotka–Volterra equations integrated with RK4: populations oscillate, a phase portrait traces the closed orbit, and the conserved invariant is shown live. |
 | **Natural Selection & Genetic Drift** | One locus, two alleles, three tunable fitnesses. A finite Wright–Fisher population runs against the infinite-population recursion, so selection shows as the trend and drift as the wobble. Recessive lethals decay as qₜ = q₀/(1 + tq₀), heterozygote advantage holds a balanced polymorphism at p*, and mean fitness never falls. |
+| **Enzyme Kinetics — Michaelis–Menten** | No line of code evaluates the rate law. Every enzyme molecule is its own continuous-time Markov chain over free / ES / EI / ESI, jumping with the mechanism's own constants and exponential waiting times; the products are counted and divided by the elapsed time. The hyperbola that the counts land on is v = Vₘₐₓ[S]/(Kₘ+[S]) to better than 1%, and each of the three inhibitors moves exactly the constant it should — competitive shares the Lineweaver–Burk y-intercept, non-competitive the x-intercept, uncompetitive the slope. |
 
 ---
 
@@ -96,7 +100,40 @@ npm run serve            # python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
-Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -m http.server`, etc.). There is nothing to install — `package.json` is metadata only.
+Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -m http.server`, etc.). There is nothing to install — `package.json` declares no dependencies.
+
+### Checks
+
+Both run on Node's standard library alone, so there is still nothing to install:
+
+```bash
+npm run lint             # syntax + .editorconfig, every tracked file
+npm test                 # 11 suites, 351 checks
+npm test -- enzyme lens  # just the suites whose path matches
+```
+
+`npm run lint` parses all 40 JavaScript files and checks the whole tree against
+`.editorconfig`. ES modules are copied to a `.mjs` temporary first, because
+`node --check` reports success without fully parsing a `.js` file that contains
+`export`.
+
+`npm test` runs every suite in its own process, each serving the repo on an
+ephemeral port for as long as it needs — nothing to start first, and no fixed
+port to collide with `npm run serve`.
+
+| Suite | What it holds to |
+| --- | --- |
+| `smoke` | Catalogue entries resolve to real files and defined title keys, `en`/`ko`/`zh` key sets are identical, every experiment is linked from its hub, and the landing page, hubs and one experiment per category load with no console error. |
+| `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
+| `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
+| `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
+| `circuit`, `diffraction`, `enzyme`, `lens`, `pendulum`, `resonance`, `selection` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, the thin-lens equation from traced rays, Foucault precession at Ω·sin φ, the resonant amplitude and phase measured back out of the motion, and Wright–Fisher against the infinite-population recursion. |
+
+The browser suites need `CHROMIUM_PATH`. In
+[Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web),
+`.claude/hooks/session-start.sh` exports it automatically; CI resolves it from
+Playwright. `smoke` alone will skip its browser section and still run the rest
+(`npm run test:smoke`).
 
 ---
 
@@ -118,7 +155,9 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions
 │       ├── card-texture.js     Procedural card canvas (gradient + grain + motif)
-│       ├── motifs.js           28 line-art glyphs, one per experiment
+│       ├── boot.js            Picks wall vs table, loads the CDN only for the wall
+│       ├── table-view.js      Plain table of the catalogue (no dependencies)
+│       ├── motifs.js           32 line-art glyphs, one per experiment
 │       └── experiments.js      Frozen catalogue of experiments
 └── experiments/
     ├── projectile.{html,js}
@@ -137,6 +176,9 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── refraction.{html,js}
     ├── generator.{html,js}
     ├── photoelectric.{html,js}
+    ├── diffraction.{html,js}
+    ├── lens.{html,js}
+    ├── resonance.{html,js}
     ├── circuit.{html,js}
     ├── molecule.{html,js}
     ├── crystal.{html,js}
@@ -148,7 +190,8 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
     ├── atom.{html,js}
     ├── spectra.{html,js}
     ├── lotka.{html,js}
-    └── selection.{html,js}
+    ├── selection.{html,js}
+    └── enzyme.{html,js}
 ```
 
 ---
@@ -156,7 +199,7 @@ Any static-file server works (`npx http-server`, `caddy file-server`, `python3 -
 ## Architecture
 
 - **No build step.** Every page is `<script>`-includes only. Three.js loads as an ES module from the jsDelivr CDN; GSAP loads as a classic deferred script.
-- **Modules where they pay off.** The landing page's wall is split into `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (28 small line-art glyphs), and `experiments.js` (the catalogue). Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
+- **Modules where they pay off.** The landing page is split into `boot.js` (picks the view), `main.js` (scene / input / loop), `card-texture.js` (the procedural card), `motifs.js` (32 small line-art glyphs), `table-view.js` (the plain view), and `experiments.js` (the catalogue). `table-view.js` imports only the catalogue, so choosing Table means Three.js and gsap are never requested at all. Each experiment ships its own `.js` because the simulations don't share more than a canvas and a slider.
 - **Theming via CSS custom properties.** `:root` defines the Physics palette; `body[data-theme="chemistry"]` swaps a handful of tokens. The categories never need a separate stylesheet.
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
@@ -180,7 +223,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 28 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 32 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift, CSS animations are short-circuited via a media query in `styles.css`, and the 3D viewers start held still — a JS animation loop can't be reached by the media query, so `gl3d.js` checks the preference itself and the on-screen control reflects it, leaving the reader free to start the rotation.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

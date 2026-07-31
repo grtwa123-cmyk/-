@@ -67,7 +67,9 @@ const mapClamp = (v, a, b, ra, rb) => {
   const t = clamp((v - a) / (b - a), 0, 1);
   return ra + (rb - ra) * t;
 };
-const tr = (key) => (i18n ? i18n.t(key) : key);
+// t() returns undefined until the dictionary has loaded, so the key is the
+// fallback here rather than the return value.
+const tr = (key) => (i18n && i18n.t(key)) || key;
 
 // ── Renderer / scene / camera ─────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
