@@ -514,6 +514,27 @@ const RENDERERS = {
     ctx.setLineDash([]);
   },
 
+  equilibrium(p, s, ctx) {
+    // Two opposed arrows of unequal length: the reaction runs both ways at
+    // once, and the position of the equilibrium is which way runs harder.
+    const arrow = (x0, x1, y) => {
+      p.line(x0, y, x1, y);
+      const dir = Math.sign(x1 - x0), head = s * 0.22;
+      p.line(x1, y, x1 - dir * head, y - head * 0.62);
+      p.line(x1, y, x1 - dir * head, y + head * 0.62);
+    };
+    arrow(-s * 1.15, s * 1.15, -s * 0.34);        // forward, longer
+    arrow(s * 0.72, -s * 1.15, s * 0.34);         // reverse, shorter
+    p.dot(-s * 1.42, -s * 0.34, s * 0.15);        // A + B on the left
+    p.dot(-s * 1.42, s * 0.34, s * 0.15);
+    p.circ(s * 1.42, 0, s * 0.24);                // C on the right
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(0, -s * 0.95, 0, s * 0.95);            // the balance point
+    ctx.restore();
+    ctx.setLineDash([]);
+  },
+
   enzyme(p, s, ctx) {
     const Km = 0.8;
     const V = (S) => S / (Km + S);

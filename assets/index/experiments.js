@@ -47,4 +47,5 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], motif: "selection" },
   { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], motif: "enzyme" },
   { titleKey: "hhTitle",         url: "experiments/neuron.html",        cat: "Biology",   tags: ["NEURON", "SPIKE"],      colors: ["#1b1206", "#ffd166"], motif: "neuron" },
+  { titleKey: "eqTitle",          url: "experiments/equilibrium.html",   cat: "Chemistry", tags: ["EQUILIBRIUM", "SHIFT"], colors: ["#08130f", "#6fbf8a"], motif: "equilibrium" },
 ]);
