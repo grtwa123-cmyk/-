@@ -22,26 +22,63 @@ const MK = `const E = window.__eq;
 
 // ── The headline: K is counted, not entered ───────────────────────────
 {
+  // Particle counts and volume are both scaled by 3, so the concentrations —
+  // and therefore K and the equilibrium position — are untouched while the
+  // counting noise falls. At the default 300 molecules a strongly
+  // product-favoured setting leaves only ~28 A and ~28 B, and Q is the ratio
+  // to their *product*, so the finite-size bias reaches 9%. That is a real
+  // effect of a small system, not an error in the chemistry, and the check
+  // below measures it directly.
+  const SCALE = 3;
   const r = await page.evaluate(new Function(`${MK}
+    const S = ${SCALE};
     const cases = [
       {T:300,dH:-12}, {T:300,dH:-16}, {T:350,dH:-12}, {T:420,dH:-12},
       {T:500,dH:-12}, {T:300,dH:-12,V:50}, {T:300,dH:-12,V:200}, {T:380,dH:-18},
     ];
     return cases.map(c => {
-      const p = mk(c);
-      const s = E.settle(p, { nA:300, nB:300, burn:40, span:60 });
-      return { ...c, K: E.predictedK(p), Q: s.Q, fwd: s.fwd, rev: s.rev, C: s.C };
+      const p = mk({ ...c, V: (c.V ?? 100) * S });
+      const s = E.settle(p, { nA:300*S, nB:300*S, burn:40, span:60 });
+      return { ...c, K: E.predictedK(p), Q: s.Q, fwd: s.fwd, rev: s.rev, C: s.C, A: s.A };
     });`));
   const err = r.map((x) => Math.abs(x.Q - x.K) / x.K);
   chk('the counted mixture settles where [C]/([A][B]) = k₀/k₋ (8 conditions)',
       Math.max(...err) < 0.06,
       r.map((x,i)=>`T${x.T}/dH${x.dH}:${(err[i]*100).toFixed(1)}%`).join(' '));
   chk('every run reached a genuine equilibrium, not exhaustion',
-      r.every((x) => x.fwd > 200 && x.rev > 200),
+      r.every((x) => x.fwd > 500 && x.rev > 500),
       r.map(x=>`${x.fwd}/${x.rev}`).join(' '));
   chk('equilibrium is dynamic: forward and reverse fire equally often',
       r.every((x) => Math.abs(x.fwd/x.rev - 1) < 0.12),
       r.map(x=>(x.fwd/x.rev).toFixed(3)).join(' '));
+}
+
+// ── The residual is finite-size, and it vanishes as the system grows ──
+{
+  // Twenty replicates per size, not five. The trend is a factor of two or
+  // three across the range and each replicate carries about that much scatter
+  // on its own, so five of them resolve nothing — the first attempt at this
+  // check reported 2.2 / 4.9 / 3.0 / 2.3 % and would have been a coin toss in
+  // CI. The runs are pure computation and cost almost nothing.
+  const r = await page.evaluate(new Function(`${MK}
+    // dH = −16 leaves only a few dozen A and B at equilibrium in a small
+    // vessel, which is where Q = [C]/([A][B]) is most sensitive: it is the
+    // ratio to their product, so both scarcities compound.
+    return [1, 2, 4, 8].map(S => {
+      const p = mk({ dH:-16, V:100*S });
+      let acc = 0, leftA = Infinity;
+      for (let k = 0; k < 20; k++) {
+        const s = E.settle(p, { nA:300*S, nB:300*S, burn:40, span:60 });
+        acc += Math.abs(s.Q - E.predictedK(p)) / E.predictedK(p);
+        leftA = Math.min(leftA, s.A);
+      }
+      return { S, N: 300*S, leftA, err: acc/20 };
+    });`));
+  chk('the residual shrinks as the system grows — it is finite-size, not error',
+      r[3].err < r[0].err * 0.6,
+      r.map(x=>`N${x.N}(${x.leftA.toFixed(0)} left):${(x.err*100).toFixed(1)}%`).join(' '));
+  chk('in the largest system the counted K is within 4% of k₀/k₋',
+      r[3].err < 0.04, `${(r[3].err*100).toFixed(2)}%`);
 }
 
 // ── Thermodynamics behind K ───────────────────────────────────────────
