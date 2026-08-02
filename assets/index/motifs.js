@@ -535,6 +535,26 @@ const RENDERERS = {
     ctx.setLineDash([]);
   },
 
+  standing(p, s, ctx) {
+    // The first three modes between two fixed ends, drawn from the sine each
+    // one actually is — so the glyph shows why only whole numbers fit.
+    const half = (n, yScale, from, to) => {
+      const steps = 60;
+      for (let i = 0; i < steps; i++) {
+        const u0 = i / steps, u1 = (i + 1) / steps;
+        p.line(from + (to - from) * u0, yScale * Math.sin(Math.PI * n * u0),
+               from + (to - from) * u1, yScale * Math.sin(Math.PI * n * u1));
+      }
+    };
+    half(1, -s * 0.72, -s * 1.3, s * 1.3);
+    half(2, -s * 0.42, -s * 1.3, s * 1.3);
+    half(3, -s * 0.24, -s * 1.3, s * 1.3);
+    p.line(-s * 1.3, -s * 1.0, -s * 1.3, s * 1.0);      // the fixed ends
+    p.line(s * 1.3, -s * 1.0, s * 1.3, s * 1.0);
+    p.dot(-s * 1.3, 0, s * 0.11);
+    p.dot(s * 1.3, 0, s * 0.11);
+  },
+
   enzyme(p, s, ctx) {
     const Km = 0.8;
     const V = (S) => S / (Km + S);

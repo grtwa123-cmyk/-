@@ -104,10 +104,15 @@ const MK = `const M = window.__mm;
     return { plain: cases.map(c => run(c, 400)),
              half: run({ S:25, Km:25, kcat:20, nE:24 }, 400) };`));
   const err = r.plain.map(x => Math.abs(x.v - x.want)/x.want);
-  const worst = Math.max(...err);
+  // Each configuration counts a different number of turnovers, so each has its
+  // own noise floor: 1/√n. A flat 2% band is four sigma at [S] = 250 but only
+  // two and a half at [S] = 2, where 400 s buys just 14000 events — and that
+  // is where it went red on CI, at 2.09%, on a rate that was correct. The
+  // bound is four sigma of the count the run actually made.
+  const tol = r.plain.map(x => Math.max(0.01, 4/Math.sqrt(x.n)));
   chk('counted turnovers reproduce v = Vₘₐₓ[S]/(Kₘ+[S]) — 8 configurations, 400 s each',
-      worst < 0.02,
-      r.plain.map((x,i)=>`S${x.p.S}:${x.v.toFixed(3)}/${x.want.toFixed(3)} (${(err[i]*100).toFixed(2)}%)`).join('  '));
+      err.every((e,i) => e < tol[i]),
+      r.plain.map((x,i)=>`S${x.p.S}:${(err[i]*100).toFixed(2)}%/${(tol[i]*100).toFixed(2)}%`).join('  '));
   chk('the counted rate at [S] = Kₘ is half the counted maximum',
       Math.abs(r.half.v/(r.half.p.Vmax/2) - 1) < 0.02,
       `${r.half.v.toFixed(3)} vs Vₘₐₓ/2 = ${(r.half.p.Vmax/2).toFixed(3)}`);

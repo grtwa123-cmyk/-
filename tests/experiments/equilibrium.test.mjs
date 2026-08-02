@@ -36,17 +36,28 @@ const MK = `const E = window.__eq;
       {T:300,dH:-12}, {T:300,dH:-16}, {T:350,dH:-12}, {T:420,dH:-12},
       {T:500,dH:-12}, {T:300,dH:-12,V:50}, {T:300,dH:-12,V:200}, {T:380,dH:-18},
     ];
+    // Five settles per condition, averaged. One run's residual reaches 4-5%
+    // at the product-favoured end even at this size, so a 6% bound on a single
+    // sample is barely one and a third sigma of scatter — it went red on CI at
+    // 6.6% on a mixture that was sitting exactly where it should. The mean of
+    // five is what the bound is on.
+    const REPS = 5;
     return cases.map(c => {
       const p = mk({ ...c, V: (c.V ?? 100) * S });
-      const s = E.settle(p, { nA:300*S, nB:300*S, burn:40, span:60 });
-      return { ...c, K: E.predictedK(p), Q: s.Q, fwd: s.fwd, rev: s.rev, C: s.C, A: s.A };
+      let Q = 0, fwd = 0, rev = 0, C = 0, A = Infinity;
+      for (let k = 0; k < REPS; k++) {
+        const s = E.settle(p, { nA:300*S, nB:300*S, burn:40, span:60 });
+        Q += s.Q / REPS; fwd += s.fwd; rev += s.rev; C += s.C / REPS;
+        A = Math.min(A, s.A);
+      }
+      return { ...c, K: E.predictedK(p), Q, fwd, rev, C, A };
     });`));
   const err = r.map((x) => Math.abs(x.Q - x.K) / x.K);
   chk('the counted mixture settles where [C]/([A][B]) = k₀/k₋ (8 conditions)',
       Math.max(...err) < 0.06,
       r.map((x,i)=>`T${x.T}/dH${x.dH}:${(err[i]*100).toFixed(1)}%`).join(' '));
   chk('every run reached a genuine equilibrium, not exhaustion',
-      r.every((x) => x.fwd > 500 && x.rev > 500),
+      r.every((x) => x.fwd > 2500 && x.rev > 2500),
       r.map(x=>`${x.fwd}/${x.rev}`).join(' '));
   chk('equilibrium is dynamic: forward and reverse fire equally often',
       r.every((x) => Math.abs(x.fwd/x.rev - 1) < 0.12),
@@ -233,11 +244,17 @@ const MK = `const E = window.__eq;
   chk('Resume starts it again', c > b, `${b} → ${c}`);
 }
 {
+  // The catalyst's whole point is that it leaves K and the equilibrium
+  // concentrations alone, so a snapshot of A/B/C/K reports it dead exactly
+  // when it works — the same trap the Pause control fell into elsewhere. What
+  // it does change is the rate constant, so that goes in the signature too.
   const sig = async () => {
     await page.waitForTimeout(420);
-    const s = await page.evaluate(()=>({ ...window.__eq.state(),
-      K: window.__eq.predictedK(window.__eq.params()) }));
-    return JSON.stringify([s.A, s.B, s.C, s.K.toFixed(6)]);
+    const s = await page.evaluate(()=>{
+      const p = window.__eq.params();
+      return { ...window.__eq.state(), K: window.__eq.predictedK(p), kf: p.kf };
+    });
+    return JSON.stringify([s.A, s.B, s.C, s.K.toFixed(6), s.kf.toExponential(4)]);
   };
   const dead = [];
   const acts = [

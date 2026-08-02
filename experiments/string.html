@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="A string integrated straight from the wave equation with both ends pinned. Nothing puts harmonics in — the series f_n = n·c/2L falls out of the boundary condition, and where you pluck decides which harmonics are there at all." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Standing Waves &amp; Harmonics · Physics" />
+  <meta property="og:description" content="A string integrated straight from the wave equation with both ends pinned. Nothing puts harmonics in — the series f_n = n·c/2L falls out of the boundary condition, and where you pluck decides which harmonics are there at all." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/string.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M6 32 Q19 8 32 32 Q45 56 58 32' fill='none' stroke='%237ad9ee' stroke-width='4' stroke-linecap='round'/&gt;&lt;circle cx='6' cy='32' r='4' fill='%237ad9ee'/&gt;&lt;circle cx='58' cy='32' r='4' fill='%237ad9ee'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="swPageTitle">Standing Waves · Physics</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount30">Physics · Standing waves</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="swTitle">Standing Waves &amp; Harmonics</h1>
+      <p data-i18n="swIntro">A string, integrated straight from the wave equation with nothing but its two ends pinned down. No harmonic is put in anywhere. Pin both ends and only certain wavelengths can survive on the string at all, so the frequencies come out as a whole-number series &mdash; and where you pluck decides which of them are there. Pluck exactly at the middle and every even harmonic is missing, because the middle is a node for all of them.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="pluck" data-i18n="swPluckLabel">Pluck position</label>
+          <span class="value"><span id="pluck-value">1/2</span> of L</span>
+          <input type="range" id="pluck" min="1" max="11" step="1" value="6" />
+        </div>
+
+        <div class="control">
+          <label for="length" data-i18n="swLengthLabel">String length L</label>
+          <span class="value"><span id="length-value">0.65</span> m</span>
+          <input type="range" id="length" min="0.25" max="1.2" step="0.01" value="0.65" />
+        </div>
+
+        <div class="control">
+          <label for="tension" data-i18n="swTensionLabel">Tension T</label>
+          <span class="value"><span id="tension-value">80</span> N</span>
+          <input type="range" id="tension" min="10" max="250" step="1" value="80" />
+        </div>
+
+        <div class="control">
+          <label for="density" data-i18n="swDensityLabel">Linear density &micro;</label>
+          <span class="value"><span id="density-value">1.20</span> g/m</span>
+          <input type="range" id="density" min="0.2" max="8" step="0.05" value="1.2" />
+        </div>
+
+        <div class="control">
+          <label for="damping" data-i18n="swDampingLabel">Damping</label>
+          <span class="value"><span id="damping-value">0.6</span> s&#8315;&sup1;</span>
+          <input type="range" id="damping" min="0" max="8" step="0.1" value="0.6" />
+        </div>
+
+        <div class="control">
+          <label for="slow" data-i18n="swSlowLabel">Slow motion</label>
+          <span class="value">1/<span id="slow-value">400</span></span>
+          <input type="range" id="slow" min="50" max="2000" step="50" value="400" />
+        </div>
+
+        <div class="control">
+          <label for="sound-on" data-i18n="swSoundLabel">Play the string</label>
+          <span class="value"><input type="checkbox" id="sound-on" /></span>
+        </div>
+
+        <div class="buttons">
+          <button id="pluck-btn" type="button" data-i18n="swPluckBtn">Pluck</button>
+          <button id="bow-btn" type="button" class="secondary" data-i18n="swModeBtn">Pure harmonic</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="swFormulaWave">Wave equation</span>: <code>&part;&sup2;y/&part;t&sup2; = c&sup2; &part;&sup2;y/&part;x&sup2;</code></li>
+            <li><span data-i18n="swFormulaSpeed">Wave speed</span>: <code>c = &radic;(T/&micro;)</code></li>
+            <li><span data-i18n="swFormulaHarm">Harmonics</span>: <code>f&#8345; = n&#8901;c/2L</code></li>
+            <li><span data-i18n="swFormulaAmp">Plucked amplitudes</span>: <code>A&#8345; &prop; sin(n&pi;p)/n&sup2;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="swNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="swNote1">Nothing here knows what a harmonic is. The string is 720 points obeying the wave equation, and the only extra fact is that the two ends cannot move. That is enough: run a Fourier transform on the shape and the frequencies come out as exact whole-number multiples of c/2L, because those are the only wavelengths that fit between two fixed ends.</li>
+            <li data-i18n="swNote2">Move the pluck point and listen, or watch the spectrum. Pluck at the middle and every even harmonic vanishes &mdash; to one part in 10&#8309;&#8310; &mdash; because the middle of the string is a node of all of them and you cannot start a mode by pulling on a point that mode never moves. Pluck at a third and every third harmonic goes. The rule is the same rule guitarists use to change tone by picking near the bridge.</li>
+            <li data-i18n="swNote3">Change the tension or the density and the whole series moves together, because both only enter through c = &radic;(T/&micro;). Four times the tension is exactly twice the pitch, an octave, and every harmonic follows it. Change the length instead and the same thing happens the other way: that is what a finger on a fretboard does.</li>
+            <li data-i18n="swNote4">The pure harmonic button starts the string in a single mode instead of plucking it. That one stands still &mdash; the nodes never move, and the shape only breathes in and out. A plucked string is that, several times over at once, which is what the spectrum is showing you.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="600" style="touch-action: none;" aria-label="A vibrating string with its nodes marked, above a live spectrum of the amplitude of each harmonic"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="swOutSpeed">Wave speed c</div>
+            <div class="num"><span id="out-speed">&mdash;</span> m/s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="swOutF1">Fundamental f&#8321;</div>
+            <div class="num"><span id="out-f1">&mdash;</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="swOutMeasured">f&#8321; measured</div>
+            <div class="num"><span id="out-measured">&mdash;</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="swOutMissing">Harmonics missing</div>
+            <div class="num" id="out-missing">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="swOutStrongest">Strongest harmonic</div>
+            <div class="num" id="out-strongest">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="swOutNote">Nearest note</div>
+            <div class="num" id="out-note">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="string.js" defer></script>
+</body>
+</html>
