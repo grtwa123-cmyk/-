@@ -555,6 +555,26 @@ const RENDERERS = {
     p.dot(s * 1.3, 0, s * 0.11);
   },
 
+  phases(p, s, ctx) {
+    // Ordered on the left, disordered on the right: the same particles, and
+    // the only difference between the two halves is temperature.
+    const rows = [-0.62, 0, 0.62];
+    rows.forEach((ry, r) => {
+      for (let c = 0; c < 3; c++) {
+        const x = -s * (1.28 - c * 0.44) + (r % 2) * s * 0.22;
+        p.dot(x, ry * s, s * 0.13);                    // lattice
+      }
+    });
+    const loose = [[0.42, -0.74], [0.95, -0.36], [0.5, 0.12], [1.24, 0.32],
+                   [0.72, 0.78], [1.32, -0.86]];
+    for (const [dx, dy] of loose) p.circ(dx * s, dy * s, s * 0.13);
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(s * 0.16, -s * 1.05, s * 0.16, s * 1.05);   // the transition
+    ctx.restore();
+    ctx.setLineDash([]);
+  },
+
   enzyme(p, s, ctx) {
     const Km = 0.8;
     const V = (S) => S / (Km + S);
