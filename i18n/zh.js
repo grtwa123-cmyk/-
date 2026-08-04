@@ -1259,4 +1259,22 @@ window.i18nRegister("zh", {
   bhHint: "拖动环绕 · 滚轮／双指缩放",
   bhFailTitle: "无法加载 WebGL 渲染器",
   bhFailBody: "未能从 CDN 获取 three.js，或当前环境不支持 WebGL。",
+
+  /* 各实验产生数字的方式 —— 以徽章显示在页面上。
+     `verified` 由是否存在物理测试套件推导，不做存储。 */
+  methodMeasured: "实测",
+  methodMeasuredWhy: "机制真实运行，教科书结果是从中读出来的。本页任何地方都没有把答案写进去。",
+  methodIntegrated: "积分",
+  methodIntegratedWhy: "运动方程随时间逐步推进。你看到的就是方程走到的地方。",
+  methodSolved: "数值解",
+  methodSolvedWhy: "每一帧都对控制方程做数值求解，而不是把各个特例拼接起来。",
+  methodFormula: "解析解",
+  methodFormulaWhy: "直接计算并绘制闭式表达式。结果精确，但它是被陈述的，而非涌现的。",
+  methodModel: "实测数据",
+  methodModelWhy: "由实测常数搭建的三维结构 —— 是几何而非模拟。",
+  methodIllustrated: "示意",
+  methodIllustratedWhy: "对概念的动画演示，背后没有定量模型。",
+  methodVerified: "已验证",
+  methodVerifiedWhy: "自动化测试套件在每次提交时，将本页的物理与其闭式解对照检验。",
+  methodLegend: "数字是如何产生的",
 });

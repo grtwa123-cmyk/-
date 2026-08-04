@@ -526,6 +526,43 @@ body.ui-table .table-view { padding-top: 28px; }
 .tv-cat-chemistry { background: rgba(196, 123, 255, 0.16); color: #c47bff; }
 .tv-cat-biology   { background: rgba(229, 143, 255, 0.16); color: #e58fff; }
 
+/* The method column: the landing table is where a reader compares the
+   catalogue, so it is where "measured" versus "closed form" is worth saying.
+   The landing page does not load styles.css, so the badge carries its own
+   rules here. Keep the two in step — `method-badges` checks the markup, not
+   the paint. */
+.tv-method { white-space: nowrap; }
+.method-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+.method-tag[data-method="measured"]    { color: #7ee0b0; background: rgba(60, 190, 130, 0.14); border-color: rgba(60, 190, 130, 0.34); }
+.method-tag[data-method="integrated"]  { color: #8fc0f5; background: rgba(90, 150, 230, 0.14); border-color: rgba(90, 150, 230, 0.32); }
+.method-tag[data-method="solved"]      { color: #b7a8f0; background: rgba(140, 120, 230, 0.14); border-color: rgba(140, 120, 230, 0.32); }
+.method-tag[data-method="formula"]     { color: #e8c07a; background: rgba(220, 165, 70, 0.13); border-color: rgba(220, 165, 70, 0.30); }
+.method-tag[data-method="model"]       { color: #9fd3d8; background: rgba(110, 190, 200, 0.13); border-color: rgba(110, 190, 200, 0.30); }
+.method-tag[data-method="illustrated"] { color: #96a0b9; background: rgba(150, 160, 185, 0.10); border-color: rgba(150, 160, 185, 0.26); }
+.method-verified {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #7ee0b0;
+  background: rgba(60, 190, 130, 0.1);
+  border: 1px solid rgba(60, 190, 130, 0.28);
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  cursor: help;
+}
+.method-verified::before { content: "✓ "; }
+
 .tv-tags {
   font-family: ui-monospace, monospace;
   font-size: 0.72rem;
@@ -547,5 +584,8 @@ body.ui-table .table-view { padding-top: 28px; }
      tight — the title, its description and the category still carry the
      whole table. */
   .tv-table .tv-tags, .tv-table .tv-num { display: none; }
+  /* The verified mark goes before the method itself: on a phone the method
+     is the more useful of the two, so it is the one that stays. */
+  .tv-table .method-verified { display: none; }
   .tv-table td { padding: 12px 8px; }
 }

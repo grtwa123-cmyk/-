@@ -434,4 +434,23 @@
   updateLabels(readParams());
   reset();
   start();
+
+  // Exposed so a harness can read the measurement out. The energetic fraction
+  // is counted from real line-of-centres collisions; e^(−Ea/kT) is never used
+  // to decide anything, only to compare against.
+  window.__kin = {
+    params: readParams,
+    collisions: () => nCollisions,
+    energetic: () => nEnergetic,
+    reactions: () => nReactions,
+    /** Counted successes ÷ counted collisions. */
+    measuredFraction: () => (nCollisions ? nEnergetic / nCollisions : NaN),
+    /** The Boltzmann factor for the same settings, for comparison only. */
+    predictedFraction: () => {
+      const p = readParams();
+      return Math.exp(-p.Ea / p.T);
+    },
+    setRunning: (v) => { running = v; },
+    reset,
+  };
 })();
