@@ -1,10 +1,10 @@
 /*
  * Translation runtime — loader plus the binding it drives.
  *
- * The dictionaries used to live in this file: three languages, 940 keys each,
- * 70 KB gzipped, shipped to all 34 pages so that any one reader could use a
- * third of it. They now sit in i18n/<lang>.js and only the active language is
- * fetched, which is a little over 20 KB.
+ * The dictionaries used to live in this file: three languages, every key in
+ * all of them, shipped to every page so that any one reader could use a third
+ * of it. They now sit in i18n/<lang>.js and only the active language is
+ * fetched — a little over 27 KB gzipped rather than three times that.
  *
  * The dictionary is pulled in with an injected classic <script> rather than
  * import() or fetch(), because both of those are blocked under file:// and the
@@ -103,6 +103,12 @@
         if (val === undefined) return;      // keep the English in the markup
         if (el.tagName === "TITLE") document.title = val;
         else el.textContent = val;
+      });
+      // An aria-label is text a screen reader speaks, so it needs translating
+      // too. Sliders and icon buttons carry one where no visible label fits.
+      document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+        const val = dict[el.dataset.i18nAria];
+        if (val !== undefined) el.setAttribute("aria-label", val);
       });
     }
 

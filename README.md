@@ -112,7 +112,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 15 suites, 513 checks
+npm test                 # 16 suites, 535 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -132,6 +132,7 @@ port to collide with `npm run serve`.
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
 | `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 
 The browser suites need `CHROMIUM_PATH`. In
 [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-web),
