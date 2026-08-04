@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="One Lennard-Jones potential, integrated with velocity Verlet. Solid, liquid and gas are never coded — change the temperature and the same particles freeze, melt, and boil, with the radial distribution and the Maxwell-Boltzmann speeds coming out as measurements." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="States of Matter · Chemistry" />
+  <meta property="og:description" content="One Lennard-Jones potential, integrated with velocity Verlet. Solid, liquid and gas are never coded — change the temperature and the same particles freeze, melt, and boil, with the radial distribution and the Maxwell-Boltzmann speeds coming out as measurements." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/phases.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='20' cy='20' r='6' fill='%23f0b060'/&gt;&lt;circle cx='38' cy='16' r='6' fill='%23f0b060'/&gt;&lt;circle cx='29' cy='34' r='6' fill='%23f0b060'/&gt;&lt;circle cx='47' cy='32' r='6' fill='%23f0b060'/&gt;&lt;circle cx='19' cy='48' r='6' fill='%23f0b060'/&gt;&lt;circle cx='42' cy='50' r='6' fill='%23f0b060'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="mdPageTitle">States of Matter · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount31">Chemistry · States of matter</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="mdTitle">States of Matter &mdash; One Potential, Three Phases</h1>
+      <p data-i18n="mdIntro">Every particle here pulls weakly on its distant neighbours and shoves hard on its close ones. That single curve &mdash; the Lennard-Jones potential &mdash; is the whole model. Nothing in the code knows what a solid is, or a liquid, or a gas. Turn the temperature down and the particles settle into a lattice; turn it up and the lattice fails and they flow; turn it up further and they fly apart. Drop the density and they pull themselves into a droplet with vapour around it, because that is what the same force does when there is room.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="temp" data-i18n="mdTempLabel">Temperature T*</label>
+          <span class="value"><span id="temp-value">0.30</span></span>
+          <input type="range" id="temp" min="0.05" max="4" step="0.05" value="0.3" />
+        </div>
+
+        <div class="control">
+          <label for="density" data-i18n="mdDensityLabel">Density &rho;*</label>
+          <span class="value"><span id="density-value">0.80</span></span>
+          <input type="range" id="density" min="0.05" max="1" step="0.01" value="0.8" />
+        </div>
+
+        <div class="control">
+          <label for="count" data-i18n="mdCountLabel">Particles</label>
+          <span class="value"><span id="count-value">100</span></span>
+          <input type="range" id="count" min="8" max="14" step="1" value="10" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="mdSpeedLabel">Steps per frame</label>
+          <span class="value"><span id="speed-value">12</span></span>
+          <input type="range" id="speed" min="1" max="40" step="1" value="12" />
+        </div>
+
+        <div class="control">
+          <label for="thermostat" data-i18n="mdThermostatLabel">Thermostat</label>
+          <span class="value"><input type="checkbox" id="thermostat" checked /></span>
+        </div>
+
+        <div class="control">
+          <label for="trails" data-i18n="mdTrailsLabel">Show paths</label>
+          <span class="value"><input type="checkbox" id="trails" /></span>
+        </div>
+
+        <div class="control" style="margin: 0.8rem 0 0.4rem;">
+          <label data-i18n="mdPresets">Presets</label>
+        </div>
+        <div class="molecule-list" id="preset-list" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="solid"><span data-i18n="mdPresetSolid">Solid</span><small>&rho;* 0.80 · T* 0.15</small></button>
+          <button type="button" class="mol-btn" data-key="melting"><span data-i18n="mdPresetMelting">Melting</span><small>&rho;* 0.80 · T* 0.45</small></button>
+          <button type="button" class="mol-btn" data-key="liquid"><span data-i18n="mdPresetLiquid">Liquid</span><small>&rho;* 0.80 · T* 0.80</small></button>
+          <button type="button" class="mol-btn" data-key="droplet"><span data-i18n="mdPresetDroplet">Droplet</span><small>&rho;* 0.12 · T* 0.35</small></button>
+          <button type="button" class="mol-btn" data-key="gas"><span data-i18n="mdPresetGas">Gas</span><small>&rho;* 0.12 · T* 1.50</small></button>
+          <button type="button" class="mol-btn" data-key="hot"><span data-i18n="mdPresetHot">Hot dense</span><small>&rho;* 0.80 · T* 3.00</small></button>
+        </div>
+
+        <div class="buttons">
+          <button id="quench-btn" type="button" data-i18n="mdQuenchBtn">Quench</button>
+          <button id="pause-btn" type="button" class="secondary" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="mdFormulaLJ">Potential</span>: <code>V(r) = 4&epsilon;[(&sigma;/r)&sup1;&sup2; &minus; (&sigma;/r)&#8310;]</code></li>
+            <li><span data-i18n="mdFormulaT">Temperature</span>: <code>T* = &lang;KE&rang;/N</code> (2D)</li>
+            <li><span data-i18n="mdFormulaP">Pressure</span>: <code>P = (N T* + &frac12;&Sigma;r&#8901;f)/A</code></li>
+            <li><span data-i18n="mdFormulaD">Diffusion</span>: <code>&lang;r&sup2;&rang; = 4Dt</code></li>
+            <li><span data-i18n="mdFormulaMB">Speeds</span>: <code>P(v) &prop; v&#8901;e&#8315;&#7396;&#178;&#8725;&#7580;&#7511;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="mdNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="mdNote1">There is no code for solid, liquid or gas. There is one potential and Newton's second law. Cold, the particles sit on a triangular lattice and the order parameter &psi;&#8326; sits near 0.9; warm it past about T* = 0.4 and &psi;&#8326; collapses while the diffusion constant leaves zero. That is melting happening, not melting being drawn.</li>
+            <li data-i18n="mdNote2">The clearest evidence is the pair distribution g(r) beneath the box. A solid gives sharp spikes at the lattice shells. A liquid keeps one broad first peak &mdash; neighbours still touch, but the order is gone by the third shell. A gas is flat at 1: no structure at all beyond the hole each particle keeps around itself.</li>
+            <li data-i18n="mdNote3">Nothing sets the speeds either. Every particle starts with exactly the same speed, pointed somewhere at random &mdash; a spike where Maxwell and Boltzmann predict a spread. Collisions alone redistribute it, until the histogram lands on the curve drawn over it. That is also where the temperature reading comes from, since T* is just the mean kinetic energy.</li>
+            <li data-i18n="mdNote4">Drop the density to 0.12 and cool it. The particles do not spread out to fill the box. Droplets nucleate &mdash; two or three of them, wherever the crowding happened to be &mdash; each with a sharp surface and a thin vapour around it, and then they drift and merge, slowly, until one is left. Nothing put a surface there and nothing scheduled the merge. Heat the same system and it boils away again. Turn the thermostat off at any point and the total energy is conserved to a tenth of a percent, so none of this is being driven.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="680" style="touch-action: none;" aria-label="A box of Lennard-Jones particles with periodic boundaries, above the pair distribution function and a histogram of particle speeds"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="mdOutT">Temperature, measured</div>
+            <div class="num" id="out-t">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mdOutP">Pressure P*</div>
+            <div class="num" id="out-p">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mdOutPsi">Order &psi;&#8326;</div>
+            <div class="num" id="out-psi">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mdOutD">Diffusion D*</div>
+            <div class="num" id="out-d">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mdOutE">Energy per particle</div>
+            <div class="num" id="out-e">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="mdOutPhase">Phase</div>
+            <div class="num" id="out-phase">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="phases.js" defer></script>
+</body>
+</html>

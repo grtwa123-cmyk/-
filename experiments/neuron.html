@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="The Hodgkin-Huxley equations integrated as written — four coupled ODEs and two ion channels. Nothing tests for a threshold, yet one appears: a hair under it nothing happens, a hair over it and a full action potential fires." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Nerve Impulse · Biology" />
+  <meta property="og:description" content="The Hodgkin-Huxley equations integrated as written — four coupled ODEs and two ion channels. Nothing tests for a threshold, yet one appears: a hair under it nothing happens, a hair over it and a full action potential fires." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/neuron.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M6 46 L20 46 L26 18 L34 52 L40 34 L46 34 L58 34' fill='none' stroke='%23ffd166' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="hhPageTitle">Nerve Impulse · Biology</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount28">Biology · Nerve impulse</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="hhTitle">Nerve Impulse &mdash; Hodgkin&ndash;Huxley</h1>
+      <p data-i18n="hhIntro">Four coupled differential equations, integrated exactly as Hodgkin and Huxley wrote them in 1952. Two kinds of gate open and close, each at its own speed, and that is the whole model. No line of code asks whether the voltage has crossed a threshold &mdash; yet a threshold is there, and it is sharp: a hair below it the membrane just sags back, a hair above it and the axon fires a full spike of the same size every time.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control" style="margin-bottom: 0.4rem;">
+          <label data-i18n="hhStimulus">Stimulus</label>
+        </div>
+        <div class="molecule-list" id="mode-list" data-reset="keep" style="grid-template-columns: 1fr 1fr; margin-bottom: 0.9rem;">
+          <button type="button" class="mol-btn active" data-key="pulse" aria-pressed="true"><span data-i18n="hhModePulse">Single pulse</span><small data-i18n="hhModePulseSub">find the threshold</small></button>
+          <button type="button" class="mol-btn" data-key="pair" aria-pressed="false"><span data-i18n="hhModePair">Pulse pair</span><small data-i18n="hhModePairSub">refractory period</small></button>
+          <button type="button" class="mol-btn" data-key="steady" aria-pressed="false"><span data-i18n="hhModeSteady">Sustained current</span><small data-i18n="hhModeSteadySub">repetitive firing</small></button>
+          <button type="button" class="mol-btn" data-key="ramp" aria-pressed="false"><span data-i18n="hhModeRamp">Slow ramp</span><small data-i18n="hhModeRampSub">accommodation</small></button>
+        </div>
+
+        <div class="control">
+          <label for="amp" data-i18n="hhAmpLabel">Stimulus current</label>
+          <span class="value"><span id="amp-value">20</span> &micro;A/cm&sup2;</span>
+          <input type="range" id="amp" min="0" max="200" step="0.5" value="20" />
+        </div>
+
+        <div class="control" id="width-control">
+          <label for="width" data-i18n="hhWidthLabel">Pulse width</label>
+          <span class="value"><span id="width-value">0.5</span> ms</span>
+          <input type="range" id="width" min="0.1" max="5" step="0.1" value="0.5" />
+        </div>
+
+        <div class="control" id="gap-control" hidden>
+          <label for="gap" data-i18n="hhGapLabel">Gap between pulses</label>
+          <span class="value"><span id="gap-value">12</span> ms</span>
+          <input type="range" id="gap" min="1" max="40" step="0.5" value="12" />
+        </div>
+
+        <div class="control">
+          <label for="ttx" data-i18n="hhTtxLabel">Na&#8314; channels (TTX blocks)</label>
+          <span class="value"><span id="ttx-value">100</span> %</span>
+          <input type="range" id="ttx" min="0" max="100" step="1" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="tea" data-i18n="hhTeaLabel">K&#8314; channels (TEA blocks)</label>
+          <span class="value"><span id="tea-value">100</span> %</span>
+          <input type="range" id="tea" min="0" max="100" step="1" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="hhSpeedLabel">Slow motion</label>
+          <span class="value"><span id="speed-value">50</span> ms/s</span>
+          <input type="range" id="speed" min="5" max="300" step="5" value="50" />
+        </div>
+
+        <div class="buttons">
+          <button id="fire-btn" type="button" data-i18n="hhFireBtn">Stimulate</button>
+          <button id="threshold-btn" type="button" class="secondary" data-i18n="hhThresholdBtn">Find threshold</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="hhFormulaCable">Membrane</span>: <code>C&#8344; dV/dt = I &minus; g&#773;&#8344;&#8336;m&sup3;h(V&minus;E&#8344;&#8336;) &minus; g&#773;&#8342;n&#8308;(V&minus;E&#8342;) &minus; g&#8343;(V&minus;E&#8343;)</code></li>
+            <li><span data-i18n="hhFormulaGate">Gates</span>: <code>dx/dt = &alpha;&#8339;(V)(1&minus;x) &minus; &beta;&#8339;(V)x</code>, <code>x = m, h, n</code></li>
+            <li><span data-i18n="hhFormulaConst">Constants</span>: <code>g&#773;&#8344;&#8336;=120, g&#773;&#8342;=36, g&#8343;=0.3 mS/cm&sup2;</code></li>
+            <li><span data-i18n="hhFormulaRev">Reversal</span>: <code>E&#8344;&#8336;=+50, E&#8342;=&minus;77, E&#8343;=&minus;54.4 mV</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="hhNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="hhNote1">Nothing in the model tests the voltage against a threshold. The four equations are integrated as written and the spike is what they do. Press <em>Find threshold</em> and the search will bracket it to three decimals: one part in a thousand below, the membrane sags back and nothing happens; one part above, a full action potential. That cliff is the whole point &mdash; it is a property of the gate kinetics, not a rule that was imposed.</li>
+            <li data-i18n="hhNote2">Once over the line, the spike is the same size however hard you push. Its height comes from E&#8344;&#8336;, not from the stimulus, which is why a nerve carries information as a rate of firing rather than an amplitude.</li>
+            <li data-i18n="hhNote3">Watch the gates rather than the voltage. m opens in a fraction of a millisecond and drags V up towards E&#8344;&#8336;; h closes more slowly and shuts the sodium off; n opens later still and pulls V down past rest. The refractory period is just h needing time to reopen &mdash; try the pulse pair and shorten the gap until the second spike disappears.</li>
+            <li data-i18n="hhNote4">Sustained current does something odd twice over. Firing does not ease in from zero &mdash; below about 6 &micro;A/cm&sup2; there is nothing, and above it the axon starts straight in at roughly 50 Hz. Then push past about 80 and firing <em>stops</em>: so much current holds V high enough that h never recovers. Too much stimulus is as silent as too little.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="620" style="touch-action: none;" aria-label="Membrane voltage, gate variables and ionic currents plotted against time while the axon is stimulated"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="hhOutV">Membrane potential</div>
+            <div class="num"><span id="out-v">&mdash;</span> mV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="hhOutPeak">Last spike peak</div>
+            <div class="num"><span id="out-peak">&mdash;</span> mV</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="hhOutThreshold">Measured threshold</div>
+            <div class="num"><span id="out-threshold">&mdash;</span> &micro;A/cm&sup2;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="hhOutRate">Firing rate</div>
+            <div class="num"><span id="out-rate">&mdash;</span> Hz</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="hhOutGates">Gates m · h · n</div>
+            <div class="num" id="out-gates">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="hhOutState">State</div>
+            <div class="num" id="out-state">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="neuron.js" defer></script>
+</body>
+</html>

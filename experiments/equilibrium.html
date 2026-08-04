@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="description" content="A + B reversible C, one molecule at a time. The equilibrium constant is never typed in — it is measured from the counts, and it comes out as k_forward over k_reverse. Disturb the mixture and Le Chatelier's principle is the result, not the rule." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Chemical Equilibrium · Chemistry" />
+  <meta property="og:description" content="A + B reversible C, one molecule at a time. The equilibrium constant is never typed in — it is measured from the counts, and it comes out as k_forward over k_reverse. Disturb the mixture and Le Chatelier's principle is the result, not the rule." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/equilibrium.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M10 24 L46 24 M40 18 L46 24 L40 30 M54 40 L18 40 M24 34 L18 40 L24 46' fill='none' stroke='%236fbf8a' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="eqPageTitle">Chemical Equilibrium · Chemistry</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount29">Chemistry · Equilibrium</span><span class="version-tag">v1.0.0</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="eqTitle">Chemical Equilibrium &amp; Le Chatelier</h1>
+      <p data-i18n="eqIntro">A + B &#8652; C, run one molecule at a time. Every pair that meets may join; every C may come apart again; each happens with the rate constant its own energy barrier gives it. The equilibrium constant is never entered anywhere &mdash; it is measured from the counts once they settle, and what comes out is k&#8320;/k&#8331;. Disturb the mixture and the shift you see is a result, not a rule that was applied.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="temp" data-i18n="eqTempLabel">Temperature</label>
+          <span class="value"><span id="temp-value">300</span> K</span>
+          <input type="range" id="temp" min="250" max="600" step="5" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="dh" data-i18n="eqDhLabel">Reaction enthalpy &Delta;H&deg;</label>
+          <span class="value"><span id="dh-value">&minus;12</span> kJ/mol</span>
+          <input type="range" id="dh" min="-30" max="10" step="0.5" value="-12" />
+        </div>
+
+        <div class="control">
+          <label for="volume" data-i18n="eqVolumeLabel">Vessel volume</label>
+          <span class="value"><span id="volume-value">100</span> L</span>
+          <input type="range" id="volume" min="40" max="200" step="5" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="catalyst" data-i18n="eqCatalystLabel">Catalyst (lowers both barriers)</label>
+          <span class="value"><span id="catalyst-value">0</span> kJ/mol</span>
+          <input type="range" id="catalyst" min="0" max="14" step="0.5" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="na0" data-i18n="eqNaLabel">Starting A</label>
+          <span class="value"><span id="na0-value">300</span></span>
+          <input type="range" id="na0" min="50" max="600" step="10" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="nb0" data-i18n="eqNbLabel">Starting B</label>
+          <span class="value"><span id="nb0-value">300</span></span>
+          <input type="range" id="nb0" min="50" max="600" step="10" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="eqSpeedLabel">Simulation speed</label>
+          <span class="value">&times;<span id="speed-value">1.0</span></span>
+          <input type="range" id="speed" min="0.1" max="8" step="0.1" value="1" />
+        </div>
+
+        <div class="buttons">
+          <button id="add-a-btn" type="button" data-i18n="eqAddA">Inject A</button>
+          <button id="add-c-btn" type="button" class="secondary" data-i18n="eqAddC">Inject C</button>
+          <button id="pause-btn" type="button" class="secondary" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="eqFormulaRxn">Reaction</span>: <code>A + B &#8652; C</code></li>
+            <li><span data-i18n="eqFormulaRates">Rates</span>: <code>r&#8320; = k&#8320;[A][B]</code>, <code>r&#8331; = k&#8331;[C]</code></li>
+            <li><span data-i18n="eqFormulaK">At equilibrium</span>: <code>r&#8320; = r&#8331;</code> &rarr; <code>K = [C]/([A][B]) = k&#8320;/k&#8331;</code></li>
+            <li><span data-i18n="eqFormulaArr">Arrhenius</span>: <code>k = A&#8901;e&#8315;&#7580;&#7491;&#799;&#7523;&#7580;&#7511;</code>, <code>E&#8336;(rev) = E&#8336;(fwd) &minus; &Delta;H&deg;</code></li>
+            <li><span data-i18n="eqFormulaVh">van &rsquo;t Hoff</span>: <code>ln K = &Delta;S&deg;/R &minus; &Delta;H&deg;/RT</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="eqNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="eqNote1">K is never entered. Each molecule reacts or comes apart at random with the rate constant its barrier gives it, and K is read off the counts afterwards. It lands on k&#8320;/k&#8331; because at equilibrium the two rates are equal &mdash; which is the derivation, run forwards.</li>
+            <li data-i18n="eqNote2">Equilibrium is not the reaction stopping. Watch the event counters: at equilibrium thousands of forward and reverse reactions keep happening and their ratio sits at 1.000. The concentrations hold still because the two directions cancel, not because anything has finished.</li>
+            <li data-i18n="eqNote3">Now disturb it. Inject A and the mixture makes more C; squeeze the vessel and it shifts to the side with fewer molecules; heat an exothermic reaction and it retreats. In every case K itself is unchanged unless you change the temperature &mdash; what moves is Q, which then walks back to K.</li>
+            <li data-i18n="eqNote4">The catalyst is the honest test of all this. Lower both barriers by the same amount and the reaction arrives at equilibrium far sooner &mdash; a hundred times sooner at the far end of the slider &mdash; while K and the final concentrations do not move at all. A catalyst changes the road, not the destination.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="620" style="touch-action: none;" aria-label="A reaction vessel of A, B and C molecules with a movable piston, above plots of concentration against time and of the reaction quotient against the equilibrium constant"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="eqOutConc">[A] · [B] · [C]</div>
+            <div class="num" id="out-conc">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="eqOutQ">Reaction quotient Q</div>
+            <div class="num" id="out-q">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="eqOutK">K, measured</div>
+            <div class="num" id="out-k">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="eqOutKpred">k&#8320;/k&#8331;</div>
+            <div class="num" id="out-kpred">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="eqOutEvents">Reactions fwd · rev</div>
+            <div class="num" id="out-events">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="eqOutShift">Direction</div>
+            <div class="num" id="out-shift">&mdash;</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="equilibrium.js" defer></script>
+</body>
+</html>

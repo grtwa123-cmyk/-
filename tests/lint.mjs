@@ -24,8 +24,14 @@ const root = path.resolve(import.meta.dirname, "..");
 const rel = (p) => path.relative(root, p);
 const failures = [];
 
-const tracked = execSync("git ls-files", { cwd: root, encoding: "utf8" })
-  .trim().split("\n").filter(Boolean);
+// --others --exclude-standard picks up files that are new but not ignored.
+// Plain `git ls-files` lists only what is already staged or committed, so a
+// brand-new file went unchecked until someone remembered to `git add` it —
+// which is exactly when a syntax error is most likely to be there.
+const tracked = execSync("git ls-files --cached --others --exclude-standard",
+  { cwd: root, encoding: "utf8" })
+  .trim().split("\n").filter(Boolean)
+  .filter((f, i, a) => a.indexOf(f) === i);
 
 const BINARY = /\.(png|jpe?g|ico|gif|webp|woff2?|ttf|mp3|wav)$/i;
 const text = tracked.filter((f) => !BINARY.test(f));

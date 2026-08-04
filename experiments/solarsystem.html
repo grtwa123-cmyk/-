@@ -16,7 +16,7 @@
   <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%2304060d'/&gt;&lt;circle cx='32' cy='32' r='7' fill='%23ffd884'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='10' fill='none' stroke='%237da3d4' stroke-width='1.5'/&gt;&lt;/svg&gt;" />
-<title>Solar System Tour · Science Lab</title>
+<title data-i18n="ssPageTitle">Solar System Tour · Science Lab</title>
 <style>
   :root{
     --bg:#04060d;
@@ -132,7 +132,10 @@
 
   /* ── 사이트 헤더 통합 (Back + 버전) ──────── */
   .site-overlay{
-    position:fixed;z-index:11;
+    /* Above #loading (z 50): while the scene is still building, and above all
+       when it has failed to build, Back and the language buttons have to stay
+       reachable — a failure notice the reader cannot translate is no use. */
+    position:fixed;z-index:60;
     top:calc(8px + env(safe-area-inset-top));left:14px;
     display:flex;align-items:center;gap:.55rem;
   }
@@ -147,62 +150,91 @@
     border:1px solid var(--line);border-radius:999px;
     font-variant-numeric:tabular-nums;letter-spacing:.02em;
   }
-  /* 통합 헤더가 들어갔으니 topbar 좌측 컬럼은 살짝 아래로 밀어줘 겹치지 않게 */
-  .topbar > div:first-child{margin-top:14px}
+  /* The Back / version / language row is pinned over the top-left corner, so
+     the topbar's own column starts below it rather than under it. */
+  .topbar > div:first-child{margin-top:30px}
+
+  /* ── 언어 전환 ─────────────────────
+     This page is full-bleed, so it cannot use the shared .lang-switch from
+     styles.css. It rides in the top-left row rather than the opposite corner,
+     because on desktop the observation card owns the whole right edge and
+     would sit on top of it. */
+  .lang-switch{display:flex;gap:.3rem;margin-left:.2rem}
+  .lang-switch .lang-btn{
+    padding:.16rem .5rem;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+    color:var(--dim);background:rgba(20,26,46,.78);
+    border:1px solid var(--line);border-radius:999px;cursor:pointer;
+  }
+  .lang-switch .lang-btn:hover{color:var(--ink)}
+  .lang-switch .lang-btn.active{color:#0b1020;background:#8fb4ff;border-color:#8fb4ff}
 </style>
 </head>
 <body>
 
 <div class="site-overlay">
-  <a href="../physics.html">&larr; Back</a>
-  <span class="version-tag">v1.0.0</span>
+  <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+  <span class="version-tag">v1.1.0</span>
+  <span class="lang-switch" role="group" aria-label="Language">
+    <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
+    <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+    <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+  </span>
 </div>
 
 <div id="stage"></div>
 
-<div id="loading"><div class="spin"></div><div id="loadingCap">행성 표면 생성 중…</div></div>
+<div id="loading"><div class="spin"></div><div id="loadingCap" data-i18n="ssLoading">Generating planet surfaces&hellip;</div></div>
 
   <script src="../assets/reduced-motion.js" defer></script>
 <script>
   // This page needs three.js from a CDN. If the CDN is blocked (offline,
   // strict firewall, corporate proxy) the spinner would otherwise sit on
-  // "행성 표면 생성 중…" forever with no way out — the same dead end the
-  // landing wall used to have. After 8 s without a canvas, say so and offer
-  // the way back instead.
-  setTimeout(function () {
+  // "Generating planet surfaces…" forever with no way out — the same dead
+  // end the landing wall used to have. Say so and offer the way back.
+  //
+  // The dictionary may not have arrived yet when this runs, so every string
+  // is re-read on `langchange` as well.
+  window.solarLoadFailed = function () {
     var el = document.getElementById("loading");
     if (!el || el.classList.contains("done") || document.querySelector("#stage canvas")) return;
+    var t = function (k, fallback) {
+      return (window.i18n && window.i18n.t(k)) || fallback;
+    };
     el.innerHTML =
       '<div style="text-align:center;line-height:1.7">' +
-      '<div style="font-size:15px;margin-bottom:10px">3D 뷰를 불러오지 못했습니다</div>' +
-      '<div style="font-size:12px;opacity:.7;margin-bottom:14px">three.js를 CDN에서 받지 못했습니다. 네트워크를 확인해 주세요.</div>' +
+      '<div style="font-size:15px;margin-bottom:10px" data-i18n="ssFailTitle">' +
+        t("ssFailTitle", "The 3D view could not load") + "</div>" +
+      '<div style="font-size:12px;opacity:.7;margin-bottom:14px" data-i18n="ssFailBody">' +
+        t("ssFailBody", "three.js did not arrive from the CDN. Check the network connection.") + "</div>" +
       '<div style="display:flex;gap:14px;justify-content:center;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase">' +
-      '<a href="../physics.html" style="color:#8cbaff">Physics</a>' +
-      '<a href="../index.html" style="color:#8cbaff">Home</a>' +
-      '<a href="solar.html" style="color:#8cbaff">2D 태양계</a>' +
+      '<a href="../physics.html" style="color:#8cbaff" data-i18n="physicsHubTitle">' + t("physicsHubTitle", "Physics") + "</a>" +
+      '<a href="../index.html" style="color:#8cbaff" data-i18n="ssNavHome">' + t("ssNavHome", "Home") + "</a>" +
+      '<a href="solar.html" style="color:#8cbaff" data-i18n="ss2D">' + t("ss2D", "2D solar system") + "</a>" +
       "</div></div>";
-  }, 8000);
+  };
+  // Belt and braces: the load may also fail slowly rather than outright.
+  setTimeout(window.solarLoadFailed, 8000);
 </script>
 
 <header class="topbar">
   <div>
-    <div class="eyebrow">Solar System &middot; Live Orbit</div>
-    <h1>태양계 시뮬레이터</h1>
-    <div class="sub">드래그 회전 &middot; 휠/핀치 확대 &middot; 행성을 탭하면 관측 카드</div>
+    <div class="eyebrow" data-i18n="ssEyebrow">Solar System &middot; Live Orbit</div>
+    <h1 data-i18n="ssTitle">Solar System Simulator</h1>
+    <div class="sub" data-i18n="ssSub">Drag to turn &middot; wheel / pinch to zoom &middot; tap a planet for its card</div>
   </div>
   <div class="telemetry">
-    <div>경과 <b id="tDays">0일</b></div>
-    <div>배속 <b id="tSpeed">&times;1.0</b></div>
+    <div><span data-i18n="ssElapsed">Elapsed</span> <b id="tDays">0 d</b></div>
+    <div><span data-i18n="ssRate">Rate</span> <b id="tSpeed">&times;1.0</b></div>
   </div>
 </header>
 
 <div class="dock">
   <div class="ctrl-row">
-    <button class="btn" id="pauseBtn" aria-label="일시정지">&#9208; 정지</button>
-    <input type="range" id="speed" min="0" max="100" value="50" aria-label="시간 배속">
+    <button class="btn" id="pauseBtn">&#9208; Pause</button>
+    <input type="range" id="speed" min="0" max="100" value="50">
     <span id="spdLab">&times;1.0</span>
-    <button class="btn" id="labelBtn">라벨</button>
-    <button class="btn" id="resetBtn">전체 보기</button>
+    <button class="btn" id="labelBtn" data-i18n="ssLabels">Labels</button>
+    <button class="btn" id="resetBtn" data-i18n="ssOverview">Overview</button>
   </div>
   <div class="chip-rail" id="chips"></div>
 </div>
@@ -211,10 +243,10 @@
   <div class="p-head">
     <div class="p-bar" id="pBar"></div>
     <div class="p-title">
-      <div class="eyebrow">Observation Card &middot; <span id="pEn">EARTH</span></div>
-      <h2 id="pName">지구</h2>
+      <div class="eyebrow"><span data-i18n="ssCard">Observation Card</span> &middot; <span id="pEn">EARTH</span></div>
+      <h2 id="pName">Earth</h2>
     </div>
-    <button class="btn" id="pClose">닫기 &#10005;</button>
+    <button class="btn" id="pClose" data-i18n="ssClose">Close &#10005;</button>
   </div>
   <p class="p-desc" id="pDesc"></p>
   <dl class="grid" id="pGrid"></dl>
@@ -224,54 +256,76 @@
   </div>
 </aside>
 
+<script src="../i18n.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+/* If the CDN did not deliver, everything below throws "THREE is not defined"
+   on its first top-level statement — an uncaught error, a dead page, and an
+   eight-second wait before the reader is told anything. Report it now and
+   stop, rather than crashing through nine hundred lines of setup. */
+if (typeof THREE === "undefined") window.solarLoadFailed();
+else {
 /* ===================== 데이터 ===================== */
+/* Every string the reader sees is a dictionary key. `rows` is an ordered list
+   of [labelKey, value, valueIsAKey]: diameter, mass and surface gravity are
+   pure numbers and units, so they are the same in all three languages and stay
+   literal; everything else carries words and is translated. */
 const BODIES = [
-  { id:'sun', name:'태양', en:'SUN', ui:'#ffc169', dispR:15, orbitR:0, period:1, rotDir:1, rotSpd:.012, ratio:109.2,
-    desc:'태양계 전체 질량의 99.86%를 차지하는 G형 주계열성. 중심부의 수소 핵융합으로 빛과 에너지를 만들어 낸다.',
-    data:{ '분류':'항성 (G2V)', '지름':'1,392,700 km', '질량':'1.989×10³⁰ kg', '태양까지 거리':'— (중심)',
-           '공전 주기':'—', '자전 주기':'약 25일 (적도)', '표면 온도':'약 5,500 °C', '위성 수':'행성 8개 거느림', '표면 중력':'27.9 g' } },
-  { id:'mercury', name:'수성', en:'MERCURY', ui:'#a89684', dispR:1.3, orbitR:30, period:88, rotDir:1, rotSpd:.004, ratio:0.38, tilt:0,
-    desc:'태양계에서 가장 작은 행성. 대기가 거의 없어 낮과 밤의 온도 차가 600 °C에 이른다.',
-    data:{ '분류':'암석 행성', '지름':'4,879 km', '질량':'3.30×10²³ kg', '태양까지 거리':'5,790만 km (0.39 AU)',
-           '공전 주기':'88일', '자전 주기':'58.6일', '평균 온도':'167 °C (낮 430 / 밤 −180)', '위성 수':'0개', '표면 중력':'0.38 g' } },
-  { id:'venus', name:'금성', en:'VENUS', ui:'#e6c98f', dispR:2.4, orbitR:44, period:225, rotDir:-1, rotSpd:.002, ratio:0.95, tilt:177,
+  { id:'sun', nameKey:'ssSun', en:'SUN', ui:'#ffc169', dispR:15, orbitR:0, period:1, rotDir:1, rotSpd:.012, ratio:109.2,
+    descKey:'ssDescSun',
+    rows:[['ssLabClass','ssClassStar',1], ['ssLabDiameter','1,392,700 km',0], ['ssLabMass','1.989×10³⁰ kg',0],
+          ['ssLabDistance','ssDistSun',1], ['ssLabOrbit','ssOrbitSun',1], ['ssLabRotation','ssRotSun',1],
+          ['ssLabTempSurface','ssTempSun',1], ['ssLabMoons','ssMoonsSun',1], ['ssLabGravity','27.9 g',0]] },
+  { id:'mercury', nameKey:'ssMercury', en:'MERCURY', ui:'#a89684', dispR:1.3, orbitR:30, period:88, rotDir:1, rotSpd:.004, ratio:0.38, tilt:0,
+    descKey:'ssDescMercury',
+    rows:[['ssLabClass','ssClassRock',1], ['ssLabDiameter','4,879 km',0], ['ssLabMass','3.30×10²³ kg',0],
+          ['ssLabDistance','ssDistMercury',1], ['ssLabOrbit','ssOrbitMercury',1], ['ssLabRotation','ssRotMercury',1],
+          ['ssLabTempMean','ssTempMercury',1], ['ssLabMoons','ssMoonsMercury',1], ['ssLabGravity','0.38 g',0]] },
+  { id:'venus', nameKey:'ssVenus', en:'VENUS', ui:'#e6c98f', dispR:2.4, orbitR:44, period:225, rotDir:-1, rotSpd:.002, ratio:0.95, tilt:177,
     atmo:{ c:'#eedaa2', i:.7, s:1.13 },
-    desc:'두꺼운 이산화탄소 대기의 온실 효과 때문에 표면이 가장 뜨거운 행성. 다른 행성과 반대 방향으로 자전한다.',
-    data:{ '분류':'암석 행성', '지름':'12,104 km', '질량':'4.87×10²⁴ kg', '태양까지 거리':'1억 820만 km (0.72 AU)',
-           '공전 주기':'225일', '자전 주기':'243일 (역자전)', '평균 온도':'464 °C', '위성 수':'0개', '표면 중력':'0.91 g' } },
-  { id:'earth', name:'지구', en:'EARTH', ui:'#5e9bd6', dispR:2.5, orbitR:58, period:365.25, rotDir:1, rotSpd:.02, ratio:1, tilt:23.5,
+    descKey:'ssDescVenus',
+    rows:[['ssLabClass','ssClassRock',1], ['ssLabDiameter','12,104 km',0], ['ssLabMass','4.87×10²⁴ kg',0],
+          ['ssLabDistance','ssDistVenus',1], ['ssLabOrbit','ssOrbitVenus',1], ['ssLabRotation','ssRotVenus',1],
+          ['ssLabTempMean','ssTempVenus',1], ['ssLabMoons','ssMoonsVenus',1], ['ssLabGravity','0.91 g',0]] },
+  { id:'earth', nameKey:'ssEarth', en:'EARTH', ui:'#5e9bd6', dispR:2.5, orbitR:58, period:365.25, rotDir:1, rotSpd:.02, ratio:1, tilt:23.5,
     atmo:{ c:'#5fb4ff', i:1.0, s:1.16 },
-    desc:'표면에 액체 상태의 물이 있고 생명체가 확인된 유일한 행성. 달이라는 비교적 큰 위성을 거느린다.',
-    data:{ '분류':'암석 행성', '지름':'12,756 km', '질량':'5.97×10²⁴ kg', '태양까지 거리':'1억 4,960만 km (1 AU)',
-           '공전 주기':'365.25일', '자전 주기':'23.9시간', '평균 온도':'15 °C', '위성 수':'1개 (달)', '표면 중력':'1.00 g' } },
-  { id:'mars', name:'화성', en:'MARS', ui:'#d1693f', dispR:1.7, orbitR:74, period:687, rotDir:1, rotSpd:.019, ratio:0.53, tilt:25,
+    descKey:'ssDescEarth',
+    rows:[['ssLabClass','ssClassRock',1], ['ssLabDiameter','12,756 km',0], ['ssLabMass','5.97×10²⁴ kg',0],
+          ['ssLabDistance','ssDistEarth',1], ['ssLabOrbit','ssOrbitEarth',1], ['ssLabRotation','ssRotEarth',1],
+          ['ssLabTempMean','ssTempEarth',1], ['ssLabMoons','ssMoonsEarth',1], ['ssLabGravity','1.00 g',0]] },
+  { id:'mars', nameKey:'ssMars', en:'MARS', ui:'#d1693f', dispR:1.7, orbitR:74, period:687, rotDir:1, rotSpd:.019, ratio:0.53, tilt:25,
     atmo:{ c:'#e08a5e', i:.32, s:1.1 },
-    desc:'산화철(녹) 먼지 때문에 붉게 보인다. 태양계에서 가장 큰 화산인 올림푸스산이 있다.',
-    data:{ '분류':'암석 행성', '지름':'6,792 km', '질량':'6.42×10²³ kg', '태양까지 거리':'2억 2,790만 km (1.52 AU)',
-           '공전 주기':'687일', '자전 주기':'24.6시간', '평균 온도':'−65 °C', '위성 수':'2개 (포보스·데이모스)', '표면 중력':'0.38 g' } },
-  { id:'jupiter', name:'목성', en:'JUPITER', ui:'#d8a06a', dispR:8, orbitR:106, period:4333, rotDir:1, rotSpd:.045, ratio:11.21, tilt:3,
+    descKey:'ssDescMars',
+    rows:[['ssLabClass','ssClassRock',1], ['ssLabDiameter','6,792 km',0], ['ssLabMass','6.42×10²³ kg',0],
+          ['ssLabDistance','ssDistMars',1], ['ssLabOrbit','ssOrbitMars',1], ['ssLabRotation','ssRotMars',1],
+          ['ssLabTempMean','ssTempMars',1], ['ssLabMoons','ssMoonsMars',1], ['ssLabGravity','0.38 g',0]] },
+  { id:'jupiter', nameKey:'ssJupiter', en:'JUPITER', ui:'#d8a06a', dispR:8, orbitR:106, period:4333, rotDir:1, rotSpd:.045, ratio:11.21, tilt:3,
     atmo:{ c:'#e7caa0', i:.35, s:1.07 },
-    desc:'태양계에서 가장 큰 행성. 대적점은 지구보다 큰 거대한 폭풍으로, 수백 년째 이어지고 있다.',
-    data:{ '분류':'가스 행성', '지름':'142,984 km', '질량':'1.90×10²⁷ kg', '태양까지 거리':'7억 7,860만 km (5.2 AU)',
-           '공전 주기':'11.9년', '자전 주기':'9.9시간', '평균 온도':'−110 °C', '위성 수':'95개', '표면 중력':'2.53 g' } },
-  { id:'saturn', name:'토성', en:'SATURN', ui:'#e3c78f', dispR:6.8, orbitR:142, period:10759, rotDir:1, rotSpd:.042, ratio:9.45, tilt:27, ring:'saturn',
+    descKey:'ssDescJupiter',
+    rows:[['ssLabClass','ssClassGas',1], ['ssLabDiameter','142,984 km',0], ['ssLabMass','1.90×10²⁷ kg',0],
+          ['ssLabDistance','ssDistJupiter',1], ['ssLabOrbit','ssOrbitJupiter',1], ['ssLabRotation','ssRotJupiter',1],
+          ['ssLabTempMean','ssTempJupiter',1], ['ssLabMoons','ssMoonsJupiter',1], ['ssLabGravity','2.53 g',0]] },
+  { id:'saturn', nameKey:'ssSaturn', en:'SATURN', ui:'#e3c78f', dispR:6.8, orbitR:142, period:10759, rotDir:1, rotSpd:.042, ratio:9.45, tilt:27, ring:'saturn',
     atmo:{ c:'#eedcae', i:.3, s:1.07 },
-    desc:'수많은 얼음 조각으로 이루어진 거대한 고리를 가진다. 평균 밀도가 물보다 낮아 물에 뜰 수 있을 정도다.',
-    data:{ '분류':'가스 행성', '지름':'120,536 km', '질량':'5.68×10²⁶ kg', '태양까지 거리':'14억 3,350만 km (9.58 AU)',
-           '공전 주기':'29.4년', '자전 주기':'10.7시간', '평균 온도':'−140 °C', '위성 수':'274개 (확인 기준)', '표면 중력':'1.07 g' } },
-  { id:'uranus', name:'천왕성', en:'URANUS', ui:'#8fd0d6', dispR:4.2, orbitR:178, period:30687, rotDir:-1, rotSpd:.03, ratio:4.01, tilt:98, ring:'uranus',
+    descKey:'ssDescSaturn',
+    rows:[['ssLabClass','ssClassGas',1], ['ssLabDiameter','120,536 km',0], ['ssLabMass','5.68×10²⁶ kg',0],
+          ['ssLabDistance','ssDistSaturn',1], ['ssLabOrbit','ssOrbitSaturn',1], ['ssLabRotation','ssRotSaturn',1],
+          ['ssLabTempMean','ssTempSaturn',1], ['ssLabMoons','ssMoonsSaturn',1], ['ssLabGravity','1.07 g',0]] },
+  { id:'uranus', nameKey:'ssUranus', en:'URANUS', ui:'#8fd0d6', dispR:4.2, orbitR:178, period:30687, rotDir:-1, rotSpd:.03, ratio:4.01, tilt:98, ring:'uranus',
     atmo:{ c:'#aef0f4', i:.5, s:1.1 },
-    desc:'자전축이 약 98° 기울어져 거의 누운 채로 공전한다. 대기의 메탄이 붉은빛을 흡수해 청록색으로 보인다.',
-    data:{ '분류':'얼음 거대 행성', '지름':'51,118 km', '질량':'8.68×10²⁵ kg', '태양까지 거리':'28억 7,250만 km (19.2 AU)',
-           '공전 주기':'84년', '자전 주기':'17.2시간 (역자전)', '평균 온도':'−195 °C', '위성 수':'28개', '표면 중력':'0.89 g' } },
-  { id:'neptune', name:'해왕성', en:'NEPTUNE', ui:'#5a7fe0', dispR:4.0, orbitR:210, period:60190, rotDir:1, rotSpd:.032, ratio:3.88, tilt:28,
+    descKey:'ssDescUranus',
+    rows:[['ssLabClass','ssClassIce',1], ['ssLabDiameter','51,118 km',0], ['ssLabMass','8.68×10²⁵ kg',0],
+          ['ssLabDistance','ssDistUranus',1], ['ssLabOrbit','ssOrbitUranus',1], ['ssLabRotation','ssRotUranus',1],
+          ['ssLabTempMean','ssTempUranus',1], ['ssLabMoons','ssMoonsUranus',1], ['ssLabGravity','0.89 g',0]] },
+  { id:'neptune', nameKey:'ssNeptune', en:'NEPTUNE', ui:'#5a7fe0', dispR:4.0, orbitR:210, period:60190, rotDir:1, rotSpd:.032, ratio:3.88, tilt:28,
     atmo:{ c:'#7e9bff', i:.55, s:1.1 },
-    desc:'태양계에서 바람이 가장 강한 행성으로, 풍속이 시속 2,000 km를 넘는 폭풍이 분다.',
-    data:{ '분류':'얼음 거대 행성', '지름':'49,528 km', '질량':'1.02×10²⁶ kg', '태양까지 거리':'44억 9,510만 km (30.1 AU)',
-           '공전 주기':'165년', '자전 주기':'16.1시간', '평균 온도':'−200 °C', '위성 수':'16개', '표면 중력':'1.14 g' } },
+    descKey:'ssDescNeptune',
+    rows:[['ssLabClass','ssClassIce',1], ['ssLabDiameter','49,528 km',0], ['ssLabMass','1.02×10²⁶ kg',0],
+          ['ssLabDistance','ssDistNeptune',1], ['ssLabOrbit','ssOrbitNeptune',1], ['ssLabRotation','ssRotNeptune',1],
+          ['ssLabTempMean','ssTempNeptune',1], ['ssLabMoons','ssMoonsNeptune',1], ['ssLabGravity','1.14 g',0]] },
 ];
+/** Dictionary lookup that keeps working before the dictionary has arrived. */
+const T = (key, fallback) => (window.i18n && window.i18n.t(key)) || fallback || key;
 const MAX_RATIO = 11.21;
 
 /* ===================== 펄린 노이즈 ===================== */
@@ -870,7 +924,7 @@ function buildBodies(){
       scene.add(orbit);
     }
 
-    b.label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(b.name), depthTest: false, transparent: true }));
+    b.label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(T(b.nameKey)), depthTest: false, transparent: true }));
     labelsGroup.add(b.label);
     scene.add(b.holder);
   });
@@ -899,7 +953,7 @@ const minR = () => selected ? selected.dispR * 2.4 + 2 : 16;
 function focusBody(b){
   selected = b;
   trans = { from: camTarget.clone(), fromR: radius, toR: b ? Math.max(b.dispR * 6, 15) : 300, t: 0 };
-  if(b){ openPanel(b); } else { panel.classList.remove('open'); }
+  if(b){ openPanel(b); } else { openBody = null; panel.classList.remove('open'); }
   selRing.visible = !!b;
   if(b) selRing.material.color.set(b.ui);
   document.querySelectorAll('.chip').forEach(c => {
@@ -974,18 +1028,20 @@ function pick(cx, cy){
 
 /* ===================== UI ===================== */
 const panel = document.getElementById('panel');
+let openBody = null;
 function openPanel(b){
+  openBody = b;
   document.getElementById('pBar').style.background = b.ui;
   document.getElementById('pEn').textContent = b.en;
-  document.getElementById('pName').textContent = b.name;
-  document.getElementById('pDesc').textContent = b.desc;
+  document.getElementById('pName').textContent = T(b.nameKey);
+  document.getElementById('pDesc').textContent = T(b.descKey);
   const grid = document.getElementById('pGrid');
   grid.innerHTML = '';
-  Object.entries(b.data).forEach(([k, val]) => {
+  b.rows.forEach(([labelKey, val, isKey]) => {
     const cell = document.createElement('div');
     cell.className = 'cell';
-    const dt = document.createElement('dt'); dt.textContent = k;
-    const dd = document.createElement('dd'); dd.textContent = val;
+    const dt = document.createElement('dt'); dt.textContent = T(labelKey);
+    const dd = document.createElement('dd'); dd.textContent = isKey ? T(val) : val;
     cell.append(dt, dd);
     grid.appendChild(cell);
   });
@@ -994,8 +1050,8 @@ function openPanel(b){
   fill.style.width = Math.min(100, b.ratio / MAX_RATIO * 100) + '%';
   document.getElementById('cmpCap').innerHTML =
     b.id === 'sun'
-      ? '지름 = 지구의 <b>109.2배</b> (그래프 범위 초과)'
-      : `지름 = 지구의 <b>${b.ratio.toFixed(2)}배</b>`;
+      ? T('ssDiameterSun', 'Diameter = <b>109.2×</b> Earth (off the scale)')
+      : T('ssDiameter', 'Diameter = <b>{x}×</b> Earth').replace('{x}', b.ratio.toFixed(2));
   panel.classList.add('open');
 }
 document.getElementById('pClose').addEventListener('click', () => focusBody(null));
@@ -1006,7 +1062,8 @@ addEventListener('keydown', e => { if(e.key === 'Escape') focusBody(null); });
 const rail = document.getElementById('chips');
 BODIES.forEach(b => {
   const c = document.createElement('button');
-  c.className = 'chip'; c.dataset.id = b.id; c.textContent = b.name;
+  c.className = 'chip'; c.dataset.id = b.id; c.dataset.i18n = b.nameKey;
+  c.textContent = T(b.nameKey);
   c.addEventListener('click', () => focusBody(b));
   rail.appendChild(c);
 });
@@ -1021,10 +1078,14 @@ speedEl.addEventListener('input', () => {
   document.getElementById('tSpeed').textContent = fmtMult(mult);
 });
 const pauseBtn = document.getElementById('pauseBtn');
-pauseBtn.addEventListener('click', () => {
-  paused = !paused;
-  pauseBtn.innerHTML = paused ? '&#9654; 재생' : '&#9208; 정지';
-});
+/** The pause button carries two strings, so it is repainted rather than bound. */
+function paintPause(){
+  pauseBtn.textContent = paused ? T('ssResume', '▶ Play') : T('ssPause', '⏸ Pause');
+  pauseBtn.setAttribute('aria-label', T('ssPauseAria', 'Pause'));
+}
+pauseBtn.addEventListener('click', () => { paused = !paused; paintPause(); });
+paintPause();
+speedEl.setAttribute('aria-label', T('ssSpeedAria', 'Time rate'));
 const labelBtn = document.getElementById('labelBtn');
 labelBtn.addEventListener('click', () => {
   labelsGroup.visible = !labelsGroup.visible;
@@ -1087,11 +1148,33 @@ function animate(){
   }
 
   const days = Math.floor(simDays);
-  document.getElementById('tDays').textContent =
-    days >= 365 ? `${days.toLocaleString()}일 (${(simDays / 365.25).toFixed(1)}년)` : days + '일';
+  document.getElementById('tDays').textContent = days >= 365
+    ? T('ssDaysYears', '{n} d ({y} yr)')
+        .replace('{n}', days.toLocaleString()).replace('{y}', (simDays / 365.25).toFixed(1))
+    : T('ssDays', '{n} d').replace('{n}', days);
 
   renderer.render(scene, camera);
 }
+
+/* The chips, the pause label and the whole observation card are built in JS,
+   so `data-i18n` cannot reach them. Repaint them when the language changes. */
+document.addEventListener('langchange', () => {
+  paintPause();
+  rail.querySelectorAll('.chip').forEach((c) => {
+    const b = BODIES.find((x) => x.id === c.dataset.id);
+    if (b) c.textContent = T(b.nameKey);
+  });
+  if (openBody) openPanel(openBody);
+  // The in-scene labels are baked into a texture, so they have to be redrawn
+  // rather than reassigned — and the old texture released with them.
+  BODIES.forEach((b) => {
+    if (!b.label) return;
+    const old = b.label.material.map;
+    b.label.material.map = labelTex(T(b.nameKey));
+    b.label.material.needsUpdate = true;
+    if (old) old.dispose();
+  });
+});
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -1112,6 +1195,7 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
   document.getElementById('loading').remove();
   animate();
 }));
+}   /* end of the `typeof THREE` guard opened above */
 </script>
 <script src="../assets/sfx.js" defer></script>
 <script>

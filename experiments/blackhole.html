@@ -16,7 +16,7 @@
   <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%2304060d'/&gt;&lt;circle cx='32' cy='32' r='12' fill='%23000'/&gt;&lt;ellipse cx='32' cy='34' rx='22' ry='6' fill='none' stroke='%23e08a4a' stroke-width='2'/&gt;&lt;/svg&gt;" />
-  <title>Black Hole · Schwarzschild Lensing</title>
+  <title data-i18n="bhPageTitle">Black Hole · Schwarzschild Lensing</title>
   <style>
     :root {
       --panel-bg: rgba(10, 12, 20, 0.72);
@@ -32,9 +32,24 @@
 
     .overlay { position: fixed; z-index: 10; }
 
-    .top-left { top: 12px; left: 14px; display: flex; align-items: center; gap: 0.6rem; }
+    /* z-index 100 puts this above the CDN-failure notice (z 99): a message
+       the reader cannot translate, on a page they cannot leave, is no use. */
+    .top-left { top: 12px; left: 14px; z-index: 100; display: flex; align-items: center; gap: 0.6rem; }
     .top-left a { color: var(--accent); text-decoration: none; font-size: 0.95rem; }
     .top-left a:hover { text-decoration: underline; }
+    /* Full-bleed page, so the shared .lang-switch in styles.css cannot be
+       used. It rides in the top-left row: the readout owns the right edge and
+       the controls bar spans the top-centre, both of which would cover it. */
+    .lang-switch { display: flex; gap: 0.3rem; margin-left: 0.2rem; }
+    .lang-switch .lang-btn {
+      padding: 0.16rem 0.5rem; font-size: 0.68rem; letter-spacing: 0.04em;
+      color: var(--muted); background: var(--panel-bg);
+      border: 1px solid var(--panel-border); border-radius: 999px; cursor: pointer;
+      font-family: ui-monospace, monospace;
+    }
+    .lang-switch .lang-btn:hover { color: var(--text); }
+    .lang-switch .lang-btn.active { color: #0b1020; background: var(--accent); border-color: var(--accent); }
+
     .version-tag {
       padding: 0.1rem 0.5rem; font-size: 0.72rem; font-weight: 600;
       color: var(--muted); background: var(--panel-bg);
@@ -107,32 +122,37 @@
   -->
 
   <div class="overlay top-left">
-    <a href="../physics.html">&larr; Back</a>
-    <span class="version-tag">v1.2.0</span>
+    <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+    <span class="version-tag">v1.3.0</span>
+    <span class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </span>
   </div>
 
   <div class="overlay controls">
-    <label class="ctrl" for="ui-mass">Mass M <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></label>
-    <label class="ctrl" for="ui-disk">Disk <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></label>
-    <label class="ctrl" for="ui-glow">Glow <input type="range" id="ui-glow" min="0" max="1.5" step="0.05" value="0.8" /><span class="val" id="ui-glow-val">0.80</span></label>
-    <span class="ctrl"><label><input type="checkbox" id="ui-doppler-on" checked /> Doppler</label>
-      <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" aria-label="Doppler strength" /><span class="val" id="ui-doppler-val">1.00</span></span>
+    <label class="ctrl" for="ui-mass"><span data-i18n="bhMass">Mass M</span> <input type="range" id="ui-mass" min="0.5" max="2.0" step="0.05" value="1.0" /><span class="val" id="ui-mass-val">1.00</span></label>
+    <label class="ctrl" for="ui-disk"><span data-i18n="bhDisk">Disk</span> <input type="range" id="ui-disk" min="0" max="3" step="0.05" value="1.0" /><span class="val" id="ui-disk-val">1.00</span></label>
+    <label class="ctrl" for="ui-glow"><span data-i18n="bhGlow">Glow</span> <input type="range" id="ui-glow" min="0" max="1.5" step="0.05" value="0.8" /><span class="val" id="ui-glow-val">0.80</span></label>
+    <span class="ctrl"><label><input type="checkbox" id="ui-doppler-on" checked /> <span data-i18n="bhDoppler">Doppler</span></label>
+      <input type="range" id="ui-doppler" min="0" max="1" step="0.05" value="1.0" aria-label="Doppler strength" data-i18n-aria="bhDopplerAria" /><span class="val" id="ui-doppler-val">1.00</span></span>
     <span class="ctrl"><button type="button" id="ui-spin">Spin: CCW</button></span>
-    <span class="ctrl">Quality
+    <span class="ctrl"><span data-i18n="bhQuality">Quality</span>
       <select id="ui-quality">
-        <option value="low">Low</option>
-        <option value="medium" selected>Medium</option>
-        <option value="high">High</option>
-        <option value="ultra">Ultra</option>
+        <option value="low" data-i18n="bhLow">Low</option>
+        <option value="medium" selected data-i18n="bhMedium">Medium</option>
+        <option value="high" data-i18n="bhHigh">High</option>
+        <option value="ultra" data-i18n="bhUltra">Ultra</option>
       </select></span>
   </div>
 
   <div class="overlay readout">
-    <div><div class="label">Camera distance</div><div class="num"><span id="ui-dist">30.0</span> M</div></div>
-    <div><div class="label">FPS</div><div class="num" id="ui-fps">—</div></div>
+    <div><div class="label" data-i18n="bhDistance">Camera distance</div><div class="num"><span id="ui-dist">30.0</span> M</div></div>
+    <div><div class="label" data-i18n="bhFps">FPS</div><div class="num" id="ui-fps">—</div></div>
   </div>
 
-  <div class="overlay hint">Drag to orbit · Scroll / pinch to zoom</div>
+  <div class="overlay hint" data-i18n="bhHint">Drag to orbit · Scroll / pinch to zoom</div>
 
   <!-- ════════════ 프래그먼트 셰이더: 모든 물리 계산 ════════════ -->
   <script id="frag" type="x-shader/x-fragment">
@@ -374,6 +394,7 @@
     }
   </script>
 
+  <script src="../i18n.js" defer></script>
   <script src="../assets/reduced-motion.js" defer></script>
   <script type="importmap">
     {
@@ -398,12 +419,17 @@
       d.style.cssText =
         "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;" +
         "background:#05060b;color:#e8ecf8;z-index:99;font:14px/1.7 system-ui,sans-serif;text-align:center";
+      var t = function (k, fallback) {
+        return (window.i18n && window.i18n.t(k)) || fallback;
+      };
       d.innerHTML =
-        '<div><div style="font-size:15px;margin-bottom:10px">WebGL 렌더러를 불러오지 못했습니다</div>' +
-        '<div style="font-size:12px;opacity:.7;margin-bottom:14px">three.js를 CDN에서 받지 못했거나 WebGL을 쓸 수 없습니다.</div>' +
+        '<div><div style="font-size:15px;margin-bottom:10px" data-i18n="bhFailTitle">' +
+          t("bhFailTitle", "The WebGL renderer could not load") + "</div>" +
+        '<div style="font-size:12px;opacity:.7;margin-bottom:14px" data-i18n="bhFailBody">' +
+          t("bhFailBody", "three.js did not arrive from the CDN, or WebGL is unavailable.") + "</div>" +
         '<div style="display:flex;gap:14px;justify-content:center;font-family:ui-monospace,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase">' +
-        '<a href="../physics.html" style="color:#8cbaff">Physics</a>' +
-        '<a href="../index.html" style="color:#8cbaff">Home</a>' +
+        '<a href="../physics.html" style="color:#8cbaff" data-i18n="physicsHubTitle">' + t("physicsHubTitle", "Physics") + "</a>" +
+        '<a href="../index.html" style="color:#8cbaff" data-i18n="ssNavHome">' + t("ssNavHome", "Home") + "</a>" +
         "</div></div>";
       document.body.appendChild(d);
     }, 8000);
@@ -558,9 +584,18 @@
     }
     $("ui-doppler").addEventListener("input", syncDoppler);
     $("ui-doppler-on").addEventListener("change", syncDoppler);
+    /* The spin button carries one of two strings, so `data-i18n` cannot bind
+       it; it is repainted here and again whenever the language changes. */
+    const T = (k, fallback) => (window.i18n && window.i18n.t(k)) || fallback;
+    function paintSpin() {
+      $("ui-spin").textContent = uniforms.uSpin.value > 0
+        ? T("bhSpinCCW", "Spin: CCW") : T("bhSpinCW", "Spin: CW");
+    }
+    document.addEventListener("langchange", paintSpin);
+    paintSpin();
     $("ui-spin").addEventListener("click", () => {
       uniforms.uSpin.value *= -1;
-      $("ui-spin").textContent = uniforms.uSpin.value > 0 ? "Spin: CCW" : "Spin: CW";
+      paintSpin();
     });
     $("ui-quality").addEventListener("change", (e) => applyPreset(e.target.value));
     $("ui-glow").addEventListener("input", (e) => {

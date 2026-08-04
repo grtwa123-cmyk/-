@@ -46,4 +46,8 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], motif: "lotka" },
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], motif: "selection" },
   { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], motif: "enzyme" },
+  { titleKey: "hhTitle",         url: "experiments/neuron.html",        cat: "Biology",   tags: ["NEURON", "SPIKE"],      colors: ["#1b1206", "#ffd166"], motif: "neuron" },
+  { titleKey: "eqTitle",          url: "experiments/equilibrium.html",   cat: "Chemistry", tags: ["EQUILIBRIUM", "SHIFT"], colors: ["#08130f", "#6fbf8a"], motif: "equilibrium" },
+  { titleKey: "swTitle",          url: "experiments/string.html",        cat: "Physics",   tags: ["WAVES", "HARMONICS"],   colors: ["#080e1a", "#7ad9ee"], motif: "standing" },
+  { titleKey: "mdTitle",          url: "experiments/phases.html",        cat: "Chemistry", tags: ["PHASE", "DYNAMICS"],    colors: ["#120d06", "#f0b060"], motif: "phases" },
 ]);

@@ -483,6 +483,98 @@ const RENDERERS = {
 
   // Enzyme kinetics: the Michaelis–Menten hyperbola drawn from the real
   // expression, with Kₘ marked at the half-maximum and Vmax as the asymptote.
+  neuron(p, s, ctx) {
+    // A real action potential: the same Hodgkin-Huxley equations the page
+    // integrates, run once at build time here so the glyph is the curve
+    // rather than a hand-drawn impression of one.
+    const aM=V=>Math.abs(V+40)<1e-6?1:0.1*(V+40)/(1-Math.exp(-(V+40)/10));
+    const bM=V=>4*Math.exp(-(V+65)/18);
+    const aH=V=>0.07*Math.exp(-(V+65)/20);
+    const bH=V=>1/(1+Math.exp(-(V+35)/10));
+    const aN=V=>Math.abs(V+55)<1e-6?0.1:0.01*(V+55)/(1-Math.exp(-(V+55)/10));
+    const bN=V=>0.125*Math.exp(-(V+65)/80);
+    let V=-65, m=0.053, h=0.596, n=0.318;
+    const pts=[], dt=0.01;
+    for (let i=0;i<2200;i++){
+      const tt=i*dt, I=tt<0.5?25:0;
+      const dV=(I-120*m*m*m*h*(V-50)-36*n*n*n*n*(V+77)-0.3*(V+54.387));
+      const dm=aM(V)*(1-m)-bM(V)*m, dh=aH(V)*(1-h)-bH(V)*h, dn=aN(V)*(1-n)-bN(V)*n;
+      V+=dV*dt; m+=dm*dt; h+=dh*dt; n+=dn*dt;
+      if (i%12===0) pts.push([tt, V]);
+    }
+    const X=(tt)=>s*(-1.55+(tt/22)*3.1);
+    const Y=(v)=>s*(0.85-((v+90)/150)*1.7);
+    for (let i=1;i<pts.length;i++) p.line(X(pts[i-1][0]),Y(pts[i-1][1]),X(pts[i][0]),Y(pts[i][1]));
+    p.line(-s*1.55, s*0.85, s*1.6, s*0.85);              // time axis
+    p.line(-s*1.55, s*0.85, -s*1.55, -s*0.9);            // voltage axis
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(-s*1.55, Y(-65), s*1.6, Y(-65));              // resting potential
+    ctx.restore();
+    ctx.setLineDash([]);
+  },
+
+  equilibrium(p, s, ctx) {
+    // Two opposed arrows of unequal length: the reaction runs both ways at
+    // once, and the position of the equilibrium is which way runs harder.
+    const arrow = (x0, x1, y) => {
+      p.line(x0, y, x1, y);
+      const dir = Math.sign(x1 - x0), head = s * 0.22;
+      p.line(x1, y, x1 - dir * head, y - head * 0.62);
+      p.line(x1, y, x1 - dir * head, y + head * 0.62);
+    };
+    arrow(-s * 1.15, s * 1.15, -s * 0.34);        // forward, longer
+    arrow(s * 0.72, -s * 1.15, s * 0.34);         // reverse, shorter
+    p.dot(-s * 1.42, -s * 0.34, s * 0.15);        // A + B on the left
+    p.dot(-s * 1.42, s * 0.34, s * 0.15);
+    p.circ(s * 1.42, 0, s * 0.24);                // C on the right
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(0, -s * 0.95, 0, s * 0.95);            // the balance point
+    ctx.restore();
+    ctx.setLineDash([]);
+  },
+
+  standing(p, s, ctx) {
+    // The first three modes between two fixed ends, drawn from the sine each
+    // one actually is — so the glyph shows why only whole numbers fit.
+    const half = (n, yScale, from, to) => {
+      const steps = 60;
+      for (let i = 0; i < steps; i++) {
+        const u0 = i / steps, u1 = (i + 1) / steps;
+        p.line(from + (to - from) * u0, yScale * Math.sin(Math.PI * n * u0),
+               from + (to - from) * u1, yScale * Math.sin(Math.PI * n * u1));
+      }
+    };
+    half(1, -s * 0.72, -s * 1.3, s * 1.3);
+    half(2, -s * 0.42, -s * 1.3, s * 1.3);
+    half(3, -s * 0.24, -s * 1.3, s * 1.3);
+    p.line(-s * 1.3, -s * 1.0, -s * 1.3, s * 1.0);      // the fixed ends
+    p.line(s * 1.3, -s * 1.0, s * 1.3, s * 1.0);
+    p.dot(-s * 1.3, 0, s * 0.11);
+    p.dot(s * 1.3, 0, s * 0.11);
+  },
+
+  phases(p, s, ctx) {
+    // Ordered on the left, disordered on the right: the same particles, and
+    // the only difference between the two halves is temperature.
+    const rows = [-0.62, 0, 0.62];
+    rows.forEach((ry, r) => {
+      for (let c = 0; c < 3; c++) {
+        const x = -s * (1.28 - c * 0.44) + (r % 2) * s * 0.22;
+        p.dot(x, ry * s, s * 0.13);                    // lattice
+      }
+    });
+    const loose = [[0.42, -0.74], [0.95, -0.36], [0.5, 0.12], [1.24, 0.32],
+                   [0.72, 0.78], [1.32, -0.86]];
+    for (const [dx, dy] of loose) p.circ(dx * s, dy * s, s * 0.13);
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    p.line(s * 0.16, -s * 1.05, s * 0.16, s * 1.05);   // the transition
+    ctx.restore();
+    ctx.setLineDash([]);
+  },
+
   enzyme(p, s, ctx) {
     const Km = 0.8;
     const V = (S) => S / (Km + S);
