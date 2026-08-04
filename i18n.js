@@ -110,6 +110,11 @@
         const val = dict[el.dataset.i18nAria];
         if (val !== undefined) el.setAttribute("aria-label", val);
       });
+      // Likewise a title: the method badges put their whole explanation there.
+      document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+        const val = dict[el.dataset.i18nTitle];
+        if (val !== undefined) el.setAttribute("title", val);
+      });
     }
 
     document.querySelectorAll(".lang-btn").forEach((btn) => {

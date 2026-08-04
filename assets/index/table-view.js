@@ -14,6 +14,24 @@
 import { EXPERIMENTS } from "./experiments.js";
 
 const CATS = ["Physics", "Chemistry", "Biology"];
+
+const METHOD_KEY = {
+  measured: "methodMeasured", integrated: "methodIntegrated", solved: "methodSolved",
+  formula: "methodFormula", model: "methodModel", illustrated: "methodIllustrated",
+};
+
+/*
+ * Which experiments a dedicated physics suite holds against a closed form.
+ * Listed rather than derived because the browser cannot see the tests
+ * directory — `tests/method-badges.test.mjs` fails if this drifts from what
+ * is actually on disk, so the claim can never outrun the evidence.
+ */
+const VERIFIED = new Set([
+  "experiments/circuit.html", "experiments/diffraction.html", "experiments/enzyme.html",
+  "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
+  "experiments/pendulum.html", "experiments/phases.html", "experiments/resonance.html",
+  "experiments/selection.html", "experiments/string.html",
+]);
 const CAT_KEY = {
   Physics: "categoryPhysics",
   Chemistry: "categoryChemistry",
@@ -67,6 +85,7 @@ function buildTable() {
     `<th scope="col" class="tv-num">#</th>` +
     `<th scope="col">${tr("tvColExperiment", "Experiment")}</th>` +
     `<th scope="col">${tr("tvColCategory", "Category")}</th>` +
+    `<th scope="col" class="tv-method">${tr("methodLegend", "How the numbers are produced")}</th>` +
     `<th scope="col" class="tv-tags">${tr("tvColTopics", "Topics")}</th>` +
     "</tr>";
   table.appendChild(thead);
@@ -101,11 +120,28 @@ function buildTable() {
     chip.textContent = tr(CAT_KEY[e.cat], e.cat);
     cat.appendChild(chip);
 
+    // How the page produces its numbers, and whether a suite checks it.
+    const method = document.createElement("td");
+    method.className = "tv-method";
+    const mTag = document.createElement("span");
+    mTag.className = "method-tag";
+    mTag.dataset.method = e.method;
+    mTag.textContent = tr(METHOD_KEY[e.method], e.method);
+    mTag.title = tr(METHOD_KEY[e.method] + "Why", "");
+    method.appendChild(mTag);
+    if (VERIFIED.has(e.url)) {
+      const v = document.createElement("span");
+      v.className = "method-verified";
+      v.textContent = tr("methodVerified", "Verified");
+      v.title = tr("methodVerifiedWhy", "");
+      method.appendChild(v);
+    }
+
     const tags = document.createElement("td");
     tags.className = "tv-tags";
     tags.textContent = (e.tags || []).join(" · ");
 
-    tr_.append(num, name, cat, tags);
+    tr_.append(num, name, cat, method, tags);
     tr_.addEventListener("click", (ev) => {
       if (ev.target.closest("a")) return;      // let the real link win
       location.href = e.url;

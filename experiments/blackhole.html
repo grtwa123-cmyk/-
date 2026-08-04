@@ -50,6 +50,13 @@
     .lang-switch .lang-btn:hover { color: var(--text); }
     .lang-switch .lang-btn.active { color: #0b1020; background: var(--accent); border-color: var(--accent); }
 
+    .method-tag {
+      padding: 0.14rem 0.5rem; font-size: 0.68rem; font-weight: 600;
+      border-radius: 999px; border: 1px solid rgba(90,150,230,0.32);
+      color: #8fc0f5; background: rgba(90,150,230,0.14);
+      letter-spacing: 0.02em; cursor: help;
+    }
+
     .version-tag {
       padding: 0.1rem 0.5rem; font-size: 0.72rem; font-weight: 600;
       color: var(--muted); background: var(--panel-bg);
@@ -123,7 +130,7 @@
 
   <div class="overlay top-left">
     <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-    <span class="version-tag">v1.3.0</span>
+    <span class="version-tag">v1.3.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span>
     <span class="lang-switch" role="group" aria-label="Language">
       <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
       <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>

@@ -415,4 +415,19 @@
   updateLabels(readParams());
   reseed();
   start();
+
+  // Exposed so a harness can read the measurement out. The pressure here is
+  // bookkeeping over real wall impulses, not PV = NkT rearranged, and this is
+  // what lets that be checked rather than asserted.
+  window.__gas = {
+    params: readParams,
+    /** Σ2m|v⊥| over the rolling window ÷ (time × wall length), display units. */
+    measuredPressure: () => toU(pMeas),
+    /** The ideal-gas prediction for the same box, in the same units. */
+    predictedPressure: () => toU(idealP(readParams())),
+    area: () => areaPx(readParams().fr),
+    count: () => parts.length,
+    particles: () => parts,
+    setRunning: (v) => { paused = !v; },
+  };
 })();

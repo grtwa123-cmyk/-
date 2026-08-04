@@ -1259,4 +1259,22 @@ window.i18nRegister("en", {
   bhHint: "Drag to orbit · scroll / pinch to zoom",
   bhFailTitle: "The WebGL renderer could not load",
   bhFailBody: "three.js did not arrive from the CDN, or WebGL is unavailable.",
+
+  /* How each experiment produces its numbers — shown as a badge on the page.
+     `verified` is derived from whether a physics suite exists, not stored. */
+  methodMeasured: "Measured",
+  methodMeasuredWhy: "The mechanism runs and the textbook result is read back out of it. Nothing on this page types the answer in.",
+  methodIntegrated: "Integrated",
+  methodIntegratedWhy: "The equations of motion are stepped forward in time. What you see is where they go.",
+  methodSolved: "Solved",
+  methodSolvedWhy: "The governing equation is solved numerically every frame, rather than pieced together from special cases.",
+  methodFormula: "Closed form",
+  methodFormulaWhy: "A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent.",
+  methodModel: "Real data",
+  methodModelWhy: "A three-dimensional structure built from measured constants — geometry rather than simulation.",
+  methodIllustrated: "Illustration",
+  methodIllustratedWhy: "An animation of the idea. There is no quantitative model behind it.",
+  methodVerified: "Verified",
+  methodVerifiedWhy: "An automated suite holds this page's physics against its closed form on every commit.",
+  methodLegend: "How the numbers are produced",
 });

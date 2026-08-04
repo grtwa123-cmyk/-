@@ -1259,4 +1259,22 @@ window.i18nRegister("ko", {
   bhHint: "드래그 회전 · 휠/핀치 확대",
   bhFailTitle: "WebGL 렌더러를 불러오지 못했습니다",
   bhFailBody: "three.js를 CDN에서 받지 못했거나 WebGL을 쓸 수 없습니다.",
+
+  /* 각 실험이 숫자를 만들어 내는 방식 — 페이지에 배지로 표시됩니다.
+     `verified`는 물리 스위트의 존재 여부에서 유도되며 저장하지 않습니다. */
+  methodMeasured: "측정됨",
+  methodMeasuredWhy: "메커니즘이 실제로 돌고, 교과서의 결과는 거기서 읽어냅니다. 이 페이지 어디에도 정답을 적어 넣은 곳이 없습니다.",
+  methodIntegrated: "적분됨",
+  methodIntegratedWhy: "운동 방정식을 시간에 따라 한 걸음씩 전진시킵니다. 보이는 것은 방정식이 데려간 곳입니다.",
+  methodSolved: "수치해",
+  methodSolvedWhy: "지배 방정식을 매 프레임 수치적으로 풉니다. 구간별 근사를 이어 붙이지 않습니다.",
+  methodFormula: "해석해",
+  methodFormulaWhy: "닫힌 형태의 식을 직접 계산해 그립니다. 정확하지만, 결과가 창발한 것이 아니라 진술된 것입니다.",
+  methodModel: "실측 모형",
+  methodModelWhy: "실제로 측정된 상수로 세운 3차원 구조 — 시뮬레이션이 아니라 기하입니다.",
+  methodIllustrated: "도해",
+  methodIllustratedWhy: "개념을 보여 주는 애니메이션입니다. 뒤에 정량적 모형은 없습니다.",
+  methodVerified: "검증됨",
+  methodVerifiedWhy: "자동화된 스위트가 커밋마다 이 페이지의 물리를 닫힌 해에 대고 확인합니다.",
+  methodLegend: "숫자가 만들어지는 방식",
 });

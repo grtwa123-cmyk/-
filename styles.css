@@ -639,6 +639,52 @@ body:not([data-theme]) header.site-header p {
   box-shadow: var(--glass-spec-soft);
 }
 
+/* ── Method badge ───────────────────────────────────────────────────────
+   How this page produces its numbers, stated on the page itself. The point
+   of the site is that most of these results are measured rather than typed
+   in — which is invisible unless it is said. Saying it also means saying so
+   where it is *not* true, which is why "closed form" and "illustration" are
+   in the set. `.is-verified` is only ever rendered for a page with a physics
+   suite of its own; `tests/method-badges.test.mjs` enforces that. */
+.method-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+  cursor: help;
+  vertical-align: middle;
+}
+.method-tag[data-method="measured"]    { color: #7ee0b0; background: rgba(60, 190, 130, 0.14); border-color: rgba(60, 190, 130, 0.34); }
+.method-tag[data-method="integrated"]  { color: #8fc0f5; background: rgba(90, 150, 230, 0.14); border-color: rgba(90, 150, 230, 0.32); }
+.method-tag[data-method="solved"]      { color: #b7a8f0; background: rgba(140, 120, 230, 0.14); border-color: rgba(140, 120, 230, 0.32); }
+.method-tag[data-method="formula"]     { color: #e8c07a; background: rgba(220, 165, 70, 0.13); border-color: rgba(220, 165, 70, 0.30); }
+.method-tag[data-method="model"]       { color: #9fd3d8; background: rgba(110, 190, 200, 0.13); border-color: rgba(110, 190, 200, 0.30); }
+.method-tag[data-method="illustrated"] { color: var(--muted); background: rgba(150, 160, 185, 0.10); border-color: rgba(150, 160, 185, 0.26); }
+
+.method-verified {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #7ee0b0;
+  background: rgba(60, 190, 130, 0.1);
+  border: 1px solid rgba(60, 190, 130, 0.28);
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+  cursor: help;
+  vertical-align: middle;
+}
+.method-verified::before { content: "✓ "; }
+
+@media (max-width: 560px) {
+  .method-tag, .method-verified { margin-left: 0.3rem; font-size: 0.66rem; padding: 0.12rem 0.45rem; }
+}
+
 .crumbs a {
   color: var(--accent);
   text-decoration: none;

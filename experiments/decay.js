@@ -355,4 +355,20 @@
   updateLabels(readParams());
   reset();
   start();
+
+  // Exposed so a harness can read the measurement out. Nothing here enforces
+  // N(t) = N₀·2^(−t/T½); it comes out of independent per-nucleus coin flips,
+  // and this is how that can be checked against the closed form.
+  window.__decay = {
+    params: readParams,
+    /** Nuclei still undecayed — counted, never read off the curve. */
+    alive: () => nuclei.reduce((n, q) => n + (q.alive ? 1 : 0), 0),
+    total: () => nuclei.length,
+    time: () => t,
+    halfLife: () => halfLife,
+    /** N₀·2^(−t/T½), for comparison only. */
+    predicted: () => N0 * Math.pow(2, -t / halfLife),
+    setRunning: (v) => { running = v; },
+    reset,
+  };
 })();
