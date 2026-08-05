@@ -11,6 +11,7 @@
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { browser, chk, url, finish } from './lib/harness.mjs';
+import { installCdnCache } from './lib/cdn-cache.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const read = (p) => readFileSync(`${ROOT}/${p}`, 'utf8');
@@ -128,9 +129,18 @@ const verifiedCount = entries.filter((e) => suites.has(e.name)).length;
   chk('the verified mark renders beside it',
       (await page.$eval('.method-verified', (el) => el.textContent.trim())).length > 0);
 
-  // The landing table repeats the claim for the whole catalogue.
-  await page.goto(url('index.html?view=table'), { waitUntil: 'networkidle' });
-  await page.waitForTimeout(900);
+  // The landing table repeats the claim for the whole catalogue. Reaching it
+  // means switching view the way a reader does — there is no ?view= parameter,
+  // the choice lives in localStorage. Asking for a URL that does not exist
+  // happened to work here only because the CDN is blocked in the sandbox, so
+  // the wall failed and fell back to the table; on CI the wall loads and there
+  // is no table to find. Serve the CDN and press the button instead, so this
+  // checks the same thing in both places.
+  await installCdnCache(page);
+  await page.goto(url('index.html'), { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#uiSwitch .ui-btn[data-ui="table"]', { timeout: 20000 });
+  await page.click('#uiSwitch .ui-btn[data-ui="table"]');
+  await page.waitForSelector('.tv-table tbody tr', { timeout: 20000 });
   const counts = await page.evaluate(() => {
     const tags = [...document.querySelectorAll('.tv-table .method-tag')];
     return { rows: document.querySelectorAll('.tv-table tbody tr').length,

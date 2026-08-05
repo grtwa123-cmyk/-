@@ -307,7 +307,12 @@
     // A liquid's runs away: past 1 within a few time units at T* = 0.45. The
     // ratio msd/t does the same job eventually but decays as 1/t on the way,
     // so a freshly built lattice reads as melting for the first few seconds.
-    if (msdRef && psi > 0.5 && Math.sqrt(msd()) < 0.35 * S.a) {
+    if (psi > 0.5 && (!msdRef || Math.sqrt(msd()) < 0.35 * S.a)) {
+      // Before the reference is taken there is no displacement evidence at
+      // all, and falling through to "melting" would be asserting something
+      // unmeasured — on a slow machine, for several seconds. Order alone is
+      // the evidence there is, and a lattice that has not moved yet is a
+      // solid. Once the reference exists, displacement decides.
       return ["mdPhaseSolid", "solid"];
     }
     if (p.rho < 0.35) {
@@ -725,15 +730,29 @@
       build(p);
       for (let i = 0; i < equil; i++) { step(); if (i % 10 === 0) setTemperature(p.T); }
       takeMsdReference();
-      let psi = 0, n = 0;
+      // T and P are averaged over the whole window, not read off the last
+      // step. With a hundred particles the instantaneous temperature swings
+      // by about 1/√N — ten per cent — and the thermostat only rescales every
+      // tenth step, so a single reading says as much about when you looked as
+      // about what the thermostat delivered. Sampling every step covers the
+      // rescale cycle evenly, so the mean is unbiased.
+      let psi = 0, n = 0, tSum = 0, pSum = 0, m = 0;
       for (let i = 0; i < sample; i++) {
         step();
         if (p.thermostat && i % 10 === 0) setTemperature(p.T);
+        tSum += temperature(); pSum += pressure(); m++;
         if (i % 400 === 0) { psi += psi6(); n++; }
       }
       return {
-        T: temperature(), P: pressure(), psi: psi / n, D: diffusion(),
-        msd: msd(), cluster: largestCluster(), condensed: condensedFraction(),
+        T: tSum / m, P: pSum / m, Tinstant: temperature(),
+        psi: psi / n, D: diffusion(),
+        // Displacement in units of the lattice spacing. In a solid this
+        // plateaus and D = msd/4t therefore decays as 1/t — a number that
+        // says more about the window than the physics. rms/a is the honest
+        // measure of "has it stopped sitting still", and it is what the
+        // phase readout classifies on.
+        msd: msd(), rmsOverA: Math.sqrt(msd()) / S.a,
+        cluster: largestCluster(), condensed: condensedFraction(),
         energy: (kinetic() + S.pot) / S.N,
       };
     },
