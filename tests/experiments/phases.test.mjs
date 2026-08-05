@@ -66,9 +66,15 @@ const MK = `const M = window.__md;
     return [0.15, 0.30, 0.45, 0.80, 1.50, 3.00].map(T =>
       ({ target: T, ...M.measure(mk({ T, rho:0.8 }), { equil:6000, sample:8000 }) }));`));
   const at = (T) => r.find((x) => x.target === T);
-  chk('cold: the particles hold a lattice — ψ₆ near 0.9, no diffusion',
-      at(0.15).psi > 0.75 && at(0.15).D < 2e-3,
-      `ψ₆ ${at(0.15).psi.toFixed(3)}, D ${at(0.15).D.toExponential(1)}`);
+  // "No diffusion" is asked as bounded displacement, not as a small D. In a
+  // solid the mean-square displacement plateaus, so D = msd/4t is that
+  // plateau divided by however long you happened to watch — it decays as 1/t
+  // and is not a transport coefficient at all. rms/a is flat in time:
+  // 0.15–0.19 at T* = 0.15 over four offline replicates, against 1.8–2.1 in
+  // the liquid, so the two do not come close to overlapping.
+  chk('cold: the particles hold a lattice — ψ₆ near 0.9, displacement bounded',
+      at(0.15).psi > 0.75 && at(0.15).rmsOverA < 0.35,
+      `ψ₆ ${at(0.15).psi.toFixed(3)}, rms/a ${at(0.15).rmsOverA.toFixed(3)}`);
   chk('hot: the order is gone and the particles diffuse freely',
       at(1.50).psi < 0.35 && at(1.50).D > 2e-2,
       `ψ₆ ${at(1.50).psi.toFixed(3)}, D ${at(1.50).D.toExponential(1)}`);
@@ -78,9 +84,13 @@ const MK = `const M = window.__md;
   chk('diffusion rises as the system is heated',
       at(0.15).D < at(0.45).D && at(0.45).D < at(0.80).D && at(0.80).D < at(3.00).D,
       r.map(x=>`T${x.target}:${x.D.toExponential(1)}`).join(' '));
-  chk('melting is a transition, not a slope: D jumps by orders of magnitude',
-      at(0.80).D / Math.max(at(0.15).D, 1e-9) > 50,
-      `${at(0.15).D.toExponential(1)} → ${at(0.80).D.toExponential(1)}`);
+  // Compared over the same observation window, so this is a ratio of two
+  // things measured the same way rather than of a transport coefficient
+  // against a plateau artefact.
+  chk('melting is a transition, not a slope: displacement jumps by an order of magnitude',
+      at(0.80).rmsOverA / Math.max(at(0.15).rmsOverA, 1e-9) > 5,
+      `rms/a ${at(0.15).rmsOverA.toFixed(3)} → ${at(0.80).rmsOverA.toFixed(3)}`
+      + ` (${(at(0.80).rmsOverA / at(0.15).rmsOverA).toFixed(1)}×)`);
   chk('pressure rises with temperature at fixed density',
       r.every((x,i,a) => i===0 || x.P > a[i-1].P),
       r.map(x=>`T${x.target}:${x.P.toFixed(2)}`).join(' '));
@@ -93,9 +103,15 @@ const MK = `const M = window.__md;
       const s = M.measure(mk({ T, rho:0.8 }), { equil:5000, sample:5000 });
       return { want:T, got:s.T };
     });`));
+  // Averaged over the sampling window, not read off the last step. A single
+  // instantaneous reading is off by 1–14% — with a hundred particles the
+  // temperature swings by about 1/√N and the thermostat only corrects every
+  // tenth step — so the old 12% bound sat inside its own noise and failed
+  // roughly one run in three. The time average lands within 0.1%, which is a
+  // far stronger statement as well as a reliable one.
   chk('the measured temperature is the mean kinetic energy, and it matches the target',
-      r.every((x) => Math.abs(x.got - x.want)/x.want < 0.12),
-      r.map(x=>`${x.want}→${x.got.toFixed(3)}`).join(' '));
+      r.every((x) => Math.abs(x.got - x.want)/x.want < 0.01),
+      r.map(x=>`${x.want}→${x.got.toFixed(4)}`).join(' '));
 }
 
 // ── g(r) is the structural fingerprint ────────────────────────────────
@@ -242,11 +258,26 @@ const MK = `const M = window.__md;
     const t = document.getElementById('out-psi').textContent;
     return /^[\d.]+$/.test(t) && parseFloat(t) > 0;
   }, { timeout: 40000 }).catch(()=>{});
-  await page.waitForTimeout(2500);
+  // Wait on simulated time, not wall-clock: on a loaded runner the same
+  // number of milliseconds buys far fewer frames, and what the readout is
+  // reporting on is how far the run has got, not how long you waited.
+  await page.waitForFunction(() => window.__md.time() > 12, null, { timeout: 60000 });
   const psiSolid = parseFloat(await txt('out-psi'));
   chk('the solid preset settles at high order', psiSolid > 0.6, String(psiSolid));
+
+  // Report the two quantities the classification is made of, so a failure
+  // says which one moved instead of leaving it to be guessed at.
+  const solidState = await page.evaluate(() => {
+    const M = window.__md, S = M.system();
+    return { phase: document.getElementById('out-phase').textContent.trim(),
+      psi: M.psi6(), rmsOverA: Math.sqrt(M.msd()) / S.a,
+      T: M.temperature(), t: M.time() };
+  });
   chk('and the phase readout says solid',
-      /solid|고체|固体/.test(await txt('out-phase')), await txt('out-phase'));
+      /solid|고체|固体/.test(solidState.phase),
+      `${solidState.phase} — ψ₆ ${solidState.psi.toFixed(3)} (needs > 0.5), `
+      + `rms/a ${solidState.rmsOverA.toFixed(3)} (needs < 0.35), `
+      + `T* ${solidState.T.toFixed(3)}, t ${solidState.t.toFixed(1)}`);
 
   await page.click('#preset-list .mol-btn[data-key="liquid"]');
   await page.waitForTimeout(4000);
