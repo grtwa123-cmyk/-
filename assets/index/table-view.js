@@ -32,7 +32,7 @@ const VERIFIED = new Set([
   "experiments/pendulum.html", "experiments/phases.html", "experiments/photoelectric.html",
   "experiments/projectile.html",
   "experiments/resonance.html",
-  "experiments/selection.html", "experiments/string.html",
+  "experiments/selection.html", "experiments/spectra.html", "experiments/string.html",
 ]);
 const CAT_KEY = {
   Physics: "categoryPhysics",

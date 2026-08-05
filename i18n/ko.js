@@ -1306,4 +1306,8 @@ window.i18nRegister("ko", {
   peOutPlanck: "플랑크 상수, 맞춘 값",
   peOutPhiFit: "일함수, 맞춘 값",
   peOutStoppingMeasured: "정지 전압, 측정값",
+
+  /* 수소 스펙트럼 — 이제 R을 원자가 실제로 낸 선에 맞춥니다. */
+  spectraMeasureBtn: "R 측정하기",
+  spectraOutRydberg: "뤼드베리 상수, 맞춘 값",
 });

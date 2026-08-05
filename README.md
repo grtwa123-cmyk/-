@@ -40,15 +40,15 @@ so where it is **not** true, which is why the last two rows exist.
 
 | Badge | What it means | Count |
 | --- | --- | --- |
-| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 14 |
+| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 15 |
 | **Integrated** | The equations of motion are stepped forward in time. What you see is where they go. | 8 |
-| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 6 |
+| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 5 |
 | **Real data** | A three-dimensional structure built from measured constants — geometry rather than simulation. | 4 |
 | **Solved** | The governing equation is solved numerically every frame, rather than pieced together from special cases. | 2 |
 | **Illustration** | An animation of the idea. There is no quantitative model behind it. | 2 |
 
 A separate **✓ Verified** mark means a dedicated suite holds that page's physics
-against its closed form on every commit — 13 of the 36 so far. It is not stored
+against its closed form on every commit — 14 of the 36 so far. It is not stored
 anywhere: `tests/method-badges.test.mjs` derives it from what is actually in
 `tests/experiments/`, and fails if a page claims it without one. The same suite
 requires any page badged **Measured** to expose a `window.__*` hook, because a
@@ -92,7 +92,7 @@ page that cannot be interrogated cannot support the claim.
 | **Reaction Rates & Collision Theory** | A+B→C only when the line-of-centres collision energy beats Ea; the measured per-collision success converges exactly to e^(−Ea/kT). |
 | **Chemical Equilibrium & Le Chatelier** | A + B ⇌ C by exact stochastic simulation, one reaction event at a time. K is never entered: it is measured from the counts once they settle and lands on k₊/k₋, because at equilibrium the two channels fire equally often — the derivation run forwards rather than asserted. The event counters show equilibrium is not the reaction stopping. Injecting A, moving the piston and heating all shift the position, and only temperature moves K itself; van 't Hoff comes out exact, slope −ΔH°/R and intercept ΔS°/R. The catalyst is the honest test: lower both barriers and equilibrium arrives over 50× sooner with K unchanged to twelve decimals. |
 | **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
-| **Hydrogen Spectrum** | Excite the electron and let it cascade back down; every jump emits one photon, drawn in its true colour. The Balmer lines land on 656.5 / 486.3 / 434.2 / 410.3 nm (vacuum) straight from the Rydberg formula. |
+| **Hydrogen Spectrum** | The levels are the model, Eₙ = −E₁/n², and everything else follows: a jump releases the difference, one photon carries it, λ = hc/ΔE. Written that way round the Rydberg formula is a *consequence*, which is what makes it worth measuring — **Measure R** fits 1/λ against (1/n₁² − 1/n₂²) over the lines this atom actually emitted and recovers R_H. Which lines exist at all is decided by the cascade: from n = 2 there is only one, from n = 5 there are ten, and the first hop is uniform over the rungs below. Fixing this turned up a real inconsistency — the ladder was drawn from R_∞ (13.605693 eV) while the wavelengths came from R_H, so the page drew one hydrogen and emitted from another, 0.055% apart. |
 | **States of Matter** | One Lennard-Jones potential and Newton's second law, integrated with velocity Verlet. Nowhere does the code know what a solid is: cool it and the particles hold a triangular lattice with ψ₆ ≈ 0.9 and no diffusion, warm it past T\* ≈ 0.4 and ψ₆ collapses while D jumps by more than 50×. g(r) shows sharp shells, then one broad peak, then nothing. Speeds start as a single spike — every particle at the same speed — and collisions alone carry them onto Maxwell–Boltzmann. Thin the gas and cool it and it pulls itself into a droplet with a surface nobody drew. Thermostat off, the total energy holds to a tenth of a percent. |
 
 ### Biology (5)
@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 19 suites, 616 checks
+npm test                 # 20 suites, 648 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -153,7 +153,7 @@ port to collide with `npm run serve`.
 | `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
-| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `resonance`, `selection`, `spectra`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, the Rydberg constant fitted from emitted lines, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 

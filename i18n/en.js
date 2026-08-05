@@ -1306,4 +1306,8 @@ window.i18nRegister("en", {
   peOutPlanck: "Planck's constant, fitted",
   peOutPhiFit: "Work function, fitted",
   peOutStoppingMeasured: "Stopping voltage, measured",
+
+  /* Hydrogen spectrum — R is now fitted to the lines the atom emitted. */
+  spectraMeasureBtn: "Measure R",
+  spectraOutRydberg: "Rydberg constant, fitted",
 });

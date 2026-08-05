@@ -53,7 +53,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], method: "formula", motif: "electrolysis" },
   { titleKey: "kinTitle",         url: "experiments/kinetics.html",      cat: "Chemistry", tags: ["ARRHENIUS", "RATE"],    colors: ["#22091a", "#ff8aa3"], method: "measured", motif: "kinetics" },
   { titleKey: "atomTitle",        url: "experiments/atom.html",          cat: "Chemistry", tags: ["ELEMENT", "ISOTOPE"],   colors: ["#0a1424", "#6ea8ff"], method: "model", motif: "atom" },
-  { titleKey: "spectraTitle",     url: "experiments/spectra.html",       cat: "Chemistry", tags: ["QUANTUM", "SPECTRUM"],  colors: ["#12081f", "#ff5ea8"], method: "formula", motif: "spectra" },
+  { titleKey: "spectraTitle",     url: "experiments/spectra.html",       cat: "Chemistry", tags: ["QUANTUM", "SPECTRUM"],  colors: ["#12081f", "#ff5ea8"], method: "measured", motif: "spectra" },
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "CYCLES"],    colors: ["#101f14", "#7be0d0"], method: "integrated", motif: "lotka" },
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], method: "measured", motif: "selection" },
   { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], method: "measured", motif: "enzyme" },
