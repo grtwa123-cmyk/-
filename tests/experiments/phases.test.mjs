@@ -309,6 +309,13 @@ const MK = `const M = window.__md;
   // With the integrator live the canvas differs every frame, so comparing
   // pixels would pass whatever the control did — including nothing. Each one is
   // held to the thing it is supposed to change in the model instead.
+  //
+  // Freezing matters as much as the signature: the measured temperature is in
+  // there so that Quench (which changes velocities and nothing else) can be
+  // seen, and while the integrator runs that value drifts on its own. Planting
+  // a deliberately dead entry in this list still passed until the clock was
+  // stopped.
+  await page.evaluate(() => window.__md.setRunning(false));
   const sig = async () => {
     await page.waitForTimeout(320);
     return page.evaluate(() => {
@@ -336,6 +343,7 @@ const MK = `const M = window.__md;
     before = after;
   }
   chk('every control changes the model it claims to', dead.length===0, dead.join(','));
+  await page.evaluate(() => window.__md.setRunning(true));
 
   // `trails` is the one control that is purely a drawing choice, so it is the
   // one that has to be checked in pixels — on a frozen frame, where the only

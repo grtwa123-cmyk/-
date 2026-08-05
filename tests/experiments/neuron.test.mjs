@@ -220,12 +220,19 @@ const MK = `const H = window.__hh;
   // after leaves two identical idle screens and every control looks dead.
   // What actually shows a control is wired is that the *run it produces*
   // differs, so each one is changed and then fired.
+  // The screenshot in here used to make this vacuous: the trace advances
+  // between the two captures whatever the control did, so a deliberately
+  // dead entry planted in the list passed. Each control is held to what it
+  // changes in the model, plus the two that only change the display.
   const runSig = async () => {
     await page.click('#fire-btn');
     await page.waitForTimeout(650);
-    const st = await page.evaluate(()=>window.__hh.state());
-    const img = (await page.locator('#stage').screenshot()).toString('base64');
-    return JSON.stringify([st.spikes, Math.round(st.V*10), Math.round((st.lastPeak||0)*10), img]);
+    return page.evaluate(() => {
+      const p = window.__hh.params(), st = window.__hh.state();
+      return JSON.stringify([p.amp, p.width, p.gap, p.gNa, p.gK, p.mode,
+        document.getElementById('speed-value').textContent,
+        st.spikes, Math.round(st.V * 10), Math.round((st.lastPeak || 0) * 10)]);
+    });
   };
   const dead = [];
   await page.click('#mode-list .mol-btn[data-key="pulse"]');
@@ -245,7 +252,7 @@ const MK = `const H = window.__hh;
     if (after === before) dead.push(name);
     before = after;
   }
-  chk('no dead controls', dead.length===0, dead.join(','));
+  chk('every control changes the model it claims to', dead.length===0, dead.join(','));
   await page.click('#reset-btn'); await page.waitForTimeout(250);
   chk('Reset returns the page to idle',
       (await page.evaluate(()=>window.__hh.state().spikes))===0 &&

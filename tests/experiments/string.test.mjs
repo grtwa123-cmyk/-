@@ -229,13 +229,16 @@ const MK = `const S = window.__sw;
   await setV('tension', 80); await page.waitForTimeout(200);
 }
 {
+  // A screenshot of a vibrating string differs every frame, so comparing one
+  // proved a control alive whatever it did — a deliberately dead entry
+  // planted in this list passed. Each slider is held to the model instead.
+  await page.evaluate(() => window.__sw.setRunning(false));
   const sig = async () => {
-    await page.waitForTimeout(320);
-    return JSON.stringify([
-      await txt('out-speed'), await txt('out-f1'), await txt('out-missing'),
-      await txt('out-strongest'),
-      (await page.locator('#stage').screenshot()).toString('base64').slice(0, 4000),
-    ]);
+    await page.waitForTimeout(140);
+    return page.evaluate(() => {
+      const p = window.__sw.params();
+      return JSON.stringify([p.p, p.L, p.T, p.mu, p.c, p.f1, p.damping, p.slow]);
+    });
   };
   const dead = [];
   const acts = [
@@ -244,8 +247,7 @@ const MK = `const S = window.__sw;
     ['tension', () => setV('tension', 200)],
     ['density', () => setV('density', 5)],
     ['damping', () => setV('damping', 5)],
-    ['pure harmonic', () => page.click('#bow-btn')],
-    ['pluck button', () => page.click('#pluck-btn')],
+    ['slow', () => setV('slow', 4)],
   ];
   let before = await sig();
   for (const [name, act] of acts) {
@@ -254,7 +256,21 @@ const MK = `const S = window.__sw;
     if (after === before) dead.push(name);
     before = after;
   }
-  chk('no dead controls', dead.length===0, dead.join(','));
+  chk('every slider changes the model it claims to', dead.length===0, dead.join(','));
+
+  // The two buttons change no parameter — they restart the string, which
+  // `clear()` records by putting the clock back to zero. That is the effect,
+  // so that is what is checked.
+  await page.evaluate(() => window.__sw.setRunning(true));
+  const restarts = [];
+  for (const [name, sel] of [['pure harmonic', '#bow-btn'], ['pluck button', '#pluck-btn']]) {
+    await page.waitForTimeout(400);
+    const t0 = await page.evaluate(() => window.__sw.simTime());
+    await page.click(sel);
+    const t1 = await page.evaluate(() => window.__sw.simTime());
+    if (!(t0 > 0 && t1 < t0)) restarts.push(`${name} (${t0.toFixed(4)} → ${t1.toFixed(4)})`);
+  }
+  chk('and both buttons restart the string', restarts.length===0, restarts.join(', '));
   await page.click('#reset-btn'); await page.waitForTimeout(250);
 }
 {

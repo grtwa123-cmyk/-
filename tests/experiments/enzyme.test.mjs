@@ -355,7 +355,18 @@ await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
       (await page.evaluate(()=>!!document.querySelector('#inhibitor-list .mol-btn[data-key="none"].active'))), '');
 }
 {
-  const shot = async () => (await page.locator('#stage').screenshot()).toString('base64');
+  // The molecules move every frame, so comparing screenshots proved a control
+  // alive whatever it did — a deliberately dead entry planted in this list
+  // passed. Freeze the simulation and hold each control to the model.
+  await page.evaluate(() => window.__mm.setRunning(false));
+  const sig = async () => {
+    await page.waitForTimeout(140);
+    return page.evaluate(() => {
+      const p = window.__mm.params(), a = window.__mm.apparent(p);
+      return JSON.stringify([p.S, p.Km, p.kcat, p.nE, p.i, p.type,
+        p.kOff, p.Et, p.Vmax, a.Km, a.Vmax]);
+    });
+  };
   const dead = [];
   const acts = [
     ['substrate', () => setV('substrate', 200)],
@@ -364,13 +375,27 @@ await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
     ['enzymes', () => setV('enzymes', 22)],
     ['inhibitor', () => page.click('#inhibitor-list .mol-btn[data-key="noncompetitive"]')],
     ['iratio', () => setV('iratio', 4)],
-    ['lineweaver–burk', () => page.click('#lb-on')],
   ];
+  let before = await sig();
   for (const [name, act] of acts) {
-    const b = await shot(); await act(); await page.waitForTimeout(320);
-    if (await shot() === b) dead.push(name);
+    await act();
+    const after = await sig();
+    if (after === before) dead.push(name);
+    before = after;
   }
-  chk('no dead controls', dead.length===0, dead.join(','));
+  chk('every control changes the model it claims to', dead.length===0, dead.join(','));
+
+  // Lineweaver–Burk is purely a drawing choice, so it is the one that has to
+  // be checked in pixels — on a frozen frame, where the only thing that can
+  // differ is the plot it swaps.
+  await page.waitForTimeout(250);
+  const off = (await page.locator('#stage').screenshot()).toString('base64');
+  await page.click('#lb-on');
+  await page.waitForTimeout(250);
+  const on = (await page.locator('#stage').screenshot()).toString('base64');
+  chk('the Lineweaver–Burk toggle actually swaps the plot', off !== on,
+      `${off.length} vs ${on.length} bytes, frozen frame`);
+  await page.evaluate(() => window.__mm.setRunning(true));
   await page.click('#lb-on'); await page.click('#reset-btn'); await page.waitForTimeout(250);
 }
 {
