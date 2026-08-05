@@ -47,6 +47,8 @@
     series:     document.getElementById("out-series"),
     lines:      document.getElementById("out-lines"),
   };
+  const measureBtn = document.getElementById("measure-btn");
+  const outRydberg = document.getElementById("out-rydberg");
   const exciteBtn = document.getElementById("excite-btn");
   const resetBtn  = document.getElementById("reset-btn");
   const clearBtn  = document.getElementById("clear-btn");
@@ -58,15 +60,40 @@
 
   // ── Physical constants ─────────────────────────────────────────────────
   const R_H = 1.0967758e7;      // m⁻¹, hydrogen (reduced-mass corrected)
-  const E_RYD = 13.605693;      // eV, −E₁
   const HC = 1239.841984;       // eV·nm  (= h·c)
+  // The ladder and the lines have to be the same physics. This used to be
+  // typed as 13.605693 eV, which is R_∞ — the infinite-mass value — while the
+  // wavelengths came from R_H. The two disagreed by 0.055%: the page drew one
+  // hydrogen and emitted from another. Derived from R_H it is 13.598287 eV,
+  // hydrogen's actual ionisation energy, and the ladder now reproduces the
+  // Rydberg wavelengths exactly because they are the same statement.
+  const E_RYD = HC * R_H * 1e-9;   // eV, −E₁
   const C_LIGHT = 299792458;    // m/s
   const N_MAX = 8;              // highest shell drawn
 
   const energyOf = (n) => -E_RYD / (n * n);
-  // Vacuum wavelength in nm for the jump n₂ → n₁.
-  const wavelengthOf = (n1, n2) => 1e9 / (R_H * (1 / (n1 * n1) - 1 / (n2 * n2)));
-  const photonEnergy = (n1, n2) => HC / wavelengthOf(n1, n2);
+  // The levels are the model; everything else follows from them. A jump
+  // releases the difference, and one photon carries it away. Written this way
+  // round, 1/λ = R(1/n₁² − 1/n₂²) is a consequence rather than the input —
+  // which is why R can be measured back out of the lines further down.
+  const photonEnergy = (n1, n2) => energyOf(n2) - energyOf(n1);
+  const wavelengthOf = (n1, n2) => HC / photonEnergy(n1, n2);
+
+  /**
+   * Rydberg's constant, fitted to whatever lines have actually been seen.
+   * 1/λ = R·(1/n₁² − 1/n₂²) is a straight line through the origin, so the
+   * slope is R — which is how Rydberg found it, from measured spectra,
+   * a quarter of a century before Bohr explained where it came from.
+   */
+  function fitRydberg(seen) {
+    let sxy = 0, sxx = 0, n = 0;
+    for (const rec of seen) {
+      const x = 1 / (rec.n1 * rec.n1) - 1 / (rec.n2 * rec.n2);
+      const y = 1e9 / rec.nm;                       // m⁻¹
+      sxy += x * y; sxx += x * x; n++;
+    }
+    return n >= 2 && sxx > 0 ? { R: sxy / sxx, n } : null;
+  }
 
   const SERIES = { 1: "lyman", 2: "balmer", 3: "paschen", 4: "brackett" };
   const seriesName = (n1) => {
@@ -108,6 +135,7 @@
   const photons = [];           // { x, y, vx, nm, life }
   const lines = new Map();      // "n2>n1" → { nm, n1, n2, count }
   let lastTransition = null;
+  let measuredR = null;
   let highlight = "all";
   let lastTs = performance.now();
   let raf = 0;
@@ -428,6 +456,9 @@
     let total = 0;
     for (const r of lines.values()) total += r.count;
     out.lines.textContent = String(total);
+    outRydberg.textContent = measuredR
+      ? measuredR.R.toExponential(6)
+      : (lines.size >= 2 ? "—" : "—");
   }
 
   function updateLabels() {
@@ -455,11 +486,23 @@
   clearBtn.addEventListener("click", () => {
     lines.clear();
     lastTransition = null;
+    measuredR = null;
     window.SFX?.tone({ freq: 320, dur: 0.08, type: "sine", gain: 0.1 });
     updateReadouts();
   });
+
+  // Fit Rydberg's constant to the lines this atom has actually emitted. It
+  // needs two distinct ones to have a slope at all, which is the honest
+  // failure mode: with a single line there is nothing to fit.
+  measureBtn.addEventListener("click", () => {
+    const fit = fitRydberg([...lines.values()]);
+    measuredR = fit;
+    updateReadouts();
+    window.SFX?.tone({ freq: fit ? 540 : 200, dur: 0.12, type: "sine", gain: 0.1 });
+  });
   resetBtn.addEventListener("click", () => {
     lines.clear();
+    measuredR = null;
     photons.length = 0;
     lastTransition = null;
     n = 1; target = 1; anim = 0; waiting = 0;
@@ -500,7 +543,35 @@
   window.addEventListener("resize", resizeCanvas);
 
   // Exposed purely so the test harness can assert the Rydberg wavelengths.
-  window.__spectra = { wavelengthOf, photonEnergy, energyOf, R_H };
+  // Exposed so the harness can hold the measurement against the closed form.
+  window.__spectra = {
+    wavelengthOf, photonEnergy, energyOf, fitRydberg, seriesName,
+    R_H, E_RYD, HC, N_MAX,
+    params: () => ({ level: parseInt(inputs.level.value, 10),
+                     speed: parseFloat(inputs.speed.value),
+                     auto: autoToggle.checked }),
+    lines: () => [...lines.values()],
+    measured: () => measuredR,
+    state: () => ({ n, target, anim }),
+    /** Run cascades headlessly and report the lines they produced. */
+    cascades(from, count) {
+      const seen = new Map();
+      const hops = [];
+      for (let c = 0; c < count; c++) {
+        let k = from, steps = 0;
+        while (k > 1) {
+          const to = 1 + Math.floor(Math.random() * (k - 1));
+          const key = k + ">" + to;
+          const rec = seen.get(key);
+          if (rec) rec.count++;
+          else seen.set(key, { nm: wavelengthOf(to, k), n1: to, n2: k, count: 1 });
+          k = to; steps++;
+        }
+        hops.push(steps);
+      }
+      return { lines: [...seen.values()], hops };
+    },
+  };
 
   resizeCanvas();
   updateLabels();
