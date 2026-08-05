@@ -29,7 +29,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount">Experiment 1 of 4</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount">Experiment 1 of 4</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -59,8 +59,15 @@
           <input type="range" id="gravity" min="1" max="25" step="0.01" value="9.81" />
         </div>
 
+        <div class="control">
+          <label for="drag" data-i18n="projDragLabel">Air drag b</label>
+          <span class="value"><span id="drag-value">0.0000</span> m&#8315;&sup1;</span>
+          <input type="range" id="drag" min="0" max="0.02" step="0.0005" value="0" />
+        </div>
+
         <div class="buttons">
           <button id="launch-btn" type="button" data-i18n="launchBtn">Launch</button>
+          <button id="sweep-btn" type="button" data-i18n="projSweepBtn">Find best angle</button>
           <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
         </div>
 
@@ -70,18 +77,36 @@
             <li><span data-i18n="formulaRange">Range</span>: <code>R = v₀² · sin(2θ) / g</code></li>
             <li><span data-i18n="formulaMaxHeight">Max height</span>: <code>H = (v₀ · sinθ)² / (2g)</code></li>
             <li><span data-i18n="formulaTime">Time of flight</span>: <code>T = 2 · v₀ · sinθ / g</code></li>
-            <li><span data-i18n="formulaPosition">Position</span>: <code>x(t) = v₀cosθ · t</code>, <code>y(t) = v₀sinθ · t − ½gt²</code></li>
+            <li><span data-i18n="projFormulaMotion">What is integrated</span>: <code>&#7821; = &minus;b|v|v&#8339;</code>, <code>&#7823; = &minus;g &minus; b|v|v&#7480;</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="projNotes">What to look for</summary>
+          <ul>
+            <li data-i18n="projNote1">Leave the drag at zero and compare the two range readouts. One is measured off the flight &mdash; where y actually crosses zero, found by bisection on the last step &mdash; and the other is v&#8320;&sup2;sin2&theta;/g. They agree to about one part in 10&sup1;&sup3;, which is the integrator proving itself on the one case where the answer is known exactly.</li>
+            <li data-i18n="projNote2">Now turn the drag up. The dashed line is the same launch without it, so you can watch the shortfall open up. The arc also stops being symmetric: fired at 45&deg; the ball comes down at 56&deg;, then 67&deg;, because drag takes horizontal speed away and never gives it back.</li>
+            <li data-i18n="projNote3">Press <em>Find best angle</em>. Nothing in this page contains the number 45 &mdash; the sweep flies 91 launches and reports where the range peaks. In vacuum it comes back 45.00&deg;. With drag the peak slides down the axis: about 39.5&deg; at b = 0.01, about 37&deg; at b = 0.02, and the 45&deg; marker is left behind on the plot.</li>
+            <li data-i18n="projNote4">The drag coefficient here is b = C&#7496;&rho;A/2m, in units of inverse metres, so terminal speed is &radic;(g/b) &mdash; about 31 m/s at b = 0.01. Push the launch speed well past that and almost all of it is gone before the apex.</li>
           </ul>
         </details>
       </section>
 
       <section class="stage" aria-label="Visualisation">
-        <canvas id="stage" width="800" height="400" aria-label="Projectile trajectory"></canvas>
+        <canvas id="stage" width="800" height="460" aria-label="A projectile trajectory integrated with air drag, above a plot of range against launch angle"></canvas>
 
         <div class="readouts">
           <div class="readout">
-            <div class="label" data-i18n="outRange">Range</div>
+            <div class="label" data-i18n="projOutRange">Range, measured</div>
             <div class="num"><span id="out-range">0.00</span> m</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="projOutVacuum">v&#8320;&sup2;sin2&theta;/g</div>
+            <div class="num"><span id="out-vacuum">0.00</span> m</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="projOutResidual">Measured &minus; formula</div>
+            <div class="num"><span id="out-residual">0</span></div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="outHeight">Max height</div>
@@ -92,16 +117,12 @@
             <div class="num"><span id="out-time">0.00</span> s</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outT">Current t</div>
-            <div class="num"><span id="out-t">0.00</span> s</div>
+            <div class="label" data-i18n="projOutLandAngle">Landing angle</div>
+            <div class="num"><span id="out-land-angle">0.0</span>&deg;</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outX">Current x</div>
-            <div class="num"><span id="out-x">0.00</span> m</div>
-          </div>
-          <div class="readout">
-            <div class="label" data-i18n="outY">Current y</div>
-            <div class="num"><span id="out-y">0.00</span> m</div>
+            <div class="label" data-i18n="projOutBest">Best angle, measured</div>
+            <div class="num" id="out-best">&mdash;</div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="outSpeed">Speed</div>

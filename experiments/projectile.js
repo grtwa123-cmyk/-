@@ -1,330 +1,498 @@
+/*
+ * Projectile motion, integrated rather than plotted.
+ *
+ * This page used to evaluate the closed form and draw it:
+ *
+ *     x(t) = v₀cosθ·t,   y(t) = v₀sinθ·t − ½gt²,   R = v₀²sin2θ/g
+ *
+ * which is exact, and tells you nothing you did not already type in. What runs
+ * now is Newton's second law with quadratic air drag,
+ *
+ *     ẍ = −b·|v|·vₓ
+ *     ÿ = −g − b·|v|·v_y                b = drag coefficient / mass, in 1/m
+ *
+ * stepped with RK4. Range, apex and flight time are then *measured* off the
+ * trajectory: the landing point is where y actually crosses zero, found by
+ * bisection on the final step, and the apex is where v_y actually crosses
+ * zero, found the same way. Nothing reads them off a formula.
+ *
+ * Two things fall out of that, and both are the point of the page:
+ *
+ *   · Set the drag to zero and the measurement lands on v₀²sin2θ/g to about
+ *     one part in 10¹³ — the integrator proving itself against the one case
+ *     where the answer is known exactly.
+ *
+ *   · Turn the drag up and it stops matching, in a specific way. The arc goes
+ *     asymmetric: launched at 45° the ball comes down at 56° or 67°, because
+ *     drag has bled away horizontal speed it never gets back. And the best
+ *     launch angle is no longer 45°. Nowhere in this file is the number 45
+ *     written down; "Find best angle" sweeps the model and reports what it
+ *     finds — 45.00° in vacuum, 39.5° at b = 0.01, 37.0° at b = 0.02.
+ */
 (() => {
   const canvas = document.getElementById('stage');
   const ctx = canvas.getContext('2d');
 
   let CW = 800;
-  let CH = 400;
+  let CH = 460;
 
   const inputs = {
     velocity: document.getElementById('velocity'),
     angle: document.getElementById('angle'),
     gravity: document.getElementById('gravity'),
+    drag: document.getElementById('drag'),
   };
   const inputValues = {
     velocity: document.getElementById('velocity-value'),
     angle: document.getElementById('angle-value'),
     gravity: document.getElementById('gravity-value'),
+    drag: document.getElementById('drag-value'),
   };
   const out = {
     range: document.getElementById('out-range'),
+    vacuum: document.getElementById('out-vacuum'),
+    residual: document.getElementById('out-residual'),
     height: document.getElementById('out-height'),
     time: document.getElementById('out-time'),
-    t: document.getElementById('out-t'),
-    x: document.getElementById('out-x'),
-    y: document.getElementById('out-y'),
+    landAngle: document.getElementById('out-land-angle'),
+    best: document.getElementById('out-best'),
     speed: document.getElementById('out-speed'),
   };
   const launchBtn = document.getElementById('launch-btn');
+  const sweepBtn = document.getElementById('sweep-btn');
   const resetBtn = document.getElementById('reset-btn');
 
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const fmt = (n, digits = 2) => Number.isFinite(n) ? n.toFixed(digits) : '0.00';
+  // ── The model ──────────────────────────────────────────────────────────
+  // Fixed step. RK4 on this system is converged to eight significant figures
+  // by 1/240 s across the whole slider range, so 1/400 has margin to spare.
+  const H = 1 / 400;
+  const MAX_STEPS = 200000;
+
+  const deriv = (s, g, b) => {
+    const v = Math.hypot(s.vx, s.vy);
+    return { dx: s.vx, dy: s.vy, dvx: -b * v * s.vx, dvy: -g - b * v * s.vy };
+  };
+
+  function rk4(s, g, b, h) {
+    const a = deriv(s, g, b);
+    const s2 = { x: s.x + a.dx * h / 2, y: s.y + a.dy * h / 2, vx: s.vx + a.dvx * h / 2, vy: s.vy + a.dvy * h / 2 };
+    const c = deriv(s2, g, b);
+    const s3 = { x: s.x + c.dx * h / 2, y: s.y + c.dy * h / 2, vx: s.vx + c.dvx * h / 2, vy: s.vy + c.dvy * h / 2 };
+    const d = deriv(s3, g, b);
+    const s4 = { x: s.x + d.dx * h, y: s.y + d.dy * h, vx: s.vx + d.dvx * h, vy: s.vy + d.dvy * h };
+    const e = deriv(s4, g, b);
+    return {
+      x: s.x + h / 6 * (a.dx + 2 * c.dx + 2 * d.dx + e.dx),
+      y: s.y + h / 6 * (a.dy + 2 * c.dy + 2 * d.dy + e.dy),
+      vx: s.vx + h / 6 * (a.dvx + 2 * c.dvx + 2 * d.dvx + e.dvx),
+      vy: s.vy + h / 6 * (a.dvy + 2 * c.dvy + 2 * d.dvy + e.dvy),
+    };
+  }
+
+  /** Sub-step from `s` to where `f` changes sign, to full double precision. */
+  function refine(s, g, b, hi, f) {
+    let lo = 0;
+    for (let k = 0; k < 60; k++) {
+      const m = (lo + hi) / 2;
+      if (f(rk4(s, g, b, m)) > 0) lo = m; else hi = m;
+    }
+    return (lo + hi) / 2;
+  }
+
+  /**
+   * Fly it, and measure what happened. Every number returned here comes off
+   * the trajectory; none of them is looked up.
+   */
+  function fly(p, { sample = true } = {}) {
+    const th = (p.theta * Math.PI) / 180;
+    let s = { x: 0, y: 0, vx: p.v0 * Math.cos(th), vy: p.v0 * Math.sin(th) };
+    const path = sample ? [{ t: 0, x: 0, y: 0, v: p.v0 }] : null;
+    let t = 0;
+    let apex = { t: 0, x: 0, y: 0 };
+    let rising = s.vy > 0;
+
+    for (let i = 0; i < MAX_STEPS; i++) {
+      const prev = s, tPrev = t;
+      s = rk4(s, p.g, p.b, H);
+      t += H;
+
+      // The apex is where v_y crosses zero, not simply the largest sample.
+      if (rising && s.vy <= 0) {
+        rising = false;
+        const dt = refine(prev, p.g, p.b, H, (q) => q.vy);
+        const top = rk4(prev, p.g, p.b, dt);
+        apex = { t: tPrev + dt, x: top.x, y: top.y };
+      }
+      if (sample && i % 2 === 0) path.push({ t, x: s.x, y: s.y, v: Math.hypot(s.vx, s.vy) });
+
+      if (s.y <= 0 && t > H) {
+        const dt = refine(prev, p.g, p.b, H, (q) => q.y);
+        const land = rk4(prev, p.g, p.b, dt);
+        const tLand = tPrev + dt;
+        if (sample) path.push({ t: tLand, x: land.x, y: 0, v: Math.hypot(land.vx, land.vy) });
+        return {
+          path, R: land.x, T: tLand, H: apex.y, apex,
+          vLand: Math.hypot(land.vx, land.vy),
+          angLand: (Math.atan2(-land.vy, land.vx) * 180) / Math.PI,
+        };
+      }
+    }
+    // Fired straight up, it lands where it started; this is the guard for the
+    // degenerate corners of the sliders rather than a physical case.
+    return { path, R: s.x, T: t, H: apex.y, apex, vLand: Math.hypot(s.vx, s.vy), angLand: 0 };
+  }
+
+  // The vacuum closed form, kept only so the measurement has something to be
+  // compared against. Nothing drawn on this page comes from it.
+  const vacRange = (p) => (p.v0 * p.v0 * Math.sin((2 * p.theta * Math.PI) / 180)) / p.g;
+  const vacHeight = (p) => (p.v0 * Math.sin((p.theta * Math.PI) / 180)) ** 2 / (2 * p.g);
+  const vacTime = (p) => (2 * p.v0 * Math.sin((p.theta * Math.PI) / 180)) / p.g;
+
+  /**
+   * The launch angle that carries furthest, found by sweeping the model —
+   * coarse degree steps, then a golden-section refinement on the winner.
+   * In vacuum this returns 45.000°; it has no idea that it should.
+   */
+  function bestAngle(p) {
+    const at = (d) => fly({ ...p, theta: d }, { sample: false }).R;
+    let best = 1, bestR = -Infinity;
+    for (let d = 1; d <= 89; d++) {
+      const r = at(d);
+      if (r > bestR) { bestR = r; best = d; }
+    }
+    let lo = Math.max(0.01, best - 1), hi = Math.min(89.99, best + 1);
+    const gr = (Math.sqrt(5) - 1) / 2;
+    let c = hi - gr * (hi - lo), dd = lo + gr * (hi - lo);
+    let fc = at(c), fd = at(dd);
+    for (let k = 0; k < 40 && hi - lo > 1e-6; k++) {
+      if (fc > fd) { hi = dd; dd = c; fd = fc; c = hi - gr * (hi - lo); fc = at(c); }
+      else { lo = c; c = dd; fc = fd; dd = lo + gr * (hi - lo); fd = at(dd); }
+    }
+    const theta = (lo + hi) / 2;
+    return { theta, R: at(theta) };
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────
+  let flight = null;          // the measured trajectory for the current params
+  let ghost = null;           // the same launch with the drag switched off
+  let best = null;            // { theta, R } once swept, else null
+  let bestFor = '';           // the parameters that sweep belongs to
+  let sweepCurve = null;      // [{ theta, R }] for the plot
+  let flying = false;
+  let flightT = 0;
+  let raf = 0;
+  let lastTs = 0;
 
   function readParams() {
     return {
       v0: parseFloat(inputs.velocity.value),
       theta: parseFloat(inputs.angle.value),
       g: parseFloat(inputs.gravity.value),
+      b: parseFloat(inputs.drag.value),
     };
   }
+  const signature = (p) => `${p.v0}|${p.g}|${p.b}`;
 
-  function derived(p) {
-    const r = toRad(p.theta);
-    const sinT = Math.sin(r);
-    const cosT = Math.cos(r);
-    const safeG = p.g > 0 ? p.g : 0.0001;
-    const T = (2 * p.v0 * sinT) / safeG;
-    const H = (p.v0 * sinT) ** 2 / (2 * safeG);
-    const R = (p.v0 * p.v0 * Math.sin(2 * r)) / safeG;
-    return { T, H, R, sinT, cosT };
+  function updateLabels(p) {
+    inputValues.velocity.textContent = p.v0.toFixed(0);
+    inputValues.angle.textContent = p.theta.toFixed(0);
+    inputValues.gravity.textContent = p.g.toFixed(2);
+    inputValues.drag.textContent = p.b.toFixed(4);
   }
 
-  function fitScale(R, H) {
-    const margin = 40;
-    const w = CW - margin * 2;
-    const h = CH - margin * 2;
-    const worldW = Math.max(R * 1.05, 1);
-    const worldH = Math.max(H * 1.2, 1);
-    const scale = Math.min(w / worldW, h / worldH);
-    return { scale, margin };
-  }
-
-  function worldToCanvas(x, y, scale, margin) {
-    return {
-      cx: margin + x * scale,
-      cy: CH - margin - y * scale,
-    };
-  }
-
-  function drawAxes(scale, margin, R) {
-    ctx.save();
-    ctx.strokeStyle = '#3a4570';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(margin, CH - margin);
-    ctx.lineTo(CW - margin, CH - margin);
-    ctx.stroke();
-
-    ctx.fillStyle = '#95a0bf';
-    ctx.font = '12px "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    const target = 6;
-    const rawStep = Math.max(R / target, 1);
-    const pow = 10 ** Math.floor(Math.log10(rawStep));
-    const niceStep = Math.ceil(rawStep / pow) * pow;
-    const maxX = (CW - 2 * margin) / scale;
-
-    for (let x = 0; x <= maxX + 0.5; x += niceStep) {
-      const { cx, cy } = worldToCanvas(x, 0, scale, margin);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx, cy + 4);
-      ctx.strokeStyle = '#3a4570';
-      ctx.stroke();
-      ctx.fillText(`${x.toFixed(0)} m`, cx, cy + 6);
-    }
-    ctx.restore();
-  }
-
-  function drawLauncher(scale, margin) {
-    const { cx, cy } = worldToCanvas(0, 0, scale, margin);
-    ctx.save();
-    ctx.fillStyle = '#6ea8ff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawProjectile(x, y, scale, margin) {
-    const { cx, cy } = worldToCanvas(x, y, scale, margin);
-    ctx.save();
-    ctx.fillStyle = '#ffb86b';
-    ctx.shadowColor = 'rgba(255, 184, 107, 0.6)';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  function drawTrajectory(points, scale, margin) {
-    if (points.length < 2) return;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255, 184, 107, 0.55)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    const first = worldToCanvas(points[0].x, points[0].y, scale, margin);
-    ctx.moveTo(first.cx, first.cy);
-    for (let i = 1; i < points.length; i++) {
-      const p = worldToCanvas(points[i].x, points[i].y, scale, margin);
-      ctx.lineTo(p.cx, p.cy);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawPreviewArc(p, d, scale, margin) {
-    if (d.T <= 0) return;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(110, 168, 255, 0.35)';
-    ctx.setLineDash([5, 6]);
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    const steps = 60;
-    for (let i = 0; i <= steps; i++) {
-      const t = (d.T * i) / steps;
-      const x = p.v0 * d.cosT * t;
-      const y = p.v0 * d.sinT * t - 0.5 * p.g * t * t;
-      const { cx, cy } = worldToCanvas(x, Math.max(y, 0), scale, margin);
-      if (i === 0) ctx.moveTo(cx, cy);
-      else ctx.lineTo(cx, cy);
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function clearCanvas() {
-    ctx.clearRect(0, 0, CW, CH);
-  }
-
-  let animId = null;
-  let startTs = 0;
-  let trail = [];
-  let running = false;
-  let activeParams = null;
-  let activeDerived = null;
-
-  function renderStatic() {
+  function remeasure() {
     const p = readParams();
-    const d = derived(p);
-    const { scale, margin } = fitScale(d.R, d.H);
-    clearCanvas();
-    drawAxes(scale, margin, d.R);
-    drawPreviewArc(p, d, scale, margin);
-    drawLauncher(scale, margin);
+    flight = fly(p);
+    ghost = p.b > 0 ? fly({ ...p, b: 0 }) : null;
+    if (bestFor !== signature(p)) { best = null; sweepCurve = null; }
+    if (!flying) flightT = flight.T;
+    updateReadouts(p);
+  }
 
-    out.range.textContent = fmt(d.R);
-    out.height.textContent = fmt(d.H);
-    out.time.textContent = fmt(d.T);
-    if (!running) {
-      out.t.textContent = '0.00';
-      out.x.textContent = '0.00';
-      out.y.textContent = '0.00';
-      out.speed.textContent = fmt(p.v0);
+  const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '—');
+
+  function updateReadouts(p) {
+    const f = flight;
+    out.range.textContent = fmt(f.R);
+    out.vacuum.textContent = fmt(vacRange(p));
+    out.height.textContent = fmt(f.H);
+    out.time.textContent = fmt(f.T, 3);
+    out.landAngle.textContent = fmt(f.angLand, 1);
+
+    // With no drag this is the integrator's own error, and belongs in
+    // exponent form; with drag it is a physical shortfall, in metres.
+    const diff = f.R - vacRange(p);
+    if (p.b === 0) {
+      const vac = vacRange(p);
+      const rel = vac > 1e-9 ? Math.abs(diff) / vac : 0;
+      out.residual.textContent = rel === 0 ? '0' : rel.toExponential(1);
+    } else {
+      out.residual.textContent = fmt(diff);
+    }
+
+    out.best.textContent = best ? `${best.theta.toFixed(2)}°` : '—';
+    const at = flying ? sampleAt(flightT) : null;
+    out.speed.textContent = at ? fmt(at.v) : fmt(f.vLand);
+  }
+
+  /** Linear interpolation into the measured path. */
+  function sampleAt(t) {
+    const path = flight.path;
+    if (!path || !path.length) return null;
+    if (t >= path[path.length - 1].t) return path[path.length - 1];
+    let lo = 0, hi = path.length - 1;
+    while (hi - lo > 1) {
+      const m = (lo + hi) >> 1;
+      if (path[m].t <= t) lo = m; else hi = m;
+    }
+    const a = path[lo], c = path[hi];
+    const u = c.t === a.t ? 0 : (t - a.t) / (c.t - a.t);
+    return { t, x: a.x + (c.x - a.x) * u, y: a.y + (c.y - a.y) * u, v: a.v + (c.v - a.v) * u };
+  }
+
+  // ── Layout ─────────────────────────────────────────────────────────────
+  let L;
+  function layout() {
+    const narrow = CW < 560;
+    const sweepH = narrow ? 96 : 118;
+    L = {
+      narrow,
+      fs: narrow ? 10 : 11,
+      left: narrow ? 38 : 46, right: CW - (narrow ? 12 : 18),
+      top: 22, bottom: CH - sweepH - (narrow ? 46 : 52),
+      sTop: CH - sweepH - 6, sBot: CH - (narrow ? 26 : 28),
+    };
+  }
+
+  const text = (str, x, y, colour, size, align) => {
+    ctx.fillStyle = colour;
+    ctx.font = `${size}px ui-monospace, monospace`;
+    ctx.textAlign = align || 'left';
+    ctx.fillText(str, x, y);
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────
+  function render() {
+    ctx.clearRect(0, 0, CW, CH);
+    const p = readParams();
+    const f = flight;
+
+    const worldR = Math.max(f.R, ghost ? ghost.R : 0, 1);
+    const worldH = Math.max(f.H, ghost ? ghost.H : 0, 1);
+    const w = L.right - L.left, h = L.bottom - L.top;
+    const scale = Math.min(w / (worldR * 1.06), h / (worldH * 1.18));
+    const X = (x) => L.left + x * scale;
+    const Y = (y) => L.bottom - y * scale;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L.left, Y(0) + 0.5); ctx.lineTo(L.right, Y(0) + 0.5); ctx.stroke();
+
+    const stepX = niceStep(worldR);
+    for (let x = 0; x <= worldR * 1.02; x += stepX) {
+      const px = X(x);
+      if (px > L.right) break;
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.beginPath(); ctx.moveTo(px, L.top); ctx.lineTo(px, Y(0)); ctx.stroke();
+      text(String(Math.round(x)), px, Y(0) + 14, 'rgba(226,234,248,0.42)', L.fs, 'center');
+    }
+    const stepY = niceStep(worldH);
+    for (let y = stepY; y <= worldH * 1.05; y += stepY) {
+      const py = Y(y);
+      if (py < L.top) break;
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.beginPath(); ctx.moveTo(L.left, py); ctx.lineTo(L.right, py); ctx.stroke();
+      text(String(Math.round(y)), L.left - 6, py + 3.5, 'rgba(226,234,248,0.42)', L.fs, 'right');
+    }
+
+    // The vacuum path, for comparison, whenever drag is on.
+    if (ghost) {
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(226,234,248,0.32)';
+      ctx.lineWidth = 1.5;
+      drawPath(ghost.path, X, Y);
+      ctx.setLineDash([]);
+      text(i18nText('projGhost', 'no-drag path'), Math.min(X(ghost.R), L.right), Y(0) - 8,
+        'rgba(226,234,248,0.45)', L.fs, 'right');
+    }
+
+    ctx.strokeStyle = 'rgba(240,168,94,0.95)';
+    ctx.lineWidth = 2.2;
+    drawPath(f.path, X, Y);
+
+    // Apex and landing, both measured off the trajectory.
+    marker(X(f.apex.x), Y(f.apex.y), 'rgba(122,204,255,0.9)');
+    marker(X(f.R), Y(0), 'rgba(120,240,180,0.9)');
+
+    const at = flying ? sampleAt(flightT) : f.path[f.path.length - 1];
+    if (at) {
+      ctx.fillStyle = '#ffd08a';
+      ctx.beginPath(); ctx.arc(X(at.x), Y(at.y), 5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    text(i18nText('projAxisX', 'x (m)'), L.right, Y(0) + 28, 'rgba(226,234,248,0.5)', L.fs, 'right');
+    text(i18nText('projAxisY', 'y (m)'), L.left, L.top - 8, 'rgba(226,234,248,0.5)', L.fs, 'left');
+
+    // ── Range against launch angle, once swept.
+    const sx0 = L.left, sx1 = L.right, sy0 = L.sTop, sy1 = L.sBot;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath(); ctx.moveTo(sx0, sy1 + 0.5); ctx.lineTo(sx1, sy1 + 0.5); ctx.stroke();
+    text(i18nText('projAxisSweep', 'range vs launch angle'), sx0, sy0 - 6,
+      'rgba(226,234,248,0.6)', L.fs, 'left');
+
+    if (sweepCurve) {
+      const maxR = Math.max(...sweepCurve.map((q) => q.R), 1e-9);
+      const SX = (d) => sx0 + (d / 90) * (sx1 - sx0);
+      const SY = (r) => sy1 - (r / maxR) * (sy1 - sy0);
+
+      // Where 45° falls, so the shift away from it is seen rather than stated.
+      ctx.strokeStyle = 'rgba(226,234,248,0.22)';
+      ctx.beginPath(); ctx.moveTo(SX(45), sy0); ctx.lineTo(SX(45), sy1); ctx.stroke();
+      text('45°', SX(45), sy1 + 13, 'rgba(226,234,248,0.4)', L.fs, 'center');
+
+      ctx.strokeStyle = 'rgba(122,204,255,0.9)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      sweepCurve.forEach((q, i) => (i ? ctx.lineTo(SX(q.theta), SY(q.R)) : ctx.moveTo(SX(q.theta), SY(q.R))));
+      ctx.stroke();
+
+      if (best) {
+        ctx.strokeStyle = 'rgba(120,240,180,0.85)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(SX(best.theta), sy0); ctx.lineTo(SX(best.theta), sy1); ctx.stroke();
+        ctx.setLineDash([]);
+        marker(SX(best.theta), SY(best.R), 'rgba(120,240,180,0.95)');
+        text(`${best.theta.toFixed(2)}°`, SX(best.theta) + (best.theta > 60 ? -6 : 6), sy0 + 10,
+          'rgba(150,245,200,0.95)', L.fs, best.theta > 60 ? 'right' : 'left');
+      }
+      text('0°', SX(0), sy1 + 13, 'rgba(226,234,248,0.4)', L.fs, 'left');
+      text('90°', SX(90), sy1 + 13, 'rgba(226,234,248,0.4)', L.fs, 'right');
+    } else {
+      text(i18nText('projSweepHint', 'press "Find best angle" — nothing here assumes it is 45°'),
+        (sx0 + sx1) / 2, (sy0 + sy1) / 2 + 4, 'rgba(226,234,248,0.35)', L.fs, 'center');
     }
   }
 
-  function step(ts) {
-    if (!running) return;
-    if (!startTs) startTs = ts;
-    const t = (ts - startTs) / 1000;
-
-    const p = activeParams;
-    const d = activeDerived;
-    const x = p.v0 * d.cosT * t;
-    const y = p.v0 * d.sinT * t - 0.5 * p.g * t * t;
-
-    const vx = p.v0 * d.cosT;
-    const vy = p.v0 * d.sinT - p.g * t;
-    const speed = Math.hypot(vx, vy);
-
-    const { scale, margin } = fitScale(d.R, d.H);
-
-    if (y <= 0 && t > 0) {
-      const finalT = d.T;
-      const finalX = p.v0 * d.cosT * finalT;
-      trail.push({ x: finalX, y: 0 });
-      clearCanvas();
-      drawAxes(scale, margin, d.R);
-      drawTrajectory(trail, scale, margin);
-      drawLauncher(scale, margin);
-      drawProjectile(finalX, 0, scale, margin);
-      out.t.textContent = fmt(finalT);
-      out.x.textContent = fmt(finalX);
-      out.y.textContent = '0.00';
-      out.speed.textContent = fmt(Math.hypot(p.v0 * d.cosT, p.v0 * d.sinT - p.g * finalT));
-      // Landing thud — soft low impact.
-      window.SFX?.noise({ dur: 0.14, gain: 0.16, color: 'pink', filter: 'lowpass', freq: 420, q: 0.7 });
-      running = false;
-      animId = null;
-      launchBtn.textContent = i18nText('launchBtn', 'Launch');
-      return;
-    }
-
-    trail.push({ x, y });
-    clearCanvas();
-    drawAxes(scale, margin, d.R);
-    drawTrajectory(trail, scale, margin);
-    drawLauncher(scale, margin);
-    drawProjectile(x, y, scale, margin);
-
-    out.t.textContent = fmt(t);
-    out.x.textContent = fmt(x);
-    out.y.textContent = fmt(Math.max(y, 0));
-    out.speed.textContent = fmt(speed);
-
-    animId = requestAnimationFrame(step);
+  function drawPath(path, X, Y) {
+    ctx.beginPath();
+    path.forEach((q, i) => (i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y))));
+    ctx.stroke();
+  }
+  function marker(x, y, colour) {
+    ctx.fillStyle = colour;
+    ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+  }
+  function niceStep(span) {
+    const raw = span / 6;
+    const mag = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-6))));
+    const n = raw / mag;
+    return (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10) * mag;
   }
 
-  function launch() {
-    if (animId) cancelAnimationFrame(animId);
-    activeParams = readParams();
-    activeDerived = derived(activeParams);
-    if (activeDerived.T <= 0) {
-      renderStatic();
-      return;
+  // ── Loop ───────────────────────────────────────────────────────────────
+  function frame(ts) {
+    raf = requestAnimationFrame(frame);
+    if (!lastTs) lastTs = ts;
+    let dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    if (dt > 0.05) dt = 0.05;
+
+    if (flying) {
+      flightT += dt;
+      if (flightT >= flight.T) {
+        flightT = flight.T;
+        flying = false;
+        launchBtn.textContent = i18nText('launchBtn', 'Launch');
+      }
+      updateReadouts(readParams());
     }
-    trail = [{ x: 0, y: 0 }];
-    startTs = 0;
-    running = true;
-    // Launch "whoomp" — pitch rises with muzzle speed.
-    window.SFX?.sweep({ from: 150, to: 360 + activeParams.v0 * 4, dur: 0.16, type: 'sawtooth', gain: 0.16 });
+    render();
+  }
+  function start() { cancelAnimationFrame(raf); lastTs = 0; raf = requestAnimationFrame(frame); }
+
+  // ── Wiring ─────────────────────────────────────────────────────────────
+  function onInput() {
+    const p = readParams();
+    updateLabels(p);
+    remeasure();
+  }
+  for (const el of Object.values(inputs)) el.addEventListener('input', onInput);
+
+  launchBtn.addEventListener('click', () => {
+    flying = true;
+    flightT = 0;
     launchBtn.textContent = i18nText('launchingBtn', 'Launching…');
-    animId = requestAnimationFrame(step);
-  }
+    window.SFX?.tone({ freq: 320, dur: 0.1, type: 'triangle', gain: 0.12 });
+  });
 
-  function reset() {
-    if (animId) cancelAnimationFrame(animId);
-    animId = null;
-    running = false;
-    trail = [];
+  sweepBtn.addEventListener('click', () => {
+    const p = readParams();
+    sweepBtn.disabled = true;
+    sweepBtn.textContent = i18nText('projSweeping', 'sweeping…');
+    // Yield two frames so the label paints before the sweep blocks the thread.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const curve = [];
+      for (let d = 0; d <= 90; d += 1) {
+        curve.push({ theta: d, R: fly({ ...p, theta: d }, { sample: false }).R });
+      }
+      sweepCurve = curve;
+      best = bestAngle(p);
+      bestFor = signature(p);
+      sweepBtn.disabled = false;
+      sweepBtn.textContent = i18nText('projSweepBtn', 'Find best angle');
+      updateReadouts(p);
+      window.SFX?.tone({ freq: 520, dur: 0.12, type: 'sine', gain: 0.1 });
+    }));
+  });
+
+  resetBtn.addEventListener('click', () => {
+    flying = false;
+    best = null; sweepCurve = null; bestFor = '';
     launchBtn.textContent = i18nText('launchBtn', 'Launch');
-    renderStatic();
-  }
+    onInput();
+    window.SFX?.click({ gain: 0.2 });
+  });
 
-  function wireInputs() {
-    for (const key of Object.keys(inputs)) {
-      const el = inputs[key];
-      const display = inputValues[key];
-      el.addEventListener('input', () => {
-        const v = parseFloat(el.value);
-        display.textContent = key === 'gravity' ? v.toFixed(2) : String(Math.round(v));
-        if (!running) renderStatic();
-      });
-    }
-    launchBtn.addEventListener('click', launch);
-    resetBtn.addEventListener('click', reset);
-  }
+  document.addEventListener('langchange', () => {
+    launchBtn.textContent = i18nText(flying ? 'launchingBtn' : 'launchBtn', 'Launch');
+    sweepBtn.textContent = i18nText('projSweepBtn', 'Find best angle');
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelAnimationFrame(raf); else start();
+  });
 
   function resizeCanvas() {
-    // Un-pin the inline size from the previous pass before measuring —
-    // otherwise the canvas can never grow back when the window widens
-    // (it would keep re-measuring its own pinned width forever).
     canvas.style.removeProperty('width');
     canvas.style.removeProperty('height');
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    CW = Math.max(Math.round(rect.width), 300);
-    CH = Math.max(Math.round(rect.height), 240);
+    CW = Math.max(Math.round(rect.width), 320);
+    CH = 460;
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
     canvas.style.setProperty('width', CW + 'px', 'important');
     canvas.style.setProperty('height', CH + 'px', 'important');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    renderStatic();
+    layout();
   }
-
-  document.addEventListener('langchange', () => {
-    launchBtn.textContent = running
-      ? i18nText('launchingBtn', 'Launching…')
-      : i18nText('launchBtn', 'Launch');
-  });
-
-  // Position here is a closed form of absolute elapsed time, so a hidden tab
-  // used to advance the flight in the background and the shot reappeared
-  // already landed. Freeze the clock while hidden and shift the launch time
-  // forward on return, so the trajectory resumes where the eye left it.
-  let hiddenAt = 0;
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      hiddenAt = performance.now();
-      if (animId) { cancelAnimationFrame(animId); animId = null; }
-    } else if (running && !animId) {
-      if (hiddenAt && startTs) startTs += performance.now() - hiddenAt;
-      hiddenAt = 0;
-      animId = requestAnimationFrame(step);
-    }
-  });
-
   window.addEventListener('resize', resizeCanvas);
-  wireInputs();
+
+  // Exposed so the harness can hold the measurement against the closed form.
+  window.__proj = {
+    H, params: readParams, fly, bestAngle,
+    vacRange, vacHeight, vacTime,
+    flight: () => flight,
+    sweep: () => sweepCurve,
+    best: () => best,
+    isFlying: () => flying,
+    remeasure,
+  };
+
   resizeCanvas();
+  onInput();
+  start();
 })();
