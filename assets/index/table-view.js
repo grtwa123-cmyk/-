@@ -27,7 +27,8 @@ const METHOD_KEY = {
  * is actually on disk, so the claim can never outrun the evidence.
  */
 const VERIFIED = new Set([
-  "experiments/circuit.html", "experiments/diffraction.html", "experiments/enzyme.html",
+  "experiments/circuit.html", "experiments/diffraction.html", "experiments/electrolysis.html",
+  "experiments/enzyme.html",
   "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
   "experiments/pendulum.html", "experiments/phases.html", "experiments/photoelectric.html",
   "experiments/projectile.html",

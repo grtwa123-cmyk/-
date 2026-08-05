@@ -40,15 +40,15 @@ so where it is **not** true, which is why the last two rows exist.
 
 | Badge | What it means | Count |
 | --- | --- | --- |
-| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 15 |
+| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 16 |
 | **Integrated** | The equations of motion are stepped forward in time. What you see is where they go. | 8 |
-| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 5 |
+| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 4 |
 | **Real data** | A three-dimensional structure built from measured constants — geometry rather than simulation. | 4 |
 | **Solved** | The governing equation is solved numerically every frame, rather than pieced together from special cases. | 2 |
 | **Illustration** | An animation of the idea. There is no quantitative model behind it. | 2 |
 
 A separate **✓ Verified** mark means a dedicated suite holds that page's physics
-against its closed form on every commit — 14 of the 36 so far. It is not stored
+against its closed form on every commit — 15 of the 36 so far. It is not stored
 anywhere: `tests/method-badges.test.mjs` derives it from what is actually in
 `tests/experiments/`, and fails if a page claims it without one. The same suite
 requires any page badged **Measured** to expose a `window.__*` hook, because a
@@ -88,7 +88,7 @@ page that cannot be interrogated cannot support the claim.
 | **Acid–Base Titration** | Drip NaOH into HCl or acetic acid: exact charge-balance pH solver, live pH–V curve, buffer region, equivalence point, phenolphthalein colour change. |
 | **Ideal Gas & Kinetic Theory** | Particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT; drag the piston and ride the isotherm. |
 | **Radioactive Decay** | A grid of nuclei decays by pure per-nucleus chance and traces the exact exponential half-life curve N = N₀·2^(−t/T½); live activity and half-life markers. |
-| **Electrolysis of Water** | Above 1.23 V the cell runs and Faraday's laws fill the tubes: n(H₂)=Q/2F, n(O₂)=Q/4F — a live 2:1 volume ratio. |
+| **Electrolysis of Water** | Nothing divides the charge by 2F or 4F. Q = ∫I dt becomes moles of electrons, and then the half-reactions spend them — two at the cathode buy one H₂, four at the anode buy one O₂ — with the molecules counted as they are made, one bubble at a time. So the bubbles *are* the gas, the cathode visibly fizzing twice as fast, and 2 : 1 is a measurement that comes out at 2.000 rather than an consequence of the arithmetic. The counted moles track Q/2F to within one bubble. Faraday's first law is checkable too: the same 120 C makes the same gas whether it took 30 s or 240 s. |
 | **Reaction Rates & Collision Theory** | A+B→C only when the line-of-centres collision energy beats Ea; the measured per-collision success converges exactly to e^(−Ea/kT). |
 | **Chemical Equilibrium & Le Chatelier** | A + B ⇌ C by exact stochastic simulation, one reaction event at a time. K is never entered: it is measured from the counts once they settle and lands on k₊/k₋, because at equilibrium the two channels fire equally often — the derivation run forwards rather than asserted. The event counters show equilibrium is not the reaction stopping. Injecting A, moving the piston and heating all shift the position, and only temperature moves K itself; van 't Hoff comes out exact, slope −ΔH°/R and intercept ΔS°/R. The catalyst is the honest test: lower both barriers and equilibrium arrives over 50× sooner with K unchanged to twelve decimals. |
 | **Build an Atom** | Drag protons, neutrons, and electrons onto an atom: proton count names the element (H–Ne), electrons set the charge, neutrons make isotopes, with a real stable/unstable nuclide readout. |
@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 20 suites, 648 checks
+npm test                 # 21 suites, 675 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -153,7 +153,7 @@ port to collide with `npm run serve`.
 | `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
-| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `resonance`, `selection`, `spectra`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, the Rydberg constant fitted from emitted lines, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `circuit`, `diffraction`, `electrolysis`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `resonance`, `selection`, `spectra`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, the Rydberg constant fitted from emitted lines, Faraday's 2 : 1 counted out of the bubbles, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 

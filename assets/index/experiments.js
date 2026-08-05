@@ -50,7 +50,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "titrationTitle",   url: "experiments/titration.html",     cat: "Chemistry", tags: ["ACID", "PH"],           colors: ["#200a1c", "#f06ac0"], method: "solved", motif: "titration" },
   { titleKey: "gasTitle",         url: "experiments/gas.html",           cat: "Chemistry", tags: ["GAS", "KINETIC"],       colors: ["#231407", "#f0b060"], method: "measured", motif: "gas" },
   { titleKey: "decayTitle",       url: "experiments/decay.html",         cat: "Chemistry", tags: ["NUCLEAR", "HALF-LIFE"], colors: ["#0a1e14", "#6effc6"], method: "measured", motif: "decay" },
-  { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], method: "formula", motif: "electrolysis" },
+  { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], method: "measured", motif: "electrolysis" },
   { titleKey: "kinTitle",         url: "experiments/kinetics.html",      cat: "Chemistry", tags: ["ARRHENIUS", "RATE"],    colors: ["#22091a", "#ff8aa3"], method: "measured", motif: "kinetics" },
   { titleKey: "atomTitle",        url: "experiments/atom.html",          cat: "Chemistry", tags: ["ELEMENT", "ISOTOPE"],   colors: ["#0a1424", "#6ea8ff"], method: "model", motif: "atom" },
   { titleKey: "spectraTitle",     url: "experiments/spectra.html",       cat: "Chemistry", tags: ["QUANTUM", "SPECTRUM"],  colors: ["#12081f", "#ff5ea8"], method: "measured", motif: "spectra" },

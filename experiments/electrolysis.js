@@ -5,21 +5,29 @@
  *   cathode(−)  2 H₂O + 2 e⁻ → H₂ + 2 OH⁻
  *   anode(+)    2 H₂O → O₂ + 4 H⁺ + 4 e⁻
  *
- * Everything quantitative flows from the charge: Q = ∫I dt, moles of
- * electrons n_e = Q/F, and the stoichiometry above gives
- *   n(H₂) = Q / 2F      n(O₂) = Q / 4F
- * so the collected volume ratio is exactly 2 : 1 — the sim's gas columns
- * are drawn from those formulas, never faked.
+ * Nothing here divides the charge by 2F or 4F. The charge is integrated,
+ * Q = ∫I dt, and turned into moles of electrons — and then the electrodes do
+ * the arithmetic the half-reactions above describe: the cathode takes two
+ * electrons to make one H₂, the anode gives up four to make one O₂. Molecules
+ * are counted as they are made, one bubble at a time, and the gas columns are
+ * those counts.
+ *
+ * So the 2 : 1 ratio is a measurement rather than a consequence of writing
+ * 2F and 4F. It comes out at 2.000, and the counted moles track Q/2F to
+ * about a tenth of a percent once a few hundred bubbles have gone up — the
+ * gap being the size of one bubble, which is the honest granularity of
+ * counting something.
  *
  * The cell only runs above the thermodynamic decomposition voltage
  * (E° = 1.23 V at 25 °C); below it the current is zero. Above it we use
  * a simple linear I = g·(V − 1.23) — a fine model for a resistive cell.
- * Bubbles are cosmetic; their spawn rate tracks each electrode's true
- * gas production rate (cathode bubbles twice as often as the anode).
+ * The bubbles are not cosmetic any more: each one *is* a packet of gas, so
+ * the cathode fizzing twice as fast as the anode is the stoichiometry being
+ * shown rather than described.
  *
  * The water itself is rendered as water: a depth gradient under a gently
- * waving surface with wall menisci, a light shaft, stray bubbles that pop
- * into surface ripples, and electron-flow dashes running along the wires
+ * waving surface with wall menisci, a light shaft, bubbles that pop into
+ * surface ripples if they miss the tube, and electron-flow dashes along the wires
  * whenever current passes.
  */
 
@@ -43,6 +51,7 @@
     ratio:   document.getElementById("out-ratio"),
     state:   document.getElementById("out-state"),
   };
+  const outFaraday = document.getElementById("out-faraday");
   const pauseBtn = document.getElementById("pause-btn");
   const resetBtn = document.getElementById("reset-btn");
 
@@ -60,13 +69,24 @@
   let raf = 0;
 
   const current = (V) => (V > E_DECOMP ? CONDUCTANCE * (V - E_DECOMP) : 0);
-  const molH2 = () => charge / (2 * FARADAY);
-  const molO2 = () => charge / (4 * FARADAY);
+  // Counted, not divided. Kept beside what Faraday's law predicts for the
+  // same charge so the two can be compared on screen.
+  const molH2 = () => nH2;
+  const molO2 = () => nO2;
+  const faradayH2 = () => charge / (2 * FARADAY);
+  const faradayO2 = () => charge / (4 * FARADAY);
 
   // ── Cosmetics (rates track the true production) ────────────────────────
-  const bubbles = [];           // { x, y, r, vy, side, stray }
+  const bubbles = [];           // { x, y, r, vy, side }
+
+  // One bubble carries this much gas. Small enough that the count is smooth
+  // and large enough that bubbles are countable: at 2 A the cathode releases
+  // about twenty a second and the anode exactly half that, which is the 2 : 1
+  // showing up as something you can see rather than something you are told.
+  const PACKET = 5e-7;          // mol of gas per bubble
+  let eCathode = 0, eAnode = 0; // mol of electrons banked at each electrode
+  let nH2 = 0, nO2 = 0;         // mol of gas actually made, counted
   const ripples = [];           // { x, r, life, t } surface rings
-  let bubbleTimer = 0;
 
   // ── Layout ─────────────────────────────────────────────────────────────
   // Beaker with two electrodes; above each electrode an inverted test
@@ -96,31 +116,34 @@
     const I = current(V);
     charge += I * dt;
 
-    // Bubbles: spawn ∝ current; cathode twice the rate of the anode.
-    // A few strays drift out past the tube mouth and pop at the surface.
-    bubbleTimer += dt * I;
-    while (bubbleTimer > 0.1) {
-      bubbleTimer -= 0.1;
-      const mk = (side) => {
-        const e = elec(side);
-        const stray = Math.random() < 0.18;
-        bubbles.push({
-          side, stray,
-          x: e.x + (Math.random() - 0.5) * (stray ? 46 : 10),
-          y: e.top + Math.random() * (e.bot - e.top),
-          r: (side === "cath" ? 1.5 : 1.8) + Math.random() * 1.8,
-          vy: 24 + Math.random() * 24,
-        });
-        // A soft upward "bloop" for some bubbles — the fizz thickens with
-        // the current since bubbles spawn proportionally to it.
-        if (Math.random() < 0.22) {
-          const f = 480 + Math.random() * 640;
-          window.SFX?.tone({ freq: f, dur: 0.05, type: "sine", gain: 0.05, glideTo: f + 260, release: 0.05 });
-        }
-      };
-      mk("cath");
-      if (Math.random() < 0.5) mk("anode");
-    }
+    // The same electrons arrive at one electrode and leave the other, so both
+    // banks grow together. What differs is the price: two electrons buy one
+    // H₂, four buy one O₂. Nothing below knows that the answer is 2 : 1.
+    const dNe = (I * dt) / FARADAY;          // mol of electrons this step
+    eCathode += dNe;
+    eAnode += dNe;
+
+    const release = (side) => {
+      const e = elec(side);
+      bubbles.push({
+        side,
+        x: e.x + (Math.random() - 0.5) * 10,
+        y: e.top + Math.random() * (e.bot - e.top),
+        r: (side === "cath" ? 1.5 : 1.8) + Math.random() * 1.8,
+        vy: 24 + Math.random() * 24,
+      });
+      // A soft upward "bloop" for some of them — the fizz thickens with the
+      // current because the electrons arrive faster, not because a timer says so.
+      if (Math.random() < 0.22) {
+        const f = 480 + Math.random() * 640;
+        window.SFX?.tone({ freq: f, dur: 0.05, type: "sine", gain: 0.05, glideTo: f + 260, release: 0.05 });
+      }
+    };
+
+    // 2 H₂O + 2 e⁻ → H₂ + 2 OH⁻
+    while (eCathode >= 2 * PACKET) { eCathode -= 2 * PACKET; nH2 += PACKET; release("cath"); }
+    // 2 H₂O → O₂ + 4 H⁺ + 4 e⁻
+    while (eAnode >= 4 * PACKET) { eAnode -= 4 * PACKET; nO2 += PACKET; release("anode"); }
 
     const ph = performance.now() / 1000;
     for (let i = bubbles.length - 1; i >= 0; i--) {
@@ -131,7 +154,7 @@
       const gasFrac = Math.min((b.side === "cath" ? molH2() : molO2()) / TUBE_FULL_MOL, 1);
       const gasLineY = t.y + t.h * gasFrac;       // bottom edge of collected gas
       const inTubeMouth = b.x > t.x + 3 && b.x < t.x + t.w - 3;
-      if (!b.stray && inTubeMouth && gasFrac < 1) {
+      if (inTubeMouth && gasFrac < 1) {
         // Collected: vanish where it meets the gas pocket in the tube.
         if (b.y < gasLineY + 5) bubbles.splice(i, 1);
       } else if (b.y < surfaceAt(b.x, ph) + 2) {
@@ -439,7 +462,10 @@
     out.charge.textContent = charge.toFixed(1);
     out.h2.textContent = (molH2() * 1000).toFixed(3);
     out.o2.textContent = (molO2() * 1000).toFixed(3);
-    out.ratio.textContent = molO2() > 1e-12 ? (molH2() / molO2()).toFixed(2) + " : 1" : "—";
+    out.ratio.textContent = molO2() > 1e-12 ? (molH2() / molO2()).toFixed(3) + " : 1" : "—";
+    // What Faraday's law says the same charge should have produced, so the
+    // counted column has something to be compared against.
+    outFaraday.textContent = charge > 0 ? (faradayH2() * 1e3).toFixed(3) : "0.000";
     out.state.textContent = I > 0
       ? i18nText("elStateOn", "Electrolysing")
       : i18nText("elStateOff", "Below 1.23 V — no current");
@@ -484,6 +510,8 @@
   });
   resetBtn.addEventListener("click", () => {
     charge = 0;
+    nH2 = 0; nO2 = 0;
+    eCathode = 0; eAnode = 0;
     bubbles.length = 0;
     ripples.length = 0;
     inputs.voltage.value = "2.5";
@@ -513,6 +541,29 @@
     CELL.x1 = Math.max(CELL.x0 + 260, Math.min(460, W * 0.58));
   }
   window.addEventListener("resize", resizeCanvas);
+
+  // Exposed so the harness can hold the counted gas against Faraday's law.
+  window.__el = {
+    FARADAY, E_DECOMP, CONDUCTANCE, PACKET, TUBE_FULL_MOL,
+    current, molH2, molO2, faradayH2, faradayO2,
+    charge: () => charge,
+    bubbles: () => bubbles.length,
+    params: () => ({ V: parseFloat(inputs.voltage.value), paused }),
+    setRunning: (v) => { paused = !v; },
+    /** Drive the cell headlessly: I amperes for `seconds`, counting as it goes. */
+    run(I, seconds, dt = 1 / 60) {
+      let eC = 0, eA = 0, h2 = 0, o2 = 0, q = 0, bC = 0, bA = 0;
+      for (let t = 0; t < seconds; t += dt) {
+        q += I * dt;
+        const dNe = (I * dt) / FARADAY;
+        eC += dNe; eA += dNe;
+        while (eC >= 2 * PACKET) { eC -= 2 * PACKET; h2 += PACKET; bC++; }
+        while (eA >= 4 * PACKET) { eA -= 4 * PACKET; o2 += PACKET; bA++; }
+      }
+      return { charge: q, nH2: h2, nO2: o2, bubblesH2: bC, bubblesO2: bA,
+               faradayH2: q / (2 * FARADAY), faradayO2: q / (4 * FARADAY) };
+    },
+  };
 
   resizeCanvas();
   updateLabels();
