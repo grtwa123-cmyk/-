@@ -90,9 +90,13 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
   chk('UI: latitude 0° shows ∞', (await txt('out-angvel')) === '∞', await txt('out-angvel'));
   await setV('latitude', 37.6); await setV('timescale', 7200);
   await page.click('#start-btn'); await page.waitForTimeout(2500);
-  const simH = parseFloat(await txt('out-time'));
-  const plane = parseFloat(await txt('out-angle'));
-  const Tp = parseFloat(await txt('out-angvel'));
+  // Read all three in one evaluate. At ×7200 the plane turns about 0.2° per
+  // hundred milliseconds, so three separate round trips sample three
+  // different instants and the comparison drifts by more than it allows.
+  const { simH, plane, Tp } = await page.evaluate(() => {
+    const n = (id) => parseFloat(document.getElementById(id).textContent);
+    return { simH: n('out-time'), plane: n('out-angle'), Tp: n('out-angvel') };
+  });
   const expected = -(simH / Tp) * 360;
   chk('UI: swept angle matches simulated time / precession period',
       simH > 0.5 && Math.abs(plane - expected) < 0.5,

@@ -40,15 +40,15 @@ so where it is **not** true, which is why the last two rows exist.
 
 | Badge | What it means | Count |
 | --- | --- | --- |
-| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 12 |
+| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 13 |
 | **Integrated** | The equations of motion are stepped forward in time. What you see is where they go. | 8 |
-| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 8 |
+| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 7 |
 | **Real data** | A three-dimensional structure built from measured constants — geometry rather than simulation. | 4 |
 | **Solved** | The governing equation is solved numerically every frame, rather than pieced together from special cases. | 2 |
 | **Illustration** | An animation of the idea. There is no quantitative model behind it. | 2 |
 
 A separate **✓ Verified** mark means a dedicated suite holds that page's physics
-against its closed form on every commit — 11 of the 36 so far. It is not stored
+against its closed form on every commit — 12 of the 36 so far. It is not stored
 anywhere: `tests/method-badges.test.mjs` derives it from what is actually in
 `tests/experiments/`, and fails if a page claims it without one. The same suite
 requires any page badged **Measured** to expose a `window.__*` hook, because a
@@ -58,7 +58,7 @@ page that cannot be interrogated cannot support the claim.
 
 | Experiment | Description |
 | --- | --- |
-| **Projectile Motion** | Launch a projectile with adjustable velocity, angle, and gravity; live readouts for range, max height, and time of flight. |
+| **Projectile Motion** | Newton's second law with quadratic air drag, ẍ = −b\|v\|vₓ and ÿ = −g − b\|v\|v_y, integrated with RK4. Range, apex and flight time are *measured* off the trajectory — the landing point is where y actually crosses zero, found by bisection on the final step. With the drag at zero those measurements reproduce v₀²sin2θ/g to one part in 10¹³, which is the integrator proving itself where the answer is known exactly. Turn it up and the arc goes lopsided: fired at 45° the ball lands at 61°. Nowhere in the file is the number 45 written down — *Find best angle* flies 91 launches and reports the peak, which is 45.00° in vacuum and 39.5° at b = 0.01. |
 | **Pendulums** | Three of them. A wave pendulum whose row of slightly different periods drifts in and out of step; Foucault's pendulum, solved in the rotating frame so the plane precesses at Ω·sin φ — 23.93 h at the pole, 31.8 h in Paris, never at the equator; and Newton's cradle, where k balls in gives exactly k out because equal-mass elastic collisions leave no other option. |
 | **Wave Interference** | Two coherent point sources radiate circular waves; adjust spacing, wavelength, amplitudes, and phase to watch fringes form and shift. |
 | **Doppler Effect** | A moving source emits circular wavefronts that compress ahead and stretch behind; cross the wave speed and the rings collapse into a Mach cone. |
@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 17 suites, 547 checks
+npm test                 # 18 suites, 582 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -153,7 +153,7 @@ port to collide with `npm run serve`.
 | `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
-| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `projectile`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 

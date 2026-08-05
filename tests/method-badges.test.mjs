@@ -49,9 +49,10 @@ chk('every method is one of the six known values', unknown.length === 0,
 }
 
 // ── "Verified" means a physics suite exists, and nothing else ─────────
+const suites = new Set(readdirSync(`${ROOT}/tests/experiments`)
+  .filter((f) => f.endsWith('.test.mjs')).map((f) => f.replace('.test.mjs', '')));
+const verifiedCount = entries.filter((e) => suites.has(e.name)).length;
 {
-  const suites = new Set(readdirSync(`${ROOT}/tests/experiments`)
-    .filter((f) => f.endsWith('.test.mjs')).map((f) => f.replace('.test.mjs', '')));
   const wrong = [];
   for (const e of entries) {
     const claimed = read(e.url).includes('class="method-verified"');
@@ -139,7 +140,10 @@ chk('every method is one of the six known values', unknown.length === 0,
   chk('the table view shows a method for every row',
       counts.rows > 0 && counts.tags === counts.rows && counts.blank === 0,
       `${counts.tags} badges over ${counts.rows} rows, ${counts.blank} blank`);
-  chk('and marks exactly the verified ones', counts.verified === 11, String(counts.verified));
+  // Derived, not written down: a hard-coded number here would be one more
+  // claim to keep in step with the filesystem, which is the whole problem.
+  chk('and marks exactly the verified ones', counts.verified === verifiedCount,
+      `${counts.verified} marked, ${verifiedCount} suites on disk`);
 
   await page.close();
 }

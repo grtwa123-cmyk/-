@@ -29,7 +29,8 @@ const METHOD_KEY = {
 const VERIFIED = new Set([
   "experiments/circuit.html", "experiments/diffraction.html", "experiments/enzyme.html",
   "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
-  "experiments/pendulum.html", "experiments/phases.html", "experiments/resonance.html",
+  "experiments/pendulum.html", "experiments/phases.html", "experiments/projectile.html",
+  "experiments/resonance.html",
   "experiments/selection.html", "experiments/string.html",
 ]);
 const CAT_KEY = {

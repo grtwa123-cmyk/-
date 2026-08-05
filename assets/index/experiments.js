@@ -25,7 +25,7 @@
  *   motif     – key handled by motifs.js (line-art glyph)
  */
 export const EXPERIMENTS = Object.freeze([
-  { titleKey: "projectileTitle",  url: "experiments/projectile.html",    cat: "Physics",   tags: ["MOTION", "2D"],         colors: ["#1a2742", "#f0a85e"], method: "formula", motif: "projectile" },
+  { titleKey: "projectileTitle",  url: "experiments/projectile.html",    cat: "Physics",   tags: ["MOTION", "DRAG"],       colors: ["#1a2742", "#f0a85e"], method: "measured", motif: "projectile" },
   { titleKey: "pendulumTitle",    url: "experiments/pendulum.html",      cat: "Physics",   tags: ["MOTION", "OSCILLATE"],  colors: ["#0c1a36", "#5db0d6"], method: "measured", motif: "pendulum" },
   { titleKey: "waveTitle",        url: "experiments/wave.html",          cat: "Physics",   tags: ["WAVES", "INTERFERE"],   colors: ["#0a1a2e", "#7ad9ee"], method: "formula", motif: "wave" },
   { titleKey: "dopplerTitle",     url: "experiments/doppler.html",       cat: "Physics",   tags: ["WAVES", "DOPPLER"],     colors: ["#101830", "#ff9b6b"], method: "integrated", motif: "doppler" },
