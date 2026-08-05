@@ -29,7 +29,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount21">Physics · Photoelectric effect</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount21">Physics · Photoelectric effect</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -71,6 +71,7 @@
         </div>
 
         <div class="buttons">
+          <button id="measure-btn" type="button" data-i18n="peMeasureBtn">Measure h</button>
           <button id="clear-btn" type="button" data-i18n="peClearBtn">Clear graph</button>
           <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
         </div>
@@ -112,7 +113,7 @@
             <div class="num"><span id="out-ke">&mdash;</span> eV</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="peOutStopping">Stopping voltage</div>
+            <div class="label" data-i18n="peOutStoppingMeasured">Stopping voltage, measured</div>
             <div class="num"><span id="out-stopping">&mdash;</span> V</div>
           </div>
           <div class="readout">
@@ -122,6 +123,14 @@
           <div class="readout">
             <div class="label" data-i18n="peOutCurrent">Photocurrent</div>
             <div class="num" id="out-current">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutPlanck">Planck's constant, fitted</div>
+            <div class="num"><span id="out-planck">&mdash;</span> eV&middot;s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="peOutPhiFit">Work function, fitted</div>
+            <div class="num"><span id="out-phi-fit">&mdash;</span> eV</div>
           </div>
         </div>
       </section>

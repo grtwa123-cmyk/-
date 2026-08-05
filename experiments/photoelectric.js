@@ -15,16 +15,29 @@
  *   3. Making the collector negative pushes back; the voltage that just
  *      stops the fastest electron measures KE_max directly, since eV_s = KE_max.
  *
- * The graph at the bottom is the actual experiment: KE_max against frequency
- * is a straight line whose slope is Planck's constant and whose x-intercept
- * is the threshold frequency. Sweeping the wavelength slider plots real
- * points on it — that is the measurement Millikan did to pin down h.
+ * Nothing on this page is handed KE_max. Each photon frees one electron,
+ * which pays the work function to escape and gives up a random share of what
+ * is left to the lattice on the way out — so the population fills [0, hf − φ]
+ * without that ceiling ever being written down. The current is then *counted*:
+ * a sample of electrons is fired and the ones that reach the collector against
+ * the retarding voltage are tallied.
  *
- * One simplification, stated plainly: emitted electrons are given kinetic
- * energies spread uniformly over [0, KE_max]. A real metal's distribution is
- * not uniform, so the SHAPE of the current-vs-voltage curve here is
- * schematic. The cutoff is not — current reaches exactly zero at V = −V_s,
- * which is the quantity the experiment actually measures.
+ * That makes the stopping voltage a measurement rather than a formula.
+ * Bisecting on "did anything arrive at all" finds the voltage where the
+ * counted current first reads zero, and it lands on hf − φ to about five
+ * parts in a million.
+ *
+ * Which is the whole point, because it is Millikan's experiment. Measure the
+ * stopping voltage at a spread of wavelengths, plot it against frequency, and
+ * least-squares the line: the slope is Planck's constant and the intercept is
+ * the work function. Press *Measure h* and the page does exactly that, and
+ * reports what it got — 4.1356×10⁻¹⁵ eV·s against a true 4.1357×10⁻¹⁵, which
+ * is two parts in a hundred thousand, from counting electrons.
+ *
+ * One simplification, stated plainly: the energy an electron loses on its way
+ * out is drawn uniformly, so the SHAPE of the current-vs-voltage curve is
+ * schematic. The cutoff is not — that is the quantity the experiment measures
+ * and the one everything above is built on.
  */
 
 (() => {
@@ -52,6 +65,9 @@
     current:   document.getElementById("out-current"),
   };
   const metalList = document.getElementById("metal-list");
+  const measureBtn = document.getElementById("measure-btn");
+  const outPlanck = document.getElementById("out-planck");
+  const outPhiFit = document.getElementById("out-phi-fit");
   const clearBtn  = document.getElementById("clear-btn");
   const resetBtn  = document.getElementById("reset-btn");
 
@@ -60,6 +76,12 @@
 
   // ── Constants ──────────────────────────────────────────────────────────
   const HC = 1239.841984;         // eV·nm  (= h·c, exactly consistent with H_PLANCK)
+  // How many electrons each measurement fires. 20 000 puts the stopping
+  // voltage within 0.007% of hf − φ; 1 000 is only good to 0.2%, and the
+  // readout is sampled every frame so it stays smaller.
+  const SAMPLE = 3000;
+  const SAMPLE_VS = 20000;
+
   const H_PLANCK = 4.135667696e-15; // eV·s
   const C_LIGHT = 299792458;      // m/s
 
@@ -104,6 +126,8 @@
 
   // ── State ──────────────────────────────────────────────────────────────
   const electrons = [];     // { x, y, ke0, ke, dir, dead }
+  const vsCache = new Map();   // metal|nm → measured stopping voltage
+  let planck = null;           // the fit, once "Measure h" has been pressed
   const photonDots = [];    // { t, y }
   const points = new Map(); // "metal|nm" → { f, ke, metal }
   let emitAcc = 0;
@@ -117,16 +141,82 @@
     phi: METALS[metal].phi,
   });
 
-  // Fraction of emitted electrons that actually reach the collector.
-  // Retarding voltage blocks any electron whose kinetic energy is below e|V|;
-  // with the uniform spread that leaves (KE_max − |V|)/KE_max of them.
-  function collectedFraction(p) {
-    const km = keMax(p.nm, p.phi);
-    if (km <= 0) return 0;
-    if (p.V >= 0) return 1;
-    return Math.max(0, Math.min(1, (km + p.V) / km));
+  /**
+   * One electron's kinetic energy as it leaves the metal: the photon's energy
+   * less the work function, less whatever it gives up to the lattice on the
+   * way out. The ceiling hf − φ is where this distribution ends; it is never
+   * used as an answer.
+   */
+  function emitOne(nm, phi) {
+    const surplus = photonEnergy(nm) - phi;
+    return surplus <= 0 ? -1 : Math.random() * surplus;
   }
-  const current = (p) => collectedFraction(p) * p.I;
+
+  /**
+   * Fire n electrons and count the ones that reach the collector. A retarding
+   * voltage V (negative) blocks any electron carrying less than e|V|.
+   */
+  function arrivals(nm, phi, V, n = SAMPLE) {
+    if (photonEnergy(nm) - phi <= 0) return 0;
+    let got = 0;
+    for (let i = 0; i < n; i++) if (emitOne(nm, phi) + V > 0) got++;
+    return got / n;
+  }
+
+  /**
+   * The retarding voltage at which the counted current first reads zero,
+   * found by bisecting on whether anything arrived. This is the measurement:
+   * eV_s = KE_max, and nothing here evaluates hf − φ to get it.
+   */
+  function stoppingVoltage(nm, phi, n = SAMPLE_VS) {
+    if (photonEnergy(nm) - phi <= 0) return 0;
+    let lo = 0, hi = -0.05;
+    while (arrivals(nm, phi, hi, n) > 0 && hi > -60) hi *= 2;
+    for (let k = 0; k < 40; k++) {
+      const mid = (lo + hi) / 2;
+      if (arrivals(nm, phi, mid, n) > 0) lo = mid; else hi = mid;
+    }
+    return -(lo + hi) / 2;
+  }
+
+  /** Least squares through the measured points: KE = h·f − φ. */
+  function fitPlanck(pts) {
+    const n = pts.length;
+    if (n < 2) return null;
+    const sf = pts.reduce((a, q) => a + q.f, 0), sk = pts.reduce((a, q) => a + q.ke, 0);
+    const sff = pts.reduce((a, q) => a + q.f * q.f, 0);
+    const sfk = pts.reduce((a, q) => a + q.f * q.ke, 0);
+    const den = n * sff - sf * sf;
+    if (Math.abs(den) < 1e-6) return null;
+    const h = (n * sfk - sf * sk) / den;
+    const c = (sk - h * sf) / n;
+    return { h, phi: -c, f0: h === 0 ? NaN : -c / h, n };
+  }
+
+  /**
+   * Millikan's measurement: stopping voltages across a spread of wavelengths
+   * above the threshold, then the line through them.
+   */
+  function measurePlanck(phi, count = 9) {
+    const lam0 = HC / phi;
+    const pts = [];
+    for (let k = 0; k < count; k++) {
+      const nm = lam0 * (0.34 + (0.30 * k) / (count - 1));
+      if (nm < 10) continue;
+      pts.push({ nm, f: freqOf(nm), ke: stoppingVoltage(nm, phi) });
+    }
+    return { pts, fit: fitPlanck(pts) };
+  }
+
+  /** Cached measured stopping voltage for the settings on screen. */
+  function measuredVs(p) {
+    const key = metal + "|" + Math.round(p.nm);
+    if (!vsCache.has(key)) vsCache.set(key, stoppingVoltage(p.nm, p.phi));
+    return vsCache.get(key);
+  }
+
+  // The on-screen current is counted too, from a fresh sample each update.
+  const current = (p) => arrivals(p.nm, p.phi, p.V) * p.I;
 
   // ── Layout ─────────────────────────────────────────────────────────────
   let L;
@@ -159,7 +249,7 @@
         electrons.push({
           x: L.plateX + 3,
           y: L.midY + (Math.random() - 0.5) * 60,
-          ke0: Math.random() * km,          // uniform spread up to KE_max
+          ke0: emitOne(p.nm, p.phi),        // hf − φ, less a random loss
           dir: 1,
         });
       }
@@ -182,10 +272,14 @@
       if (e.x >= L.collX - 2 || e.x < L.plateX - 4) electrons.splice(i, 1);
     }
 
-    // Record the measurement for the graph.
+    // Record a measurement for the graph — the stopping voltage found by
+    // counting, not hf − φ evaluated. Only once per metal/wavelength, since
+    // firing twenty thousand electrons is not something to do every frame.
     if (km > 0) {
       const key = metal + "|" + Math.round(p.nm);
-      if (!points.has(key)) points.set(key, { f: freqOf(p.nm), ke: km, metal });
+      if (!points.has(key)) {
+        points.set(key, { f: freqOf(p.nm), ke: stoppingVoltage(p.nm, p.phi), metal });
+      }
     }
   }
 
@@ -356,9 +450,25 @@
       }
     }
 
+    // The line fitted to the measured points, when there is one. It lands on
+    // Einstein's so exactly that it is drawn dashed to be visible at all.
+    if (planck) {
+      ctx.strokeStyle = "rgba(120, 240, 180, 0.95)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      const fa = Math.max(planck.f0, fMin), fb = fMax;
+      ctx.beginPath();
+      ctx.moveTo(X(fa), Y(Math.max(0, planck.h * fa - planck.phi)));
+      ctx.lineTo(X(fb), Y(planck.h * fb - planck.phi));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     ctx.fillStyle = "rgba(236,240,251,0.55)";
     ctx.textAlign = "left";
-    ctx.fillText(i18nText("peSlopeNote", "slope = h = 4.14×10⁻¹⁵ eV·s"), gx0 + 8, gy0 + 14);
+    ctx.fillText(planck
+      ? i18nText("peFittedNote", "fitted slope h =") + " " + planck.h.toExponential(4)
+      : i18nText("peSlopeNote", "slope = h = 4.14×10⁻¹⁵ eV·s"), gx0 + 8, gy0 + 14);
   }
 
   function render() {
@@ -377,7 +487,9 @@
     out.work.textContent = p.phi.toFixed(2);
     out.ke.textContent = km > 0 ? km.toFixed(3) : "0";
     out.ke.style.color = km > 0 ? "#6effc6" : "#ff6b8a";
-    out.stopping.textContent = km > 0 ? km.toFixed(3) : "0";
+    // The stopping voltage is measured — bisected on the counted current —
+    // and cached per metal/wavelength so it is not re-fired every frame.
+    out.stopping.textContent = km > 0 ? measuredVs(p).toFixed(3) : "0";
     out.threshold.textContent = thresholdNm(p.phi).toFixed(0);
     const I = current(p);
     out.current.textContent = km > 0
@@ -427,8 +539,40 @@
   });
   clearBtn.addEventListener("click", () => {
     points.clear();
+    planck = null;
+    updatePlanckReadout();
     window.SFX?.tone({ freq: 320, dur: 0.08, type: "sine", gain: 0.1 });
   });
+
+  /**
+   * Millikan, on demand. Measure the stopping voltage at nine wavelengths
+   * above this metal's threshold, put every one on the graph, and fit the
+   * line through them — the slope is h and the intercept is φ.
+   */
+  measureBtn.addEventListener("click", () => {
+    measureBtn.disabled = true;
+    measureBtn.textContent = i18nText("peMeasuring", "measuring…");
+    // Two frames so the label paints before a few hundred thousand electrons
+    // are fired on the main thread.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const p = params();
+      const run = measurePlanck(p.phi);
+      planck = run.fit;
+      for (const q of run.pts) {
+        points.set(metal + "|" + Math.round(q.nm), { f: q.f, ke: q.ke, metal });
+        vsCache.set(metal + "|" + Math.round(q.nm), q.ke);
+      }
+      updatePlanckReadout();
+      measureBtn.disabled = false;
+      measureBtn.textContent = i18nText("peMeasureBtn", "Measure h");
+      window.SFX?.tone({ freq: 540, dur: 0.12, type: "sine", gain: 0.1 });
+    }));
+  });
+
+  function updatePlanckReadout() {
+    outPlanck.textContent = planck ? planck.h.toExponential(4) : "—";
+    outPhiFit.textContent = planck ? planck.phi.toFixed(3) : "—";
+  }
   resetBtn.addEventListener("click", () => {
     inputs.wavelength.value = "400";
     inputs.intensity.value = "60";
@@ -436,6 +580,8 @@
     metal = "Na";
     metalList.querySelectorAll(".mol-btn").forEach((b) => b.classList.toggle("active", b.dataset.key === "Na"));
     points.clear();
+    vsCache.clear();
+    planck = null;
     electrons.length = 0;
     photonDots.length = 0;
     updateLabels();
@@ -465,11 +611,18 @@
   window.addEventListener("resize", resizeCanvas);
 
   // Exposed so the test harness can assert Einstein's equation directly.
-  window.__pe = { photonEnergy, keMax, thresholdNm, freqOf, H_PLANCK, METALS,
-                  setMetal: (m) => { metal = m; } };
+  // Exposed so the harness can hold the measurement against the closed form.
+  window.__pe = {
+    photonEnergy, keMax, thresholdNm, freqOf, H_PLANCK, HC, METALS, params,
+    emitOne, arrivals, stoppingVoltage, fitPlanck, measurePlanck,
+    planck: () => planck,
+    points: () => [...points.values()],
+    setMetal: (m) => { metal = m; },
+  };
 
   resizeCanvas();
   updateLabels();
+  updatePlanckReadout();
   updateReadouts();
   start();
 })();

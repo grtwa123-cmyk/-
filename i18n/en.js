@@ -1298,4 +1298,12 @@ window.i18nRegister("en", {
   projNote2: "Now turn the drag up. The dashed line is the same launch without it, so you can watch the shortfall open up. The arc also stops being symmetric: fired at 45° the ball comes down at 56°, then 67°, because drag takes horizontal speed away and never gives it back.",
   projNote3: "Press Find best angle. Nothing in this page contains the number 45 — the sweep flies 91 launches and reports where the range peaks. In vacuum it comes back 45.00°. With drag the peak slides down the axis: about 39.5° at b = 0.01, about 37° at b = 0.02, and the 45° marker is left behind on the plot.",
   projNote4: "The drag coefficient here is b = C_D·ρA/2m, in units of inverse metres, so terminal speed is √(g/b) — about 31 m/s at b = 0.01. Push the launch speed well past that and almost all of it is gone before the apex.",
+
+  /* Photoelectric — the stopping voltage is now counted, and h fitted from it. */
+  peMeasureBtn: "Measure h",
+  peMeasuring: "measuring…",
+  peFittedNote: "fitted slope h =",
+  peOutPlanck: "Planck's constant, fitted",
+  peOutPhiFit: "Work function, fitted",
+  peOutStoppingMeasured: "Stopping voltage, measured",
 });
