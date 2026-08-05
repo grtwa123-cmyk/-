@@ -440,13 +440,14 @@
   // ── Loop ───────────────────────────────────────────────────────────────
   let lastTs = performance.now();
   let raf = 0;
+  let running = true;
   function frame(ts) {
     raf = requestAnimationFrame(frame);
     const dtReal = Math.max(0, Math.min((ts - lastTs) / 1000, 0.05));
     lastTs = ts;
     const p = params();
 
-    const wanted = (dtReal / p.slow) / p.dt;
+    const wanted = running ? (dtReal / p.slow) / p.dt : 0;
     const steps = Math.min(Math.round(wanted), 4000);
     for (let k = 0; k < steps; k++) step(p);
     if (steps > 0) measuredF1 = measureF1();
@@ -529,6 +530,9 @@
   // rather than trusting the readout.
   window.__sw = {
     N, MODES, COURANT, FRACTIONS,
+    // As on the other pages: stop the string without stopping the paint, so
+    // a control that only changes the drawing can still be held to it.
+    setRunning: (v) => { running = v; },
     params, modeAmp, spectrum, energy, step, pluck, pureMode, clear,
     shape: () => Array.from(y),
     simTime: () => simT,

@@ -244,17 +244,28 @@ const MK = `const E = window.__eq;
   chk('Resume starts it again', c > b, `${b} → ${c}`);
 }
 {
+  // Two traps here, and this check fell into both.
+  //
   // The catalyst's whole point is that it leaves K and the equilibrium
   // concentrations alone, so a snapshot of A/B/C/K reports it dead exactly
-  // when it works — the same trap the Pause control fell into elsewhere. What
-  // it does change is the rate constant, so that goes in the signature too.
+  // when it works. And the piston changes neither the molecule counts nor K
+  // nor kf — it changes the volume, and only the *concentrations* that
+  // follow from it. With the clock running the counts drift on their own
+  // between the two snapshots, so the check passed for a reason that had
+  // nothing to do with the control being alive, and reported "volume" dead
+  // whenever the drift happened to come out even.
+  //
+  // Freeze the clock, and hold every control to the thing it actually
+  // changes in the model — the whole parameter set, plus the counts for the
+  // two that rebuild the mixture and the button that injects into it.
+  await page.evaluate(() => window.__eq.setRunning(false));
   const sig = async () => {
-    await page.waitForTimeout(420);
-    const s = await page.evaluate(()=>{
-      const p = window.__eq.params();
-      return { ...window.__eq.state(), K: window.__eq.predictedK(p), kf: p.kf };
+    await page.waitForTimeout(140);
+    return page.evaluate(() => {
+      const p = window.__eq.params(), s = window.__eq.state();
+      return JSON.stringify([p.T, p.dH, p.cat, p.Ea, p.V,
+        p.kf.toExponential(6), p.kr.toExponential(6), s.A, s.B, s.C]);
     });
-    return JSON.stringify([s.A, s.B, s.C, s.K.toFixed(6), s.kf.toExponential(4)]);
   };
   const dead = [];
   const acts = [
@@ -273,7 +284,8 @@ const MK = `const E = window.__eq;
     if (after === before) dead.push(name);
     before = after;
   }
-  chk('no dead controls', dead.length===0, dead.join(','));
+  chk('every control changes the model it claims to', dead.length===0, dead.join(','));
+  await page.evaluate(() => window.__eq.setRunning(true));
   // Reset restarts the run, so C is only zero for an instant. Freeze, reset,
   // then look — otherwise the check is racing the reaction it just started.
   await page.evaluate(()=>window.__eq.setRunning(false));

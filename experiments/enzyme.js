@@ -552,6 +552,7 @@
   // ── Loop ───────────────────────────────────────────────────────────────
   let lastTs = performance.now();
   let raf = 0;
+  let running = true;
   function frame(ts) {
     raf = requestAnimationFrame(frame);
     const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.05));
@@ -559,7 +560,7 @@
     const p = params();
 
     const speed = sweep ? SWEEP_SPEED : 1;
-    step(simT + dt * speed, p);
+    if (running) step(simT + dt * speed, p);
 
     if (sweep) {
       sweep.tLeft -= dt * speed;
@@ -675,6 +676,10 @@
   // Exposed so the harness can check the counted rate against the rate law.
   window.__mm = {
     params, apparent, mmRate, predicted, alpha,
+    // Freezing the molecules without freezing the canvas is what lets a
+    // purely visual control — the Lineweaver–Burk toggle — be held to
+    // something. Every other page here exposes the same hook.
+    setRunning: (v) => { running = v; },
     rebuild, step, measuredRate, fitFromPoints,
     setInhibitor, OMEGA, K1, KI,
     stats: () => ({ simT, turnovers, states: mols.map((m) => m.state) }),

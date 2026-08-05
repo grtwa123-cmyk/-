@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 18 suites, 582 checks
+npm test                 # 18 suites, 584 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 

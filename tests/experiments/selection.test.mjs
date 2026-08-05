@@ -269,12 +269,20 @@ const txt = id => page.evaluate(i=>document.getElementById(i).textContent.trim()
     return JSON.stringify([s.N, s.p, s.pDet, s.geno,
       document.getElementById('out-gen').textContent,
       document.getElementById('waa-value').textContent,
+      document.getElementById('wab-value').textContent,
+      document.getElementById('wbb-value').textContent,
+      document.getElementById('p0-value').textContent,
+      document.getElementById('popn-value').textContent,
       document.getElementById('speed-value').textContent,
       // Pause's whole job is to stop the generation counter moving, so
       // watching only the counter marks it dead exactly when it works. Its
       // own label is the signal that it did something.
       document.getElementById('pause-btn').textContent]);
   });
+  // Frozen first: with generations ticking over, the counter moved between
+  // the two snapshots whatever the control did, and a deliberately dead
+  // entry planted in this list passed.
+  await page.evaluate(() => window.__ns.setRunning(false));
   const controls = [
     ['waa',  () => setV('waa', 0.4)],
     ['wab',  () => setV('wab', 0.6)],
@@ -293,7 +301,8 @@ const txt = id => page.evaluate(i=>document.getElementById(i).textContent.trim()
     await act(); await page.waitForTimeout(180);
     if (await snap() === before) dead.push(name);
   }
-  chk('no dead controls', dead.length===0, 'dead: '+dead.join(','));
+  chk('every control changes the model it claims to', dead.length===0, 'dead: '+dead.join(','));
+  await page.evaluate(() => window.__ns.setRunning(true));
 }
 
 // ---- 15. Step advances exactly one generation while paused ----
