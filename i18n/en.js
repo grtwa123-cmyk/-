@@ -1310,4 +1310,7 @@ window.i18nRegister("en", {
   /* Hydrogen spectrum — R is now fitted to the lines the atom emitted. */
   spectraMeasureBtn: "Measure R",
   spectraOutRydberg: "Rydberg constant, fitted",
+
+  /* Electrolysis — the gas is counted now, so Faraday can be compared to it. */
+  elOutFaraday: "Faraday predicts, n(H₂)",
 });

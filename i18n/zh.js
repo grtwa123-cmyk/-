@@ -1310,4 +1310,7 @@ window.i18nRegister("zh", {
   /* 氢光谱 —— R 现在是对原子实际发出的谱线拟合得到的。 */
   spectraMeasureBtn: "测量 R",
   spectraOutRydberg: "里德伯常数，拟合值",
+
+  /* 电解 —— 气体现在是数出来的，可以与法拉第的预言对照。 */
+  elOutFaraday: "法拉第预言，n(H₂)",
 });
