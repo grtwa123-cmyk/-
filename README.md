@@ -40,15 +40,15 @@ so where it is **not** true, which is why the last two rows exist.
 
 | Badge | What it means | Count |
 | --- | --- | --- |
-| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 13 |
+| **Measured** | The mechanism runs and the textbook result is read back out of it. Nothing on the page types the answer in. | 14 |
 | **Integrated** | The equations of motion are stepped forward in time. What you see is where they go. | 8 |
-| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 7 |
+| **Closed form** | A closed-form expression is evaluated and drawn directly. Exact, but the result is stated rather than emergent. | 6 |
 | **Real data** | A three-dimensional structure built from measured constants — geometry rather than simulation. | 4 |
 | **Solved** | The governing equation is solved numerically every frame, rather than pieced together from special cases. | 2 |
 | **Illustration** | An animation of the idea. There is no quantitative model behind it. | 2 |
 
 A separate **✓ Verified** mark means a dedicated suite holds that page's physics
-against its closed form on every commit — 12 of the 36 so far. It is not stored
+against its closed form on every commit — 13 of the 36 so far. It is not stored
 anywhere: `tests/method-badges.test.mjs` derives it from what is actually in
 `tests/experiments/`, and fails if a page claims it without one. The same suite
 requires any page badged **Measured** to expose a `window.__*` hook, because a
@@ -72,7 +72,7 @@ page that cannot be interrogated cannot support the claim.
 | **PN Junction Diode** | Watch the depletion region grow and shrink under forward vs reverse bias. |
 | **Refraction & TIR** | A ray bends across an interface by Snell's law, with the critical angle, total internal reflection, and Fresnel reflectance. |
 | **Electromagnetic Generator** | A water wheel spins a bar magnet inside a pickup coil; Faraday's law EMF = N·B·A·ω·sin(ωt) lights a bulb, with the live rotating dipole field. |
-| **Photoelectric Effect** | Red light at full brightness does nothing; a faint violet beam ejects electrons instantly. Sweep the wavelength and the KEₘₐₓ-vs-frequency line plots itself — slope h, intercept the threshold frequency. |
+| **Photoelectric Effect** | Nothing here is handed KEₘₐₓ. Each photon frees one electron, which pays the work function and gives up a random share of the rest on the way out, so the population fills [0, hf − φ] without that ceiling ever being written down — and the current is *counted*, not evaluated. That makes the stopping voltage a measurement: bisect on where the count first reads zero and it lands on hf − φ to five parts in a million. Which is the point, because it is Millikan's experiment. **Measure h** takes stopping voltages at nine wavelengths and fits the line: slope 4.1356×10⁻¹⁵ eV·s against a true 4.1357×10⁻¹⁵, and an intercept that returns the work function to three decimals — from counting electrons. |
 | **Double-Slit Interference & Diffraction** | One formula does all of it: I = I₀(sin α/α)²(sin Nβ/sin β)². Fringes at d·sinθ = mλ ride inside the single-slit envelope, and where d/a is a whole number every p-th order lands on a zero and is simply absent. Add slits and the peaks narrow as 1/N. Switch on the photon counter and each dot is drawn from that same curve by rejection sampling, so the pattern rebuilds one photon at a time. |
 | **Lenses & Image Formation** | A fan of rays leaves the object and each is bent by the one rule a thin lens has, θ′ = θ − y/f. The image is wherever they cross — and that they cross at all *is* 1/v − 1/u = 1/f falling out of the algebra. Newton's x·x′ = f² agrees independently, and the readout reports how far any traced ray misses the image point by: 1e-14 cm. |
 | **Driven Oscillation & Resonance** | The mass is integrated from ẍ + 2ζω₀ẋ + ω₀²x = X₀ω₀²cos ωt with RK4, transient and all, and the amplitude and phase it settles into are then *measured back out* of the motion by Fourier component and compared with the closed form — agreeing to a few parts in 10⁴. Amplitude peaks at √(1−2ζ²), the phase lag is exactly 90° at f₀ for every damping, and past ζ = 1/√2 there is no peak at all. |
@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 18 suites, 584 checks
+npm test                 # 19 suites, 616 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -153,7 +153,7 @@ port to collide with `npm run serve`.
 | `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. |
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
-| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `projectile`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `circuit`, `diffraction`, `enzyme`, `equilibrium`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `resonance`, `selection`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 
