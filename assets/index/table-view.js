@@ -28,7 +28,7 @@ const METHOD_KEY = {
  */
 const VERIFIED = new Set([
   "experiments/circuit.html", "experiments/diffraction.html", "experiments/electrolysis.html",
-  "experiments/enzyme.html",
+  "experiments/enzyme.html", "experiments/generator.html",
   "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
   "experiments/pendulum.html", "experiments/phases.html", "experiments/photoelectric.html",
   "experiments/projectile.html", "experiments/refraction.html",

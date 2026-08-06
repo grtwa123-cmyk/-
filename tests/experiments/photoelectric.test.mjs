@@ -188,10 +188,19 @@ const P = 'const M = window.__pe;';
   const pts = await page.evaluate(() => window.__pe.points().length);
   chk('the measured points are on the graph', pts >= 8, String(pts));
 
+  // Choosing a metal leaves the previous fit on screen, so something has to be
+  // waited for. It must not be "the text is no longer 2.280": the sodium fit
+  // is a measurement and lands on 2.279 or 2.281 about as often, in which case
+  // that condition is already true and nothing is waited for at all — the
+  // check then reads sodium's answer and calls it platinum's. Clear the fit
+  // and wait for a new one to appear instead.
   await page.click('#metal-list .mol-btn[data-key="Pt"]');
   await page.waitForTimeout(300);
+  await page.click('#clear-btn');
+  await page.waitForFunction(() => document.getElementById('out-phi-fit').textContent.trim() === '—',
+    null, { timeout: 10000 });
   await page.click('#measure-btn');
-  await page.waitForFunction(() => document.getElementById('out-phi-fit').textContent.trim() !== '2.280',
+  await page.waitForFunction(() => document.getElementById('out-phi-fit').textContent.trim() !== '—',
     null, { timeout: 40000 });
   chk('changing the metal and measuring again recovers its work function',
       Math.abs(parseFloat(await txt('out-phi-fit')) - 6.35) < 0.02, await txt('out-phi-fit'));

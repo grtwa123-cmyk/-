@@ -172,9 +172,28 @@ const MK = `const E = window.__eq;
       Math.abs(r.exoHot.K - r.base.K) > 1e-6, '');
   // The same equilibrium must be reached from either side — the strongest
   // statement that it is an equilibrium and not just where the run stopped.
-  chk('starting from pure C reaches the same equilibrium as starting from A + B',
-      Math.abs(r.startFromC.Q - r.base.Q) / r.base.Q < 0.08,
-      `Q ${r.base.Q.toFixed(3)} from A+B, ${r.startFromC.Q.toFixed(3)} from C`);
+  //
+  // One run of each is not enough to say so: a single settled Q carries about
+  // 3% of scatter, so two of them differ by ~5% on average and occasionally by
+  // fifteen. Average a dozen from each side and compare the means against the
+  // spread those replicates actually showed, rather than against a number
+  // picked in advance.
+  {
+    const s = await page.evaluate(new Function(`${MK}
+      const stats = (v) => { const m = v.reduce((a, b) => a + b, 0) / v.length;
+        const sd = Math.sqrt(v.reduce((s2, x) => s2 + (x - m) ** 2, 0) / (v.length - 1));
+        return { m, sd, se: sd / Math.sqrt(v.length) }; };
+      const many = (init) => stats(Array.from({ length: 12 }, () =>
+        E.settle(mk({}), { ...init, burn: 40, span: 60 }).Q));
+      return { ab: many({ nA: 300, nB: 300 }), c: many({ nA: 0, nB: 0, nC: 300 }) };`));
+    const gap = Math.abs(s.ab.m - s.c.m);
+    const bound = 4 * Math.hypot(s.ab.se, s.c.se);
+    chk('starting from pure C reaches the same equilibrium as starting from A + B',
+        gap < bound,
+        `Q ${s.ab.m.toFixed(4)} ± ${s.ab.se.toFixed(4)} from A+B, ` +
+        `${s.c.m.toFixed(4)} ± ${s.c.se.toFixed(4)} from C — ` +
+        `gap ${gap.toFixed(4)} against a 4σ bound of ${bound.toFixed(4)}`);
+  }
 }
 
 // ── The live page ─────────────────────────────────────────────────────
@@ -286,11 +305,14 @@ const MK = `const E = window.__eq;
   }
   chk('every control changes the model it claims to', dead.length===0, dead.join(','));
   await page.evaluate(() => window.__eq.setRunning(true));
-  // Reset restarts the run, so C is only zero for an instant. Freeze, reset,
-  // then look — otherwise the check is racing the reaction it just started.
-  await page.evaluate(()=>window.__eq.setRunning(false));
-  await page.click('#reset-btn');
-  await page.evaluate(()=>window.__eq.setRunning(false));
+  // Reset restarts the run, so C is only zero for an instant. Clicking and
+  // freezing have to happen in the same task: as two round trips a frame lands
+  // between them and the reaction is already a dozen molecules along by the
+  // time anyone looks.
+  await page.evaluate(() => {
+    document.getElementById('reset-btn').click();
+    window.__eq.setRunning(false);
+  });
   await page.waitForTimeout(150);
   const after = await page.evaluate(()=>window.__eq.state());
   const want = await page.evaluate(()=>parseInt(document.getElementById('na0').value, 10));
