@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0b0f1e" />
-  <meta name="description" content="Snell's law in action: a ray refracts across an interface, bending toward or away from the normal, and undergoes total internal reflection past the critical angle." />
+  <meta name="description" content="Snell's law measured, not applied: Huygens wavelets spread from the interface and the page searches for the line they are all tangent to. Total internal reflection is that line failing to exist." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Refraction · Physics" />
-  <meta property="og:description" content="Snell's law in action: a ray refracts across an interface, bending toward or away from the normal, and undergoes total internal reflection past the critical angle." />
+  <meta property="og:description" content="Snell's law measured, not applied: Huygens wavelets spread from the interface and the page searches for the line they are all tangent to. Total internal reflection is that line failing to exist." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/refraction.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -29,12 +29,12 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount13">Physics · Refraction</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount13">Physics · Refraction</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
       <h1 data-i18n="refractionTitle">Refraction &amp; Total Internal Reflection</h1>
-      <p data-i18n="refractionIntro">A ray of light crosses from one medium into another and bends by Snell's law. Drag the incident ray or use the sliders; when it travels into a less dense medium beyond the critical angle, it stops crossing and reflects entirely.</p>
+      <p data-i18n="refractionIntro">Nothing here applies Snell's law. Each point of the interface, as the incoming wavefront sweeps across it, starts a Huygens wavelet spreading into the second medium at c/n₂ — and the refracted wavefront is the one straight line those wavelets are all tangent to. The page searches for that line; θ₂ is what the search returns, and n₁·sin θ₁ = n₂·sin θ₂ comes out as a measurement. Past the critical angle no such line exists, which is all total internal reflection is.</p>
     </header>
 
     <main class="experiment">
@@ -59,6 +59,11 @@
           <input type="range" id="n2" min="1" max="2.5" step="0.01" value="1.52" />
         </div>
 
+        <div class="control">
+          <label for="huygens" data-i18n="refractionHuygensLabel">Show the wavelets</label>
+          <span class="value"><input type="checkbox" id="huygens" checked /></span>
+        </div>
+
         <div class="control" style="margin-bottom: 0.4rem;">
           <label data-i18n="refractionPresets">Media presets</label>
         </div>
@@ -77,25 +82,28 @@
         <details class="formulas">
           <summary data-i18n="formulas">Formulas</summary>
           <ul>
-            <li><span data-i18n="refractionFormulaSnell">Snell's law</span>: <code>n₁·sin θ₁ = n₂·sin θ₂</code></li>
-            <li><span data-i18n="refractionFormulaCritical">Critical angle</span> (n₁ &gt; n₂): <code>θ_c = arcsin(n₂/n₁)</code></li>
-            <li><span data-i18n="refractionFormulaSpeed">Phase speed</span>: <code>v = c / n</code></li>
-            <li><span data-i18n="refractionFormulaFresnel">Reflectance (unpolarised)</span>: <code>R = (R_s + R_p) / 2</code></li>
+            <li><span data-i18n="refractionFormulaSpeed">Put in — phase speed</span>: <code>v = c / n</code></li>
+            <li><span data-i18n="refractionFormulaStrike">Put in — the sweep</span>: <code>t(x) = x·sin θ₁ / v₁</code></li>
+            <li><span data-i18n="refractionFormulaWavelet">Put in — each wavelet</span>: <code>r(x) = v₂·(T − t(x))</code></li>
+            <li><span data-i18n="refractionFormulaEnvelope">Searched for — the tangent</span>: <code>min over θ of spread(x·sin θ + r(x))</code></li>
+            <li><span data-i18n="refractionFormulaSnell">Comes out — Snell's law</span>: <code>n₁·sin θ₁ = n₂·sin θ₂</code></li>
+            <li><span data-i18n="refractionFormulaFresnel">Formula — reflectance (unpolarised)</span>: <code>R = (R_s + R_p) / 2</code></li>
           </ul>
         </details>
 
         <details class="formulas" open>
           <summary data-i18n="refractionNotes">Notes</summary>
           <ul>
-            <li data-i18n="refractionNote1">Into a denser medium (n₂ &gt; n₁) the ray bends toward the normal; into a rarer medium it bends away.</li>
-            <li data-i18n="refractionNote2">Total internal reflection only happens going from dense to rare (n₁ &gt; n₂), once θ₁ exceeds the critical angle — this is how optical fibres trap light.</li>
-            <li data-i18n="refractionNote3">The reflected and refracted brightness follow the Fresnel equations: reflectance rises toward 100% as θ₁ approaches grazing incidence or the critical angle.</li>
+            <li data-i18n="refractionNote1">The construction is told only how fast light goes in each medium and when the wavefront reaches each point of the interface. It is never told Snell's law — <code>arcsin((n₁/n₂)·sin θ₁)</code> appears nowhere in the code. The two readouts either side of the equals sign are obtained independently, and they agree to the last digit shown.</li>
+            <li data-i18n="refractionNote2">Total internal reflection is not a special case bolted on. Past the critical angle the wavelets outrun the sweep, no single line can touch them all, and the search closes on nothing — turn the wavelets on and watch the tangent fail to exist. The critical angle in the readout is found by bisecting on exactly that failure, not by <code>arcsin(n₂/n₁)</code>.</li>
+            <li data-i18n="refractionNote3">Brightness is the one thing still taken from a formula: the Fresnel equations for unpolarised light come from matching fields at the boundary, not from this geometry. They are evaluated at the measured θ₂.</li>
+            <li data-i18n="refractionNote4">Fermat's principle is the same law by another route — the path of least time bends by exactly this much. The checks drive both and confirm they pick out the same geometry to one part in 10⁷.</li>
           </ul>
         </details>
       </section>
 
       <section class="stage" aria-label="Visualisation">
-        <canvas id="stage" width="800" height="460" style="touch-action: none;" aria-label="A light ray refracting and reflecting at the boundary between two media"></canvas>
+        <canvas id="stage" width="800" height="460" style="touch-action: none;" aria-label="A light ray refracting at the boundary between two media, with the Huygens wavelets whose common tangent sets the refracted angle"></canvas>
 
         <div class="readouts">
           <div class="readout">
@@ -103,7 +111,11 @@
             <div class="num" id="out-theta2">—</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="refractionOutCritical">Critical angle θ_c</div>
+            <div class="label" data-i18n="refractionOutSnell">n₁·sin θ₁ vs n₂·sin θ₂</div>
+            <div class="num" id="out-snell">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="refractionOutCritical">Critical angle θ_c, measured</div>
             <div class="num" id="out-critical">—</div>
           </div>
           <div class="readout">
