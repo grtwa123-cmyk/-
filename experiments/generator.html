@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0b0f1e" />
-  <meta name="description" content="A water wheel spins a bar magnet inside a pickup coil, inducing an AC voltage by Faraday's law — EMF = N·B·A·ω·sin(ωt) — that lights a bulb. Adjust the flow, loops, area, and magnet strength." />
+  <meta name="description" content="A water wheel spins a bar magnet inside a pickup coil. The flux is a surface integral over the coil, the EMF is its numerical time derivative, and the sine wave is what comes out — nobody writes sin down." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Generator · Physics" />
-  <meta property="og:description" content="A water wheel spins a bar magnet inside a pickup coil, inducing an AC voltage by Faraday's law — EMF = N·B·A·ω·sin(ωt) — that lights a bulb. Adjust the flow, loops, area, and magnet strength." />
+  <meta property="og:description" content="A water wheel spins a bar magnet inside a pickup coil. The flux is a surface integral over the coil, the EMF is its numerical time derivative, and the sine wave is what comes out — nobody writes sin down." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/generator.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -29,12 +29,12 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount19">Physics · Generator</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount19">Physics · Generator</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
       <h1 data-i18n="generatorTitle">Electromagnetic Generator</h1>
-      <p data-i18n="generatorIntro">Water from the faucet turns a wheel, spinning a bar magnet inside a coil of wire. The turning magnet's changing flux induces an AC voltage by Faraday's law — EMF = N·B·A·ω·sin(ωt) — that lights the bulb. Open the faucet, add coils, and watch the voltage rise.</p>
+      <p data-i18n="generatorIntro">Water from the faucet turns a wheel, spinning a bar magnet inside a coil. Nothing here writes down a sine. The flux the coil links is integrated over its face, cell by cell; the EMF is that flux differentiated in time, with Faraday's minus sign and nothing else. The sine wave, its quarter-turn lag behind the flux, and the way the peak scales are all things the machine produces — and the trace under the picture shows both curves at once.</p>
     </header>
 
     <main class="experiment">
@@ -86,25 +86,27 @@
         <details class="formulas">
           <summary data-i18n="formulas">Formulas</summary>
           <ul>
-            <li><span data-i18n="genFormulaFlux">Flux through coil</span>: <code>Φ = N·B·A·cos(θ)</code></li>
-            <li><span data-i18n="genFormulaEmf">Faraday's law</span>: <code>EMF = −dΦ/dt = N·B·A·ω·sin(ωt)</code></li>
-            <li><span data-i18n="genFormulaFreq">Frequency</span>: <code>f = ω / 2π</code></li>
-            <li><span data-i18n="genFormulaWheel">Wheel</span>: <code>I·dω/dt = τ(flow) − b·ω</code></li>
+            <li><span data-i18n="genFormulaField">Put in — the bore field</span>: <code>B(ρ,θ) = B₀·g(ρ)·(cos θ, sin θ)</code></li>
+            <li><span data-i18n="genFormulaFlux">Summed — flux through a turn</span>: <code>Φ₁ = ∬ B·n̂ dA</code>, on a 32×64 polar grid</li>
+            <li><span data-i18n="genFormulaEmf">Differenced — Faraday's law</span>: <code>ε = −(Φ(θ+ωh) − Φ(θ−ωh)) / 2h</code></li>
+            <li><span data-i18n="genFormulaOut">Comes out</span>: <code>a sine, peak ∝ N·B·ω, lagging Φ by a quarter turn</code></li>
+            <li><span data-i18n="genFormulaWheel">Integrated — the wheel</span>: <code>I·dω/dt = τ(flow) − b·ω</code></li>
           </ul>
         </details>
 
         <details class="formulas" open>
           <summary data-i18n="genNotes">Notes</summary>
           <ul>
-            <li data-i18n="genNote1">Only a changing flux induces a voltage. A magnet held still makes nothing; it's the turning — dΦ/dt — that drives the current, so the faster the wheel spins the brighter the bulb.</li>
-            <li data-i18n="genNote2">The output is alternating: as the magnet rotates, the flux swings + to −, so the induced EMF is a sine wave and the voltmeter needle swings both ways.</li>
-            <li data-i18n="genNote3">Peak voltage scales with every factor in N·B·A·ω — double the loops, the area, the magnet strength, or the spin rate and you double the peak EMF.</li>
+            <li data-i18n="genNote1">Only a changing flux induces a voltage. Close the faucet and the EMF is exactly zero however strong the magnet is and whatever angle it stopped at — the difference that Faraday's law takes is a difference of nothing.</li>
+            <li data-i18n="genNote2">Watch the two curves under the picture. The EMF crosses zero exactly where the flux is at its peak, and peaks where the flux is crossing zero — a quarter turn apart, measured at 90.000°. That offset is not drawn in; it is what differentiating produces.</li>
+            <li data-i18n="genNote3">Double the loops, the magnet or the spin and the peak doubles: the measured exponents are 1.000 in all three. <strong>Area is the exception.</strong> The textbook Φ = N·B·A·cos θ assumes the field is the same everywhere across the coil, and then the peak would be linear in A too. It is not — a wider loop reaches into weaker field, so the measured exponent is about 0.57 and ten times the area buys under four times the EMF.</li>
+            <li data-i18n="genNote4">The peak in the readout is not predicted: it is the largest EMF the machine has actually produced within the last complete turn, so it stays blank until the wheel has managed one. Beside the live EMF sits the same law taken off the recorded trace — the logged flux, differentiated across real frames.</li>
           </ul>
         </details>
       </section>
 
       <section class="stage" aria-label="Visualisation">
-        <canvas id="stage" width="800" height="500" style="touch-action: none;" aria-label="A water wheel spinning a bar magnet inside a pickup coil connected to a light bulb, with the magnetic field and a live voltage trace"></canvas>
+        <canvas id="stage" width="800" height="500" style="touch-action: none;" aria-label="A water wheel spinning a bar magnet inside a pickup coil connected to a light bulb, with the bore field that gets integrated and a live trace of both the flux and the induced EMF"></canvas>
 
         <div class="readouts">
           <div class="readout">
@@ -112,12 +114,16 @@
             <div class="num"><span id="out-emf">0.00</span> V</div>
           </div>
           <div class="readout">
+            <div class="label" data-i18n="genOutFaraday">&minus;d&Phi;/dt, off the trace</div>
+            <div class="num"><span id="out-faraday">&mdash;</span> V</div>
+          </div>
+          <div class="readout">
             <div class="label" data-i18n="genOutRpm">Rotation</div>
             <div class="num"><span id="out-rpm">0</span> rpm</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="genOutPeak">Peak EMF</div>
-            <div class="num"><span id="out-peak">0.00</span> V</div>
+            <div class="label" data-i18n="genOutPeak">Peak EMF, last turn</div>
+            <div class="num"><span id="out-peak">&mdash;</span> V</div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="genOutFreq">Frequency</div>

@@ -38,7 +38,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "semiTitle",        url: "experiments/semiconductor.html", cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#22153a", "#a06fc8"], method: "illustrated", motif: "semi" },
   { titleKey: "diodeTitle",       url: "experiments/diode.html",         cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#2c0e22", "#d65a8a"], method: "illustrated", motif: "diode" },
   { titleKey: "refractionTitle",  url: "experiments/refraction.html",    cat: "Physics",   tags: ["OPTICS", "SNELL"],      colors: ["#0a1428", "#6ea8ff"], method: "measured", motif: "refraction" },
-  { titleKey: "generatorTitle",   url: "experiments/generator.html",     cat: "Physics",   tags: ["INDUCTION", "FARADAY"], colors: ["#1d1405", "#ffe14a"], method: "formula", motif: "generator" },
+  { titleKey: "generatorTitle",   url: "experiments/generator.html",     cat: "Physics",   tags: ["INDUCTION", "FARADAY"], colors: ["#1d1405", "#ffe14a"], method: "measured", motif: "generator" },
   { titleKey: "peTitle",          url: "experiments/photoelectric.html", cat: "Physics",   tags: ["QUANTUM", "PHOTON"],    colors: ["#160b2a", "#b98cff"], method: "measured", motif: "photoelectric" },
   { titleKey: "circuitTitle",     url: "experiments/circuit.html",       cat: "Physics",   tags: ["CIRCUIT", "OHM"],       colors: ["#0a1a1c", "#5fd6c0"], method: "solved", motif: "circuit" },
   { titleKey: "diffTitle",        url: "experiments/diffraction.html",   cat: "Physics",   tags: ["OPTICS", "QUANTUM"],    colors: ["#101024", "#8ab4ff"], method: "formula", motif: "diffraction" },
