@@ -31,7 +31,7 @@ const VERIFIED = new Set([
   "experiments/enzyme.html",
   "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
   "experiments/pendulum.html", "experiments/phases.html", "experiments/photoelectric.html",
-  "experiments/projectile.html",
+  "experiments/projectile.html", "experiments/refraction.html",
   "experiments/resonance.html",
   "experiments/selection.html", "experiments/spectra.html", "experiments/string.html",
 ]);
