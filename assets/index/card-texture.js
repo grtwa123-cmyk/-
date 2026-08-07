@@ -36,9 +36,26 @@ const EDGE   = 22;                        // text safe-area from the rounded edg
 const HEADER_Y = 44;                      // baseline for CATEGORY row
 const FOOTER_Y = CARD_H - 26;             // baseline for TAGS row
 
-const TITLE_FONT = '700 50px -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+// Pretendard first, for the reason given in index.css: this file wraps the
+// title by measuring it, so the face has to be the same one everywhere or the
+// line count changes from machine to machine. Chinese has no Pretendard
+// coverage and falls through to the system CJK faces.
+const TITLE_STACK = '"Pretendard Variable",Pretendard,system-ui,-apple-system,'
+  + '"Segoe UI","Apple SD Gothic Neo","Noto Sans KR","Noto Sans SC","PingFang SC",'
+  + '"Microsoft YaHei",sans-serif';
+const TITLE_FONT = `700 50px ${TITLE_STACK}`;
 const META_FONT  = '600 17px ui-monospace,"SF Mono",Consolas,monospace';
 const TAG_FONT   = '500 15px ui-monospace,"SF Mono",Consolas,monospace';
+
+/**
+ * Canvas text does not reflow when a webfont arrives — whatever face was
+ * available at draw time is baked into the bitmap. Callers await this before
+ * their first paint, and the wall repaints again if it resolves late.
+ */
+export function titleFontReady() {
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
+  return document.fonts.load(TITLE_FONT, "가A").catch(() => {});
+}
 
 export const CARD_SIZE = Object.freeze({ w: CARD_W, h: CARD_H });
 

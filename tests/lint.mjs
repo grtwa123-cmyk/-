@@ -34,7 +34,14 @@ const tracked = execSync("git ls-files --cached --others --exclude-standard",
   .filter((f, i, a) => a.indexOf(f) === i);
 
 const BINARY = /\.(png|jpe?g|ico|gif|webp|woff2?|ttf|mp3|wav)$/i;
-const text = tracked.filter((f) => !BINARY.test(f));
+
+// Third-party text that has to ship byte-for-byte. The OFL requires the
+// licence to travel with the font, and reformatting someone else's licence to
+// suit our .editorconfig is not a change we get to make — it arrives from
+// upstream with a trailing space and no final newline, and it stays that way.
+const VENDORED = /^assets\/fonts\/OFL\.txt$/;
+
+const text = tracked.filter((f) => !BINARY.test(f) && !VENDORED.test(f));
 
 // ── 1. Syntax ─────────────────────────────────────────────────────────────
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sciencelab-lint-"));

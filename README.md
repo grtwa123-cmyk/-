@@ -134,7 +134,7 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 23 suites, 755 checks
+npm test                 # 24 suites, 771 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
@@ -154,6 +154,7 @@ port to collide with `npm run serve`.
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. |
 | `circuit`, `diffraction`, `electrolysis`, `enzyme`, `equilibrium`, `generator`, `lens`, `neuron`, `pendulum`, `phases`, `photoelectric`, `projectile`, `refraction`, `resonance`, `selection`, `spectra`, `string` | The physics. Each simulation is checked against its closed form — Ohm's law and Kirchhoff residuals, the N-slit intensity and its missing orders, Michaelis–Menten from counted turnovers, equilibrium constants from counted reaction events against k₊/k₋ and van 't Hoff, the thin-lens equation from traced rays, Hodgkin–Huxley threshold and refractory period, Foucault precession at Ω·sin φ, a projectile's measured range against v₀²sin2θ/g and the optimal launch angle found by sweep, Planck's constant fitted from counted stopping voltages, the Rydberg constant fitted from emitted lines, Faraday's 2 : 1 counted out of the bubbles, Snell's law read off a Huygens wavelet envelope and cross-checked against Fermat's least-time path, an AC waveform and its quarter-turn phase produced by differentiating an integrated flux, Lennard-Jones melting, condensation and Maxwell–Boltzmann relaxation, the resonant amplitude and phase measured back out of the motion, Wright–Fisher against the infinite-population recursion, and harmonics found by transforming a plucked string rather than written down. Where a check is statistical the bound is derived from the run's own counts, not picked. |
+| `fonts` | The self-hosted Pretendard subset. Every Korean syllable, Latin character and symbol the three dictionaries can put on screen must be in the shipped font, or the check names the ones that fell out and points at `tools/build-font.py`. It also holds the site to `assets/fonts/coverage.json` — the characters Pretendard genuinely lacks and that therefore fall back — in both directions, so neither the font nor the note about it can drift. And it confirms the font costs no third-party request. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 
@@ -176,7 +177,10 @@ Playwright. `smoke` alone will skip its browser section and still run the rest
 ├── 404.html                    Graceful not-found fallback
 ├── styles.css                  Shared hub / experiment styles + per-theme tokens
 ├── i18n.js                     EN / KO / ZH dictionary + data-i18n binding
+├── tools/
+│   └── build-font.py           Regenerates the Pretendard subset (manual, rare)
 ├── assets/
+│   ├── fonts/                  Self-hosted Pretendard subset + OFL licence
 │   ├── gl3d.js                 WebGL ball-and-stick 3D viewer (orbit + lighting)
 │   ├── sfx.js                  Procedural Web Audio SFX engine + mute toggle
 │   └── index/                  Landing-page modules
@@ -236,6 +240,7 @@ Playwright. `smoke` alone will skip its browser section and still run the rest
 - **i18n** is a 250-line single file. `data-i18n="key"` on any element + `i18n.applyLang('ko')` walks the DOM, replaces text content, updates `<html lang>`, and emits a `langchange` event the landing page listens for to re-render its canvas cards.
 - **Numerical integration.** RK4, leapfrog, and sub-stepped Euler depending on the experiment. Mass and momentum are conserved where the physics calls for it.
 - **Real 3D where the science is 3D.** `assets/gl3d.js` is a small ball-and-stick viewer written straight on WebGL — perspective camera, depth buffer, Blinn–Phong shading, and orbit on both axes — with no runtime dependency, so the molecule, crystal, and DNA models keep working offline. Scenes are just lists of spheres and cylinders; a 2D overlay canvas carries the labels, positioned by projecting world points back to CSS pixels. The loop redraws only when something actually changed, so a model sitting still costs no frames at all.
+- **One font, pinned.** The site self-hosts a 458 KB subset of [Pretendard](https://github.com/orioncactus/pretendard) (SIL OFL 1.1) rather than naming a stack of system faces. That is not decoration: the landing wall draws each card title into a canvas and wraps it by *measuring* it, so when `-apple-system` / `Segoe UI` / `Apple SD Gothic Neo` resolved to a different Korean face on every platform, the same card could break onto a different number of lines depending on who was looking. `tools/build-font.py` cuts the upstream variable font down to KS X 1001 — the 2 350-syllable national standard, which already contains every syllable the three dictionaries use — plus the Latin and the Greek and mathematical symbols the copy actually contains, found by scanning the source rather than by keeping a list. Pretendard carries no CJK ideographs, so Chinese still falls through to the system stack; `assets/fonts/coverage.json` records exactly which characters do, and the `fonts` suite fails if that ever stops being true.
 - **Procedural sound.** `assets/sfx.js` is a tiny Web Audio engine — every effect is synthesised from oscillators and noise buffers (no audio files, nothing to download), tied to each experiment's real events: a Geiger crackle per radioactive decay, the generator's hum rising with the wheel speed, a Doppler-shifted tone, electrolysis fizz, titration drips, and more. Audio unlocks on the first gesture and a floating 🔊 toggle (persisted to `localStorage`) mutes the whole site.
 - **WebGL black hole.** Vector Binet equation `a = −3Mh²x/r⁵` integrated with leapfrog (adaptive steps) for the exact photon-sphere shadow; Novikov–Thorne emissivity for the disk; bolometric beaming `I ∝ g⁴`.
 

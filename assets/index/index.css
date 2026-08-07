@@ -11,13 +11,39 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/*
+ * Pretendard (SIL Open Font License 1.1) — assets/fonts/OFL.txt.
+ *
+ * Self-hosted rather than pulled from a CDN, and subset by
+ * tools/build-font.py to KS X 1001 plus the symbols the pages use. The old
+ * stack resolved to a different Korean face on every platform, each with its
+ * own advance widths; the wall wraps card titles by measuring them into a
+ * canvas, so "different widths" meant a different number of lines depending
+ * on the machine. Pinning the face pins the metrics.
+ *
+ * Pretendard carries no CJK ideographs, so Chinese still falls through to the
+ * system faces further down --font-ui.
+ */
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("../fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+}
+
+:root {
+  --font-ui: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans SC", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
   background: #08080d;
   color: #f3f1ea;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Apple SD Gothic Neo", "Noto Sans KR", "Helvetica Neue", sans-serif;
+  font-family: var(--font-ui);
 }
 
 body { cursor: none; }

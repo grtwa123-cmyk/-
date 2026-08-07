@@ -18,6 +18,17 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%2304060d'/&gt;&lt;circle cx='32' cy='32' r='12' fill='%23000'/&gt;&lt;ellipse cx='32' cy='34' rx='22' ry='6' fill='none' stroke='%23e08a4a' stroke-width='2'/&gt;&lt;/svg&gt;" />
   <title data-i18n="bhPageTitle">Black Hole · Schwarzschild Lensing</title>
   <style>
+  /* Pretendard (SIL OFL 1.1) — see assets/fonts/OFL.txt and the note in
+     styles.css. Self-hosted and subset so the Korean face is the same one
+     on every platform. */
+  @font-face {
+    font-family: "Pretendard Variable";
+    font-weight: 45 920;
+    font-style: normal;
+    font-display: swap;
+    src: url("../assets/fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+  }
+
     :root {
       --panel-bg: rgba(10, 12, 20, 0.72);
       --panel-border: rgba(255, 255, 255, 0.14);
@@ -27,7 +38,7 @@
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--text); }
+    body { font-family: "Pretendard Variable",Pretendard,system-ui,-apple-system,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; color: var(--text); }
     canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
     .overlay { position: fixed; z-index: 10; }
