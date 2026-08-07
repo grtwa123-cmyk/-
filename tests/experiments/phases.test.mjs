@@ -211,12 +211,31 @@ const MK = `const M = window.__md;
 }
 
 // ── Maxwell–Boltzmann emerges from a single starting speed ────────────
-// Seeded as a spike, so χ² against the 2D Maxwell–Boltzmann form starts in the
-// hundreds (208–778 over 20 offline replicates) and relaxes to single digits
-// (3.5–22.0). The bounds below sit outside both of those ranges.
+//
+// Every particle is seeded at exactly speed 1, so at t = 0 the distribution is
+// a spike where Maxwell and Boltzmann want a spread. χ² against the 2D form is
+// the obvious way to say so, but it is a poor statistic here: build() also
+// subtracts the centre-of-mass drift, a random vector of size ~1/√N, which
+// smears the spike by a random amount. Over 60 builds χ² came out 120–778,
+// mean 356, sd 138 — so the old "> 100" bound sat under two sigma from the
+// mean and duly went red on CI at 88.
+//
+// The width of the spike is the thing actually being claimed, so measure that
+// instead: the coefficient of variation of the speeds. It separates cleanly —
+// 0.002–0.173 at t = 0 against 0.438 once relaxed, next to √(4/π − 1) = 0.523
+// for a true 2D Maxwell–Boltzmann — and it says "every particle gets the same
+// one" directly rather than through a goodness-of-fit proxy.
 {
   const r = await page.evaluate(new Function(`${MK}
     const T = 1.0;
+    const cv = (v) => { const m = v.reduce((a,b)=>a+b,0)/v.length;
+      return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/v.length)/m; };
+    // Five fresh builds, so the claim is about the seeding and not about one
+    // lucky draw of the drift that gets subtracted out of it.
+    const cvSeeded = [];
+    for (let k=0;k<5;k++){ M.build(mk({ T, rho:0.5 }));
+      cvSeeded.push(cv(Array.from(M.speeds()))); }
+
     M.build(mk({ T, rho:0.5 }));
     const before = Array.from(M.speeds());
     for (let i=0;i<20000;i++){ M.step(); if(i%10===0) M.setTemperature(T); }
@@ -239,12 +258,18 @@ const MK = `const M = window.__md;
     const Tm = M.temperature();
     const after = Array.from(M.speeds());
     return { chiBefore: compare(before, 1.0), chiAfter: compare(after, Tm), Tm,
+             cvSeeded, cvAfter: cv(after),
              meanKE: M.kinetic()/M.system().N };`));
+  const MB_CV = Math.sqrt(4 / Math.PI - 1);          // 0.5227 in two dimensions
+  const worstSeeded = Math.max(...r.cvSeeded);
   chk('the speeds start off *not* Maxwell–Boltzmann (every particle gets the same one)',
-      r.chiBefore > 100, `χ² = ${r.chiBefore.toFixed(1)}`);
+      worstSeeded < 0.25,
+      `spread/mean ≤ ${worstSeeded.toFixed(4)} across 5 builds, against ${MB_CV.toFixed(4)} for Maxwell–Boltzmann`);
   chk('collisions drive them onto the Maxwell–Boltzmann distribution',
-      r.chiAfter < r.chiBefore / 5 && r.chiAfter < 30,
-      `χ² ${r.chiBefore.toFixed(1)} → ${r.chiAfter.toFixed(1)}`);
+      Math.abs(r.cvAfter - MB_CV) < 0.15 && r.cvAfter > worstSeeded * 2
+      && r.chiAfter < r.chiBefore / 5 && r.chiAfter < 30,
+      `spread/mean ${worstSeeded.toFixed(4)} → ${r.cvAfter.toFixed(4)} (want ${MB_CV.toFixed(4)}), `
+      + `χ² ${r.chiBefore.toFixed(1)} → ${r.chiAfter.toFixed(1)}`);
   chk('T* really is the mean kinetic energy per particle',
       Math.abs(r.meanKE - r.Tm) < 1e-9, `${r.meanKE.toFixed(6)} vs ${r.Tm.toFixed(6)}`);
 }
