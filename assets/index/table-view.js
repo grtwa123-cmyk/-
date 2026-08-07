@@ -46,7 +46,8 @@ const METHOD_MARK = {
  * is actually on disk, so the claim can never outrun the evidence.
  */
 const VERIFIED = new Set([
-  "experiments/circuit.html", "experiments/diffraction.html", "experiments/electrolysis.html",
+  "experiments/circuit.html", "experiments/decay.html", "experiments/diffraction.html",
+  "experiments/electrolysis.html",
   "experiments/enzyme.html", "experiments/generator.html",
   "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
   "experiments/pendulum.html", "experiments/phases.html", "experiments/photoelectric.html",
