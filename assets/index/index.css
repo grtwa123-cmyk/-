@@ -60,6 +60,14 @@
   --vignette-0: rgba(8, 8, 13, 0);
   --vignette-1: rgba(8, 8, 13, 0.5);
   --vignette-2: rgba(8, 8, 13, 0.92);
+
+  /* One hue per category, used by both the filter buttons and the row chips.
+     The light theme keeps the hue and takes the lightness the other way —
+     these are text colours as well as fills, and a tint chosen against a
+     near-black page is unreadable on a near-white one. */
+  --cat-physics: #8cbaff;
+  --cat-chemistry: #c47bff;
+  --cat-biology: #e58fff;
 }
 
 :root[data-theme-mode="light"] {
@@ -69,8 +77,11 @@
   --ink-dim: rgba(20, 24, 42, 0.62);
   --ink-2: #2b3149;
   --ink-3: #4a5270;
-  --ink-4: #646d8c;
-  --ink-5: #77809d;
+  /* Deep enough to be read, not just seen: at #646d8c the table's row numbers
+     and filter counts came in at 4.2:1 against the page, under WCAG AA's 4.5
+     for body-sized text. tests/theme.test.mjs computes that ratio. */
+  --ink-4: #5b6480;
+  --ink-5: #6d7694;
   --on-ink: #f4f6fc;
   --hair: rgba(18, 24, 46, 0.12);
   --hair-strong: rgba(18, 24, 46, 0.20);
@@ -82,6 +93,10 @@
   --vignette-0: rgba(238, 241, 248, 0);
   --vignette-1: rgba(238, 241, 248, 0.55);
   --vignette-2: rgba(238, 241, 248, 0.94);
+
+  --cat-physics: #1f56c4;
+  --cat-chemistry: #7b2fc4;
+  --cat-biology: #a3199f;
 }
 
 html, body {
@@ -532,6 +547,17 @@ canvas { display: block; }
   box-shadow: var(--pill-spec), var(--pill-glow);
 }
 
+/* The selected pill is a bright chip meant to stand out against a dark wall.
+   On a light page it was a white chip carrying --on-ink text, which in light
+   mode is also near-white: 1.05:1, a label that is simply not there. Light
+   mode inverts the pair — the ink becomes the chip, the page becomes the
+   label. Both switchers, because both had it. */
+:root[data-theme-mode="light"] .lang-btn.active,
+:root[data-theme-mode="light"] .ui-btn.active {
+  background: linear-gradient(180deg, #333a55 0%, #1b2036 100%);
+  color: #f4f6fc;
+}
+
 /* In the plain view the page scrolls, the pointer is a pointer, and the
    wall's decoration gets out of the way. */
 body.ui-table { cursor: auto; overflow: auto; }
@@ -574,9 +600,18 @@ body.ui-table .table-view { padding-top: 28px; }
 }
 
 .tv-head h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
-.tv-head p  { margin-top: 8px; color: #9a99a4; font-size: 0.95rem; }
+.tv-head p  { margin-top: 8px; color: var(--ink-3); font-size: 0.95rem; }
 
 .tv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 18px; }
+
+/* Each filter takes the colour of the category it selects, so the button that
+   isolates a category and the chips in the rows it leaves behind are the same
+   colour. Matched case-insensitively with [i]: data-cat is capitalised
+   because tests/view-switcher.test.mjs clicks it by that exact value, and
+   lowercasing it here would be a stylesheet quietly deciding the markup. */
+.tv-filter[data-cat="physics" i]   { --cat: var(--cat-physics); }
+.tv-filter[data-cat="chemistry" i] { --cat: var(--cat-chemistry); }
+.tv-filter[data-cat="biology" i]   { --cat: var(--cat-biology); }
 
 .tv-filter {
   display: inline-flex;
@@ -598,14 +633,19 @@ body.ui-table .table-view { padding-top: 28px; }
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
 }
-.tv-filter:hover { background: var(--fill-3); color: var(--ink); }
-.tv-filter:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.tv-filter.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--on-ink);
+.tv-filter:hover {
+  background: color-mix(in srgb, var(--cat, var(--ink)) 14%, var(--fill-1));
+  border-color: color-mix(in srgb, var(--cat, var(--ink)) 34%, transparent);
+  color: var(--ink);
 }
-.tv-filter.active small { color: #55545c; }
+.tv-filter:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* "All" has no category, so it falls back to the plain ink pill it always was. */
+.tv-filter.active {
+  background: var(--cat, var(--ink));
+  border-color: var(--cat, var(--ink));
+  color: var(--page);
+}
+.tv-filter.active small { color: color-mix(in srgb, var(--page) 72%, transparent); }
 
 .tv-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 
@@ -627,36 +667,91 @@ body.ui-table .table-view { padding-top: 28px; }
   vertical-align: top;
 }
 
-.tv-table tbody tr { cursor: pointer; transition: background 0.12s; }
-.tv-table tbody tr:hover { background: var(--fill-1); }
-.tv-table tbody tr:focus-within { background: var(--fill-2); }
-
-.tv-num {
-  width: 3.4rem;
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-  color: var(--ink-5);
-  font-variant-numeric: tabular-nums;
+/* Each row carries its experiment's own two catalogue colours as --row-a (the
+   accent) and --row-b (the deep base), set in table-view.js. They are spent
+   three ways: a rail down the left edge, a wash under the row on hover, and
+   the title tinted toward the accent — but only mixed with the ink, never
+   replaced by it, or a row whose accent happens to be #ffe14a would hand the
+   reader yellow text on a white page. */
+.tv-table tbody tr { cursor: pointer; transition: background 0.16s ease; }
+.tv-table tbody tr:hover,
+.tv-table tbody tr:focus-within {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--row-a, var(--ink)) 15%, transparent),
+    color-mix(in srgb, var(--row-a, var(--ink)) 5%, transparent) 55%,
+    transparent);
 }
 
-.tv-link { color: var(--ink); text-decoration: none; font-weight: 600; }
-.tv-link:hover { text-decoration: underline; }
+.tv-num {
+  position: relative;
+  width: 3.6rem;
+  padding-left: 20px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.tv-num::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 13px;
+  bottom: 13px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg,
+    var(--row-a, var(--hair-strong)),
+    color-mix(in srgb, var(--row-b, var(--hair)) 55%, var(--row-a, transparent)));
+  opacity: 0.72;
+  transition: width 0.16s ease, opacity 0.16s ease, top 0.16s ease, bottom 0.16s ease;
+}
+.tv-table thead .tv-num::before { content: none; }
+.tv-table tbody tr:hover .tv-num::before,
+.tv-table tbody tr:focus-within .tv-num::before {
+  width: 5px;
+  opacity: 1;
+  top: 7px;
+  bottom: 7px;
+}
+.tv-table tbody tr:hover .tv-num { color: var(--ink-3); }
+
+.tv-link {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: -0.005em;
+}
+.tv-table tbody tr:hover .tv-link {
+  color: color-mix(in srgb, var(--row-a, var(--ink)) 45%, var(--ink));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .tv-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 3px; }
 
-.tv-desc { margin-top: 5px; color: #9a99a4; font-size: 0.85rem; line-height: 1.5; max-width: 62ch; }
+.tv-desc {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  max-width: 58ch;
+}
 
 .tv-cat {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--cat) 32%, transparent);
+  background: color-mix(in srgb, var(--cat) 15%, transparent);
+  color: var(--cat);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
-.tv-cat-physics   { background: rgba(110, 168, 255, 0.16); color: #8cbaff; }
-.tv-cat-chemistry { background: rgba(196, 123, 255, 0.16); color: #c47bff; }
-.tv-cat-biology   { background: rgba(229, 143, 255, 0.16); color: #e58fff; }
+.tv-cat-physics   { --cat: var(--cat-physics); }
+.tv-cat-chemistry { --cat: var(--cat-chemistry); }
+.tv-cat-biology   { --cat: var(--cat-biology); }
 
 /* The method column: the landing table is where a reader compares the
    catalogue, so it is where "measured" versus "closed form" is worth saying.
@@ -664,45 +759,68 @@ body.ui-table .table-view { padding-top: 28px; }
    rules here. Keep the two in step — `method-badges` checks the markup, not
    the paint. */
 .tv-method { white-space: nowrap; }
+
+/* One --tone per method, so the pill's text, fill and border are three
+   strengths of a single colour rather than three numbers to keep in step. */
 .method-tag {
-  display: inline-block;
-  padding: 0.15rem 0.55rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.34rem;
+  padding: 0.18rem 0.6rem;
   font-size: 0.7rem;
   font-weight: 600;
   border-radius: 999px;
-  border: 1px solid transparent;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 34%, transparent);
   letter-spacing: 0.02em;
   cursor: help;
 }
-.method-tag[data-method="measured"]    { color: #7ee0b0; background: rgba(60, 190, 130, 0.14); border-color: rgba(60, 190, 130, 0.34); }
-/* Mint on a dark field goes invisible on paper; the light theme keeps the hue
+/* The shape marker. Six pills that differ only in hue are six pills a
+   colour-blind reader cannot tell apart, so the glyph is the distinction and
+   the colour is the reinforcement. It is a real <span> in the markup, not a
+   ::before here — see the note in table-view.js. */
+.method-mark { font-size: 0.86em; line-height: 1; opacity: 0.95; }
+
+.method-tag[data-method="measured"]    { --tone: #7ee0b0; }
+.method-tag[data-method="integrated"]  { --tone: #8fc0f5; }
+.method-tag[data-method="solved"]      { --tone: #b7a8f0; }
+.method-tag[data-method="formula"]     { --tone: #e8c07a; }
+.method-tag[data-method="model"]       { --tone: #9fd3d8; }
+.method-tag[data-method="illustrated"] { --tone: #a3adc6; }
+.method-verified { --tone: #7ee0b0; }
+
+/* These are text colours, not just fills. A mint chosen against a near-black
+   page is invisible on a near-white one, so the light theme keeps every hue
    and takes the lightness the other way. Same for the CDN-failure notice. */
-:root[data-theme-mode="light"] .method-tag[data-method="measured"] { color: #0a6b46; background: rgba(16, 150, 100, 0.13); border-color: rgba(16, 150, 100, 0.34); }
-:root[data-theme-mode="light"] .method-verified { color: #0a6b46; }
+:root[data-theme-mode="light"] .method-tag[data-method="measured"]    { --tone: #0a6340; }
+:root[data-theme-mode="light"] .method-tag[data-method="integrated"]  { --tone: #1a55ac; }
+:root[data-theme-mode="light"] .method-tag[data-method="solved"]      { --tone: #5236b8; }
+:root[data-theme-mode="light"] .method-tag[data-method="formula"]     { --tone: #7f4e05; }
+:root[data-theme-mode="light"] .method-tag[data-method="model"]       { --tone: #0f6570; }
+:root[data-theme-mode="light"] .method-tag[data-method="illustrated"] { --tone: #4f5872; }
+:root[data-theme-mode="light"] .method-verified { --tone: #0a6340; }
 :root[data-theme-mode="light"] .ui-note {
   background: rgba(255, 232, 235, 0.96);
   border-color: rgba(190, 60, 85, 0.35);
   color: #8c1f36;
 }
-.method-tag[data-method="integrated"]  { color: #8fc0f5; background: rgba(90, 150, 230, 0.14); border-color: rgba(90, 150, 230, 0.32); }
-.method-tag[data-method="solved"]      { color: #b7a8f0; background: rgba(140, 120, 230, 0.14); border-color: rgba(140, 120, 230, 0.32); }
-.method-tag[data-method="formula"]     { color: #e8c07a; background: rgba(220, 165, 70, 0.13); border-color: rgba(220, 165, 70, 0.30); }
-.method-tag[data-method="model"]       { color: #9fd3d8; background: rgba(110, 190, 200, 0.13); border-color: rgba(110, 190, 200, 0.30); }
-.method-tag[data-method="illustrated"] { color: #96a0b9; background: rgba(150, 160, 185, 0.10); border-color: rgba(150, 160, 185, 0.26); }
+
 .method-verified {
-  display: inline-block;
-  margin-left: 0.3rem;
-  padding: 0.15rem 0.5rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-left: 0.35rem;
+  padding: 0.18rem 0.55rem;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #7ee0b0;
-  background: rgba(60, 190, 130, 0.1);
-  border: 1px solid rgba(60, 190, 130, 0.28);
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
   border-radius: 999px;
   letter-spacing: 0.02em;
   cursor: help;
 }
-.method-verified::before { content: "✓ "; }
 
 .tv-tags {
   font-family: ui-monospace, monospace;
@@ -721,12 +839,47 @@ body.ui-table .table-view { padding-top: 28px; }
   }
   .table-view { padding: 78px 14px calc(120px + env(safe-area-inset-bottom)); }
   .tv-head h1 { font-size: 1.5rem; }
-  /* Topics and the row number are the first things to go when space is
-     tight — the title, its description and the category still carry the
-     whole table. */
-  .tv-table .tv-tags, .tv-table .tv-num { display: none; }
-  /* The verified mark goes before the method itself: on a phone the method
-     is the more useful of the two, so it is the one that stays. */
+  /* Topics are the first thing to go when space is tight — the title, its
+     description and the category still carry the whole table. */
+  .tv-table .tv-tags { display: none; }
+  /* The verified mark goes next: on a phone the method is the more useful of
+     the two, so it is the one that stays. */
   .tv-table .method-verified { display: none; }
   .tv-table td { padding: 12px 8px; }
+  /* The row number goes too, but its cell stays, collapsed to just the rail.
+     Once the table is this narrow that rail is the only place the
+     experiment's own colour still appears. */
+  .tv-table .tv-num {
+    width: 13px;
+    padding: 12px 0;
+    font-size: 0;
+  }
+  .tv-table .tv-num::before { top: 10px; bottom: 10px; }
+  /* "How the numbers are produced" is a long heading held on one line, which
+     set a floor on the table's width that no amount of narrowing could get
+     under — at 390px the table stayed 488px wide and the heading was simply
+     sliced off at the right edge. The document could not overflow (html and
+     body are overflow:hidden so the wall can own the viewport), so nothing
+     noticed until tests/view-switcher.test.mjs started measuring the table
+     rather than the page. Let the headings wrap; keep each pill unbroken. */
+  .tv-table th, .tv-table .tv-method { white-space: normal; }
+  .tv-table .method-tag { white-space: nowrap; }
+}
+
+/* A phone. Four columns of unbreakable pills still set a floor the viewport
+   is under, so this is where the last of the slack comes from: tighter cells,
+   smaller chips, and titles allowed to break mid-word rather than hold the
+   column open. Nothing is dropped — the category is the one thing left that
+   the filter above does not already tell you about a given row. */
+@media (max-width: 480px) {
+  .tv-table td { padding: 11px 6px; }
+  .tv-table th { padding: 9px 6px; font-size: 0.62rem; letter-spacing: 0.06em; }
+  .tv-table .tv-cat, .tv-table .method-tag { font-size: 0.63rem; padding: 0.14rem 0.44rem; }
+  .tv-link { font-size: 0.95rem; }
+  /* And the description goes. Squeezed into what is left of a 320px row it
+     wraps at about nine characters a line and turns every row into a column
+     of fragments — worse to read than not having it. Title, category and
+     method still say what the row is, and dropping it also gives the title
+     back enough width to break between words rather than inside them. */
+  .tv-desc { display: none; }
 }

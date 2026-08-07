@@ -21,6 +21,25 @@ const METHOD_KEY = {
 };
 
 /*
+ * A marker beside each method label. Six pills that differ only in hue are
+ * six pills a colour-blind reader cannot tell apart, so the shape carries the
+ * distinction and the colour only reinforces it: a filled dot for a
+ * measurement, an integral sign for something stepped forward in time, an
+ * approximation sign for a numerical solve, an equals sign for a closed form,
+ * a solid diamond for a built structure, an empty circle for an illustration.
+ *
+ * Every glyph here is one upstream Pretendard actually has, and
+ * tests/fonts.test.mjs walks the rendered table and fails on one that is not.
+ * That walk reads textContent, which is also why these live in a <span> and
+ * not a CSS ::before — a pseudo-element's glyph is invisible to it, and the
+ * theme toggle already shipped two missing icons that way once.
+ */
+const METHOD_MARK = {
+  measured: "●", integrated: "∫", solved: "≈",
+  formula: "=", model: "◆", illustrated: "○",
+};
+
+/*
  * Which experiments a dedicated physics suite holds against a closed form.
  * Listed rather than derived because the browser cannot see the tests
  * directory — `tests/method-badges.test.mjs` fails if this drifts from what
@@ -44,6 +63,15 @@ const CAT_KEY = {
 
 const tr = (key, fallback) =>
   (window.i18n && window.i18n.t(key)) || fallback || key;
+
+/** A badge's shape marker: decorative, so the label is what gets read out. */
+function mark(glyph) {
+  const s = document.createElement("span");
+  s.className = "method-mark";
+  s.setAttribute("aria-hidden", "true");
+  s.textContent = glyph || "";
+  return s;
+}
 
 let filter = "All";
 let root = null;
@@ -98,11 +126,23 @@ function buildTable() {
   for (const e of rows) {
     const tr_ = document.createElement("tr");
 
+    /*
+     * The two colours the wall paints this experiment's card with, handed to
+     * the stylesheet as custom properties: --row-a is the accent, --row-b the
+     * deep base. The row's rail, its hover wash and its title on hover are all
+     * mixed from them, so the table and the wall are recognisably one
+     * catalogue rather than two lists that happen to agree.
+     */
+    const [deep, accent] = e.colors || [];
+    if (accent) tr_.style.setProperty("--row-a", accent);
+    if (deep) tr_.style.setProperty("--row-b", deep);
+
     const num = document.createElement("td");
     num.className = "tv-num";
     num.textContent = String(e.index + 1).padStart(2, "0");
 
     const name = document.createElement("td");
+    name.className = "tv-name";
     const a = document.createElement("a");
     a.href = e.url;
     a.className = "tv-link";
@@ -130,13 +170,13 @@ function buildTable() {
     const mTag = document.createElement("span");
     mTag.className = "method-tag";
     mTag.dataset.method = e.method;
-    mTag.textContent = tr(METHOD_KEY[e.method], e.method);
+    mTag.append(mark(METHOD_MARK[e.method]), tr(METHOD_KEY[e.method], e.method));
     mTag.title = tr(METHOD_KEY[e.method] + "Why", "");
     method.appendChild(mTag);
     if (VERIFIED.has(e.url)) {
       const v = document.createElement("span");
       v.className = "method-verified";
-      v.textContent = tr("methodVerified", "Verified");
+      v.append(mark("✓"), tr("methodVerified", "Verified"));
       v.title = tr("methodVerifiedWhy", "");
       method.appendChild(v);
     }

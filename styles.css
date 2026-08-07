@@ -445,6 +445,12 @@ input[type="text"]:focus-visible {
 
 .molecule-list .mol-btn.active small { color: rgba(11, 16, 36, 0.72); }
 
+/* The active chip is the accent, and light mode's accent is a deep blue, so
+   the near-black label on it came in at 2.7:1. Same inversion the language
+   pills already make. */
+:root[data-theme-mode="light"] .molecule-list .mol-btn.active { color: #fff; }
+:root[data-theme-mode="light"] .molecule-list .mol-btn.active small { color: rgba(255, 255, 255, 0.94); }
+
 .property-list { margin-top: 1rem; display: grid; gap: 0.45rem; }
 
 .property {
@@ -816,12 +822,34 @@ body:not([data-theme]) header.site-header p {
   cursor: help;
   vertical-align: middle;
 }
-.method-tag[data-method="measured"]    { color: #7ee0b0; background: rgba(60, 190, 130, 0.14); border-color: rgba(60, 190, 130, 0.34); }
-.method-tag[data-method="integrated"]  { color: #8fc0f5; background: rgba(90, 150, 230, 0.14); border-color: rgba(90, 150, 230, 0.32); }
-.method-tag[data-method="solved"]      { color: #b7a8f0; background: rgba(140, 120, 230, 0.14); border-color: rgba(140, 120, 230, 0.32); }
-.method-tag[data-method="formula"]     { color: #e8c07a; background: rgba(220, 165, 70, 0.13); border-color: rgba(220, 165, 70, 0.30); }
-.method-tag[data-method="model"]       { color: #9fd3d8; background: rgba(110, 190, 200, 0.13); border-color: rgba(110, 190, 200, 0.30); }
-.method-tag[data-method="illustrated"] { color: var(--muted); background: rgba(150, 160, 185, 0.10); border-color: rgba(150, 160, 185, 0.26); }
+/* One --tone per method: the pill's text, fill and border are three strengths
+   of a single colour rather than three numbers to keep in step. The landing
+   page repeats these badges from its own stylesheet — keep the two in step. */
+.method-tag[data-method="measured"]    { --tone: #7ee0b0; }
+.method-tag[data-method="integrated"]  { --tone: #8fc0f5; }
+.method-tag[data-method="solved"]      { --tone: #b7a8f0; }
+.method-tag[data-method="formula"]     { --tone: #e8c07a; }
+.method-tag[data-method="model"]       { --tone: #9fd3d8; }
+.method-tag[data-method="illustrated"] { --tone: #a3adc6; }
+.method-verified { --tone: #7ee0b0; }
+
+/* These are text colours, not just fills, and every one of them was picked
+   against a near-black page. On paper the mint badge measured 1.3:1 — a word
+   that is not there. Light mode keeps each hue and takes the lightness the
+   other way. tests/theme.test.mjs walks the badges and computes the ratio. */
+:root[data-theme-mode="light"] .method-tag[data-method="measured"]    { --tone: #0a6340; }
+:root[data-theme-mode="light"] .method-tag[data-method="integrated"]  { --tone: #1a55ac; }
+:root[data-theme-mode="light"] .method-tag[data-method="solved"]      { --tone: #5236b8; }
+:root[data-theme-mode="light"] .method-tag[data-method="formula"]     { --tone: #7f4e05; }
+:root[data-theme-mode="light"] .method-tag[data-method="model"]       { --tone: #0f6570; }
+:root[data-theme-mode="light"] .method-tag[data-method="illustrated"] { --tone: #4f5872; }
+:root[data-theme-mode="light"] .method-verified { --tone: #0a6340; }
+
+.method-tag {
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 15%, transparent);
+  border-color: color-mix(in srgb, var(--tone) 34%, transparent);
+}
 
 .method-verified {
   display: inline-block;
@@ -829,9 +857,9 @@ body:not([data-theme]) header.site-header p {
   padding: 0.15rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #7ee0b0;
-  background: rgba(60, 190, 130, 0.1);
-  border: 1px solid rgba(60, 190, 130, 0.28);
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
   border-radius: var(--radius-pill);
   letter-spacing: 0.02em;
   cursor: help;

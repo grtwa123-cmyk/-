@@ -192,12 +192,9 @@ const textOf = (d) => Object.values(d).join("");
    * CJK is excluded: Chinese has no Pretendard coverage at all and falls back
    * by design, which the check above already asserts.
    */
-  const p2 = await browser.newPage();
-  await p2.goto(url("physics.html"), { waitUntil: "networkidle" });
-  await p2.waitForTimeout(400);
-  const chrome = await p2.evaluate(() => {
+  const sweep = () => {
     const sel = ".theme-btn, .lang-btn, .method-tag, .method-verified, .crumbs,"
-      + " .version-tag, .hub-tab, .site-header h1";
+      + " .version-tag, .hub-tab, .site-header h1, .tv-cat, .tv-tags";
     const chars = new Set();
     for (const el of document.querySelectorAll(sel)) {
       for (const ch of el.textContent) {
@@ -206,19 +203,36 @@ const textOf = (d) => Object.values(d).join("");
       }
     }
     return [...chars];
-  });
+  };
+
+  const p2 = await browser.newPage();
+  await p2.goto(url("physics.html"), { waitUntil: "networkidle" });
+  await p2.waitForTimeout(400);
+  const chrome = new Set(await p2.evaluate(sweep));
+
+  /*
+   * And the landing table, which is where the badges carry a shape marker as
+   * well as a colour — six glyphs picked in JavaScript, exactly the kind that
+   * went missing from the theme toggle. The view is reached the way a reader
+   * reaches it: the choice lives in localStorage.
+   */
+  await p2.evaluate(() => { try { localStorage.setItem("ui-mode", "table"); } catch (e) { /* */ } });
+  await p2.goto(url("index.html"), { waitUntil: "domcontentloaded" });
+  await p2.waitForSelector(".tv-table tbody tr", { timeout: 20000 });
+  for (const c of await p2.evaluate(sweep)) chrome.add(c);
   await p2.close();
+  const glyphs = [...chrome].sort();
 
   chk("the chrome renders some non-ASCII glyphs worth checking",
-      chrome.length > 0, chrome.join(" "));
-  const res = await covered(chrome);
+      glyphs.length > 0, glyphs.join(" "));
+  const res = await covered(glyphs);
   const missing = res.filter(([, has]) => !has).map(([c]) => c);
   chk("every glyph the chrome draws for itself is in the font, with no fallback",
       missing.length === 0,
       missing.length
         ? `${missing.map((c) => `${c} U+${c.codePointAt(0).toString(16).toUpperCase()}`).join(", ")}`
           + " — pick a glyph Pretendard has, or rerun tools/build-font.py"
-        : `${chrome.length} checked: ${chrome.join(" ")}`);
+        : `${glyphs.length} checked: ${glyphs.join(" ")}`);
 }
 
 // ── The pages actually ask for it ────────────────────────────────────
