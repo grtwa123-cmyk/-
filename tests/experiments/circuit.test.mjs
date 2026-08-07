@@ -129,7 +129,9 @@ await setChk('r3-on',true); await setChk('switch-on',true);
 
 // ---- 7. Every control does something ----
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(BASE + 'experiments/circuit.html', { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   const snap = () => page.evaluate(() => {
     const s = window.__circuit.solve();
     return JSON.stringify([s.Rtot, s.I, s.P, s.branches.length,

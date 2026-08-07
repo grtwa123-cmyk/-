@@ -248,7 +248,7 @@ const MK = `const M = window.__mm;
 }
 
 // ── The live page ─────────────────────────────────────────────────────
-await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
+await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(500);
 {
   await setV('substrate', 25); await setV('km', 25); await setV('kcat', 20); await setV('enzymes', 12);
   await page.waitForTimeout(300);

@@ -276,7 +276,9 @@ const MK = `const M = window.__md;
 
 // ── The live page ─────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(500);
   await setV('speed', 40);
   await page.click('#preset-list .mol-btn[data-key="solid"]');
   await page.waitForFunction(() => {

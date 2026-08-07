@@ -14,6 +14,11 @@
 
 **Live demo:** https://grtwa123-cmyk.github.io/-/
 
+Every experiment's controls live in its URL, so a setup is a link: move a
+slider and the address bar follows, paste that address somewhere and the page
+comes back running it. Only the settings you changed are in there, so a link
+carries the point and nothing else.
+
 The landing page offers two ways in, remembered between visits. **Wall** is the curved phantom-style index — drag horizontally to scroll infinitely through cards, drag vertically to nudge rows, **press and hold a card to enter**. **Table** is one ordinary table of every experiment, filterable by category: no WebGL, no CDN, no gesture, and it doubles as the fallback if the wall cannot start. Each row carries the same two colours the wall paints that experiment's card with — as a rail down its left edge, a wash under it on hover and a tint on its title — so the two views are recognisably one catalogue. The method badges differ in **shape** as well as hue (`●` measured, `∫` integrated, `≈` solved, `=` closed form, `◆` real data, `○` illustration), because six pills that differ only in colour are six pills a colour-blind reader cannot tell apart.
 
 ---
@@ -135,11 +140,11 @@ Both run on Node's standard library alone, so there is still nothing to install:
 
 ```bash
 npm run lint             # syntax + .editorconfig, every tracked file
-npm test                 # 26 suites, 843 checks
+npm test                 # 27 suites, 864 checks
 npm test -- enzyme lens  # just the suites whose path matches
 ```
 
-`npm run lint` parses all 49 JavaScript files and checks the whole tree against
+`npm run lint` parses all 50 JavaScript files and checks the whole tree against
 `.editorconfig`. ES modules are copied to a `.mjs` temporary first, because
 `node --check` reports success without fully parsing a `.js` file that contains
 `export`.
@@ -158,6 +163,7 @@ port to collide with `npm run serve`.
 | `theme` | Light and dark. That the preference is stamped before the first paint (a deferred script would mean a flash on every navigation), that auto follows the OS while an explicit choice ignores it, that the choice survives a reload and a change of directory — and, the part worth having, that **every piece of text clears WCAG AA against what it actually sits on**, computed by compositing the real stack of translucent panes, gradient fills and gradient text rather than by eye. It walks a hub, an experiment and the landing table, and names the chips as well as the prose — a pill whose whole job is colour is exactly the thing a tag-name selector walks past. |
 | `fonts` | The self-hosted Pretendard subset. Every Korean syllable, Latin character and symbol the three dictionaries can put on screen must be in the shipped font, or the check names the ones that fell out and points at `tools/build-font.py`. It also holds the site to `assets/fonts/coverage.json` — the characters Pretendard genuinely lacks and that therefore fall back — in both directions, so neither the font nor the note about it can drift. It also takes the non-ASCII glyphs off the *rendered* chrome rather than out of the dictionaries — the theme toggle picks its icon in JavaScript, so no dictionary ever sees it — and confirms the font costs no third-party request. |
 | `method-badges` | The badge each page shows about itself. The method on the page must match the catalogue, **Verified** must match what is actually in `tests/experiments/`, and anything badged **Measured** must expose a hook a measurement can be read from — so the claim can never outrun the evidence. |
+| `url-state` | That a link carries a setup. A moved slider appears in the query string and a default one does not, a shared URL brings the *model* back and not merely the slider positions, Reset empties it, and eight slider moves add nothing to the back button. And that the query string is treated as the untrusted input it is: out of range, off the step grid, not a number, longer than any real value, an id that is not a control — nine malformed values, all refused, none of them reaching the page. |
 | `bespoke3d` | The two pages with no `.js` file of their own, so nothing else reaches them: the Solar System tour and the black-hole renderer, each checked both with three.js delivered and with the CDN blocked — because a reader behind a corporate proxy gets the second one. |
 
 The browser suites need `CHROMIUM_PATH`. In
@@ -186,6 +192,8 @@ Playwright. `smoke` alone will skip its browser section and still run the rest
 │   ├── theme.js                Light / dark, stamped before first paint
 │   ├── gl3d.js                 WebGL ball-and-stick 3D viewer (orbit + lighting)
 │   ├── sfx.js                  Procedural Web Audio SFX engine + mute toggle
+│   ├── reset-defaults.js       One meaning for Reset, snapshotted per page
+│   ├── url-state.js            The query string mirrors the controls
 │   └── index/                  Landing-page modules
 │       ├── index.css           Curved-grid HUD + cursor styles
 │       ├── main.js             Scene, camera, input, scroll, transitions

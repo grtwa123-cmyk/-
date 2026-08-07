@@ -114,7 +114,9 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
 
 // ── UI ────────────────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   await setV('natural',1); await setV('drive',1); await setV('zeta',0.05); await setV('static',1);
   await page.waitForTimeout(250);
   chk('readout: A/X₀ = 10.000 at resonance with ζ = 0.05',

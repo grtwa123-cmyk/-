@@ -148,7 +148,9 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
   await page.click('#kind-list .mol-btn[data-key="convex"]');
 }
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   const snap = () => page.evaluate(()=>{
     const p = window.__lens.params(); const s = window.__lens.solve(p);
     return JSON.stringify([p.f,p.u,p.h,p.n,s.v,s.m,window.__lens.kind(),

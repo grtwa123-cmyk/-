@@ -333,7 +333,9 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
 }
 {
   // no dead controls
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(500);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(500);
   const snap = () => page.evaluate(()=>{
     const p = window.__diff.params();
     return JSON.stringify([p.lam,p.N,p.a,p.d,p.L,

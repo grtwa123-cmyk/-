@@ -198,7 +198,9 @@ const MK = `const E = window.__eq;
 
 // ── The live page ─────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(300);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(300);
   await setV('speed', 8);
   await page.waitForFunction(() => {
     const t = document.getElementById('out-k').textContent;

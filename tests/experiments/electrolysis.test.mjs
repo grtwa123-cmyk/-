@@ -93,7 +93,9 @@ const E = 'const M = window.__el;';
 
 // ── The live cell ────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil: 'networkidle' });
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
 
   // It starts at 2.5 V, which is above the decomposition voltage, so the cell
