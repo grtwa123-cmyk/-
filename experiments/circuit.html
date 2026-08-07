@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Wire three resistors in series or in parallel and watch Ohm's law do the rest — per-resistor current, voltage drop and power, with charge carriers moving at a speed set by the real current in each wire." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Circuits · Physics" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 32h10l4-10 6 20 6-20 6 20 4-10h12' fill='none' stroke='%23ffe14a' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
   <title data-i18n="circuitPageTitle">Circuits · Physics</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="physics">

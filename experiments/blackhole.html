@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#04060d" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#04060d" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Real-time Schwarzschild black hole — the GPU integrates photon geodesics per pixel, bending starlight into an Einstein ring around a Doppler-boosted accretion disk." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Black Hole · Schwarzschild Lensing" />
@@ -114,6 +115,9 @@
       .hint { display: none; }
     }
   </style>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
 </head>
 <body>
   <!--

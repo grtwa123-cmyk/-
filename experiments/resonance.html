@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Drive a damped oscillator and sweep the frequency. The response is integrated from the equation of motion, and the amplitude it settles at is measured back out and checked against the closed form." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Driven Oscillation &amp; Resonance · Physics" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M6 52c8 0 8-4 12-4s6 4 14 4 10-40 14-40 6 40 12 40' fill='none' stroke='%23ff8aa3' stroke-width='3' stroke-linecap='round'/&gt;&lt;/svg&gt;" />
   <title data-i18n="resPageTitle">Driven Oscillation &amp; Resonance · Physics</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="physics">

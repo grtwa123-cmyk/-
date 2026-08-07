@@ -58,6 +58,10 @@
   --accent-glow: rgba(110, 168, 255, 0.42);
   --danger: #ff6b8a;
   --border: rgba(255, 255, 255, 0.10);
+  /* The two spotlights the body plate is lit with. Liquid Glass needs
+     something underneath to sample or the panes read as flat grey. */
+  --spot-warm: rgba(255, 184, 107, 0.07);
+  --spot-cool: rgba(110, 168, 255, 0.10);
   --max-width: 1040px;
 
   /* — Liquid Glass tokens —
@@ -100,6 +104,136 @@ body[data-theme="biology"] {
   --accent-glow: rgba(229, 143, 255, 0.45);
 }
 
+/* ── Light theme ─────────────────────────────────────────────────────
+ *
+ * assets/theme.js stamps data-theme-mode on <html> before first paint, so
+ * there are only ever two cases to style and never an "auto" to reason about.
+ * The media query underneath is the no-JS fallback: if that script fails to
+ * load, a reader who asked their machine for light pages still gets them.
+ *
+ * Liquid Glass has to be re-derived rather than merely inverted. On a dark
+ * page the panes are lit from above by a white specular edge over a white
+ * tint; on a light page the tint goes *toward* white while the borders and
+ * shadows carry the elevation, because a white highlight on near-white has
+ * nothing to say.
+ */
+:root[data-theme-mode="light"] {
+  --bg: #f4f6fc;
+  --bg-2: #e7ebf7;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(255, 255, 255, 0.88);
+  --text: #141829;
+  --muted: #566080;
+  /* Deep enough that white reads on it as a filled pill AND that it reads
+     as link text on paper — a mid blue fails both, sitting in the middle of
+     the luminance range where nothing contrasts with it. */
+  --accent: #245cc8;
+  --accent-2: #8f4e08;
+  --accent-soft: rgba(36, 92, 200, 0.12);
+  --accent-glow: rgba(36, 92, 200, 0.26);
+  --danger: #cf2f4c;
+  --border: rgba(18, 24, 46, 0.12);
+  --spot-warm: rgba(255, 170, 80, 0.16);
+  --spot-cool: rgba(90, 150, 255, 0.16);
+
+  --glass-tint: rgba(255, 255, 255, 0.58);
+  --glass-tint-2: rgba(255, 255, 255, 0.74);
+  --glass-tint-3: rgba(255, 255, 255, 0.88);
+  --glass-border: 1px solid rgba(18, 24, 46, 0.10);
+  --glass-border-strong: 1px solid rgba(18, 24, 46, 0.17);
+  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.85),
+                inset 0 -1px 0 rgba(18, 24, 46, 0.04),
+                inset 1px 0 0 rgba(255, 255, 255, 0.5),
+                inset -1px 0 0 rgba(18, 24, 46, 0.02);
+  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 18px 40px rgba(24, 34, 66, 0.13),
+                  0 2px 8px rgba(24, 34, 66, 0.07);
+  --glass-shadow-soft: 0 8px 20px rgba(24, 34, 66, 0.09);
+  --glass-shadow-press: 0 6px 14px rgba(24, 34, 66, 0.12);
+}
+
+:root[data-theme-mode="light"] body[data-theme="chemistry"] {
+  --accent: #7530b8;
+  --accent-2: #0b7154;
+  --accent-soft: rgba(117, 48, 184, 0.13);
+  --accent-glow: rgba(117, 48, 184, 0.26);
+}
+
+:root[data-theme-mode="light"] body[data-theme="biology"] {
+  --accent: #93309f;
+  --accent-2: #0a6b62;
+  --accent-soft: rgba(147, 48, 159, 0.13);
+  --accent-glow: rgba(147, 48, 159, 0.26);
+}
+
+/* ── Theme toggle ────────────────────────────────────────────────────
+   Injected by assets/theme.js next to the language switcher, so it sits in
+   the same row and inherits the same glass treatment. The row it lands in
+   already right-aligns, and the negative top margin lifts it onto the same
+   line rather than stacking a second row above the crumbs. */
+.chrome-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+/* Inside the row the language group supplies its own spacing already. */
+.chrome-row .lang-switch { margin-bottom: 0; flex: 0 1 auto; }
+
+.theme-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--muted);
+  border: var(--glass-border);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--glass-spec-soft);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.theme-btn:hover { color: var(--text); background: var(--glass-tint-2); }
+.theme-btn:active { transform: translateY(1px); box-shadow: var(--glass-shadow-press); }
+.theme-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.theme-icon { font-size: 0.95rem; line-height: 1; }
+
+@media (max-width: 560px) {
+  .theme-label { display: none; }
+  .theme-btn { padding: 0.4rem 0.7rem; }
+}
+
+/* The simulation canvases are drawn dark in both themes — their colours are
+   data, picked against a dark field. On a light page that needs a frame, or
+   the canvas reads as a hole punched through the paper rather than a screen
+   set into it. */
+:root[data-theme-mode="light"] .stage canvas,
+:root[data-theme-mode="light"] .stage-3d {
+  border: 1px solid rgba(18, 24, 46, 0.16);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 26px rgba(24, 34, 66, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* On a pale accent (dark theme) the filled pill carries near-black text. A
+   light theme's accent has to be deep enough to read as link text on paper,
+   and at that depth the pill wants white on it instead. */
+:root[data-theme-mode="light"] .lang-btn.active,
+:root[data-theme-mode="light"] .hub-tab.active,
+:root[data-theme-mode="light"] .hub-tab.active:hover { color: #fff; }
+
 /* ── Base helpers ───────────────────────────────────────────────────── */
 
 * { box-sizing: border-box; }
@@ -111,8 +245,8 @@ body {
      sample, otherwise the panes look like flat grey. */
   background:
     radial-gradient(900px 540px at 85% -10%, var(--accent-soft) 0%, transparent 60%) no-repeat,
-    radial-gradient(1100px 620px at 0% 0%, rgba(255, 184, 107, 0.07) 0%, transparent 55%) no-repeat,
-    radial-gradient(820px 460px at 50% 100%, rgba(110, 168, 255, 0.10) 0%, transparent 60%) no-repeat,
+    radial-gradient(1100px 620px at 0% 0%, var(--spot-warm) 0%, transparent 55%) no-repeat,
+    radial-gradient(820px 460px at 50% 100%, var(--spot-cool) 0%, transparent 60%) no-repeat,
     linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   color: var(--text);
   font-family: var(--font-ui);

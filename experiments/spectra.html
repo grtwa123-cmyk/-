@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Excite a hydrogen atom and watch it fall back down, emitting a photon at every jump. Each transition's wavelength comes straight from the Rydberg formula, and the Balmer lines land exactly where a real spectrometer sees them." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Hydrogen Spectrum · Chemistry" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;rect x='12' y='14' width='4' height='36' fill='%23ff4d4d'/&gt;&lt;rect x='24' y='14' width='4' height='36' fill='%2367e8f9'/&gt;&lt;rect x='36' y='14' width='4' height='36' fill='%235b8cff'/&gt;&lt;rect x='48' y='14' width='4' height='36' fill='%23a855f7'/&gt;&lt;/svg&gt;" />
   <title data-i18n="spectraPageTitle">Hydrogen Spectrum · Chemistry</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="chemistry">

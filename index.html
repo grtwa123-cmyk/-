@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0a0a0d" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0a0a0d" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="36 hands-on physics, chemistry and biology simulations you can touch — real 3D molecule, crystal and DNA models, procedural sound, and no build step. Hover a card to bring it to life, tap to enter the experiment." />
 
   <title data-i18n="pageTitle">Science Lab</title>
@@ -27,6 +28,9 @@
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="assets/index/index.css" />
 </head>
 <body>

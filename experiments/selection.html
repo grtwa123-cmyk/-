@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Give three genotypes different survival odds and watch an allele sweep, vanish, or settle into a balanced polymorphism — a finite Wright-Fisher population running against the infinite-population curve." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Natural Selection · Biology" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='16' cy='44' r='7' fill='%235fe0c8'/&gt;&lt;circle cx='32' cy='30' r='7' fill='%23b98cff'/&gt;&lt;circle cx='48' cy='16' r='7' fill='%23ff7aa8'/&gt;&lt;/svg&gt;" />
   <title data-i18n="nsPageTitle">Natural Selection · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="biology">

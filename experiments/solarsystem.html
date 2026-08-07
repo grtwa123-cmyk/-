@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-<meta name="color-scheme" content="dark" />
-<meta name="theme-color" content="#04060d" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#04060d" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
 <meta name="description" content="A cinematic 3D tour of the solar system — procedural planet surfaces, atmospheric glow, Saturn and Uranus rings, the asteroid belt, and tap-to-inspect observation cards." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Solar System Tour · Science Lab" />
@@ -185,6 +186,9 @@
   .lang-switch .lang-btn:hover{color:var(--ink)}
   .lang-switch .lang-btn.active{color:#0b1020;background:#8fb4ff;border-color:#8fb4ff}
 </style>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
 </head>
 <body>
 

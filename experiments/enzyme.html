@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="Every enzyme molecule is simulated as its own state machine — free, bound, catalysing, inhibited. Count the turnovers and the Michaelis-Menten curve appears on its own, with each inhibitor moving exactly the constant it should." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Enzyme Kinetics · Biology" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 48C8 24 22 16 32 16s24 4 24 4' fill='none' stroke='%237be0d0' stroke-width='4' stroke-linecap='round'/&gt;&lt;circle cx='20' cy='34' r='4' fill='%23e58fff'/&gt;&lt;circle cx='40' cy='19' r='4' fill='%23e58fff'/&gt;&lt;/svg&gt;" />
   <title data-i18n="mmPageTitle">Enzyme Kinetics · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="biology">
