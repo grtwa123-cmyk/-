@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="A + B reversible C, one molecule at a time. The equilibrium constant is never typed in — it is measured from the counts, and it comes out as k_forward over k_reverse. Disturb the mixture and Le Chatelier's principle is the result, not the rule." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Chemical Equilibrium · Chemistry" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M10 24 L46 24 M40 18 L46 24 L40 30 M54 40 L18 40 M24 34 L18 40 L24 46' fill='none' stroke='%236fbf8a' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/&gt;&lt;/svg&gt;" />
   <title data-i18n="eqPageTitle">Chemical Equilibrium · Chemistry</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="chemistry">

@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="theme-color" content="#0b0f1e" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
   <meta name="description" content="DNA Double Helix Studio — type a 5'→3' sequence and watch the antiparallel complement, hydrogen bonds, and a rotating B-form helix snap into place. GC content, melting temperature, and an mRNA transcript update live." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="DNA Double Helix · Biology Experiments" />
@@ -17,6 +18,9 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M20 8 Q44 32 20 56 M44 8 Q20 32 44 56' stroke='%23e58fff' stroke-width='3' fill='none' stroke-linecap='round'/&gt;&lt;circle cx='32' cy='20' r='3' fill='%23e58fff'/&gt;&lt;circle cx='32' cy='32' r='3' fill='%23e58fff'/&gt;&lt;circle cx='32' cy='44' r='3' fill='%23e58fff'/&gt;&lt;/svg&gt;" />
   <title data-i18n="dnaPageTitle">DNA Double Helix · Biology Experiments</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
   <link rel="stylesheet" href="../styles.css" />
 </head>
 <body data-theme="biology">

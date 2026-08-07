@@ -36,13 +36,59 @@
   --font-ui: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Segoe UI", Roboto,
     "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans SC", "PingFang SC",
     "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+
+  /* The landing page carries its own two-colour palette rather than importing
+     styles.css. --page is also what the WebGL renderer clears and fogs to, so
+     the wall fades into the page instead of into a colour of its own — see the
+     themechange handler in main.js. */
+  --page: #08080d;
+  --page-deep: #04060d;
+  --ink: #f3f1ea;
+  --ink-dim: rgba(243, 241, 234, 0.62);
+  --ink-2: #d9d6cc;
+  --ink-3: #b9b8c0;
+  --ink-4: #86858f;
+  --ink-5: #6f6e78;
+  --on-ink: #0a0a0d;
+  --hair: rgba(255, 255, 255, 0.10);
+  --hair-strong: rgba(255, 255, 255, 0.18);
+  --fill-1: rgba(255, 255, 255, 0.04);
+  --fill-2: rgba(255, 255, 255, 0.07);
+  --fill-3: rgba(255, 255, 255, 0.09);
+  --pill-glow: 0 4px 12px rgba(255, 255, 255, 0.18);
+  --pill-spec: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --vignette-0: rgba(8, 8, 13, 0);
+  --vignette-1: rgba(8, 8, 13, 0.5);
+  --vignette-2: rgba(8, 8, 13, 0.92);
+}
+
+:root[data-theme-mode="light"] {
+  --page: #eef1f8;
+  --page-deep: #e2e7f3;
+  --ink: #14182a;
+  --ink-dim: rgba(20, 24, 42, 0.62);
+  --ink-2: #2b3149;
+  --ink-3: #4a5270;
+  --ink-4: #646d8c;
+  --ink-5: #77809d;
+  --on-ink: #f4f6fc;
+  --hair: rgba(18, 24, 46, 0.12);
+  --hair-strong: rgba(18, 24, 46, 0.20);
+  --fill-1: rgba(18, 24, 46, 0.035);
+  --fill-2: rgba(18, 24, 46, 0.06);
+  --fill-3: rgba(18, 24, 46, 0.085);
+  --pill-glow: 0 4px 12px rgba(24, 34, 66, 0.18);
+  --pill-spec: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --vignette-0: rgba(238, 241, 248, 0);
+  --vignette-1: rgba(238, 241, 248, 0.55);
+  --vignette-2: rgba(238, 241, 248, 0.94);
 }
 
 html, body {
   height: 100%;
   overflow: hidden;
-  background: #08080d;
-  color: #f3f1ea;
+  background: var(--page);
+  color: var(--ink);
   font-family: var(--font-ui);
 }
 
@@ -57,11 +103,14 @@ canvas { display: block; }
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  /* Darkens the edges of the wall on a dark page; on a light one it has to
+     lighten them instead, or the corners go muddy. Both are the page colour
+     at increasing opacity, so the wall always fades into the page. */
   background: radial-gradient(
     120% 120% at 50% 50%,
-    rgba(0, 0, 0, 0) 45%,
-    rgba(0, 0, 0, 0.5) 82%,
-    rgba(0, 0, 0, 0.92) 100%
+    var(--vignette-0) 45%,
+    var(--vignette-1) 82%,
+    var(--vignette-2) 100%
   );
 }
 
@@ -87,6 +136,16 @@ canvas { display: block; }
   --glass-shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.40);
 }
 
+:root[data-theme-mode="light"] {
+  --glass-tint: rgba(255, 255, 255, 0.58);
+  --glass-tint-2: rgba(255, 255, 255, 0.80);
+  --glass-border: 1px solid rgba(18, 24, 46, 0.12);
+  --glass-spec: inset 0 1px 0 rgba(255, 255, 255, 0.85),
+                inset 0 -1px 0 rgba(18, 24, 46, 0.04);
+  --glass-spec-soft: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --glass-shadow-soft: 0 10px 24px rgba(24, 34, 66, 0.12);
+}
+
 /* ── Top bar ─────────────────────────────────────────────────────── */
 
 .topbar {
@@ -106,7 +165,7 @@ canvas { display: block; }
 
 /* The brand mark stays as plain editorial text (no chrome), so the
    wall feels like the hero. */
-.mark { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; color: #f3f1ea; }
+.mark { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; color: var(--ink); }
 .sub  { font-size: 9px; color: #8a8a93; letter-spacing: 0.24em; text-transform: uppercase; }
 
 /* Tagline gets a faint glass strip — readable above busy parts of the
@@ -115,7 +174,7 @@ canvas { display: block; }
   max-width: 320px;
   font-size: 10.5px;
   line-height: 1.7;
-  color: #d9d6cc;
+  color: var(--ink-2);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 9px 14px;
@@ -132,7 +191,7 @@ canvas { display: block; }
 
 .clock {
   font-size: 9px;
-  color: #b9b8c0;
+  color: var(--ink-3);
   letter-spacing: 0.18em;
   line-height: 1.8;
   padding: 7px 12px;
@@ -144,7 +203,7 @@ canvas { display: block; }
   box-shadow: var(--glass-spec-soft);
 }
 
-.clock b { color: #f3f1ea; font-weight: 700; }
+.clock b { color: var(--ink); font-weight: 700; }
 
 .links {
   display: flex;
@@ -159,7 +218,7 @@ canvas { display: block; }
 }
 
 .links a {
-  color: #b9b8c0;
+  color: var(--ink-3);
   text-decoration: none;
   font-size: 9.5px;
   letter-spacing: 0.18em;
@@ -171,7 +230,7 @@ canvas { display: block; }
 
 .links a:hover,
 .links a:focus-visible {
-  color: #f3f1ea;
+  color: var(--ink);
   background: var(--glass-tint-2);
   outline: none;
 }
@@ -186,7 +245,7 @@ canvas { display: block; }
   transform: translateX(-50%);
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: #d9d6cc;
+  color: var(--ink-2);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   padding: 10px 18px;
@@ -202,6 +261,53 @@ canvas { display: block; }
 }
 
 /* ── Language switcher ───────────────────────────────────────────── */
+
+/* assets/theme.js wraps the language group in .chrome-row and puts the theme
+   button beside it. On this page the group was fixed to the corner, so the row
+   takes the fixed position over and the group goes back to flowing inside it —
+   otherwise the button would land wherever the wrapper happened to sit, which
+   on a page whose body is all fixed HUD is the top-left corner. */
+.chrome-row {
+  position: fixed;
+  z-index: 5;
+  right: 24px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chrome-row .lang-switch { position: static; right: auto; bottom: auto; }
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--ink-3);
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  backdrop-filter: blur(22px) saturate(1.55);
+  border: var(--glass-border);
+  box-shadow: var(--glass-spec), var(--glass-shadow-soft);
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.theme-btn:hover { color: var(--ink); background: var(--glass-tint-2); }
+.theme-btn:focus-visible { color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
+.theme-icon { font-size: 13px; line-height: 1; }
+
+@media (max-width: 620px) {
+  .theme-label { display: none; }
+  .theme-btn { padding: 8px 11px; }
+}
 
 .lang-switch {
   position: fixed;
@@ -221,7 +327,7 @@ canvas { display: block; }
 
 .lang-btn {
   background: transparent;
-  color: #b9b8c0;
+  color: var(--ink-3);
   border: none;
   border-radius: 999px;
   padding: 7px 13px;
@@ -234,18 +340,18 @@ canvas { display: block; }
   -webkit-tap-highlight-color: transparent;
 }
 
-.lang-btn:hover { color: #f3f1ea; background: var(--glass-tint-2); }
+.lang-btn:hover { color: var(--ink); background: var(--glass-tint-2); }
 
 .lang-btn:focus-visible {
-  color: #f3f1ea;
-  outline: 2px solid #f3f1ea;
+  color: var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
 .lang-btn.active {
   background: linear-gradient(180deg, #ffffff 0%, #e6e3d8 100%);
-  color: #0a0a0d;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 12px rgba(255, 255, 255, 0.18);
+  color: var(--on-ink);
+  box-shadow: var(--pill-spec), var(--pill-glow);
 }
 
 /* ── Custom cursor — glass disc when hot ──────────────────────────── */
@@ -255,7 +361,7 @@ canvas { display: block; }
   z-index: 30;
   top: 0; left: 0;
   width: 30px; height: 30px;
-  border: 1px solid rgba(243, 241, 234, 0.7);
+  border: 1px solid var(--hair-strong);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -267,8 +373,8 @@ canvas { display: block; }
 
 .cursor.hot {
   width: 78px; height: 78px;
-  background: rgba(243, 241, 234, 0.14);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--fill-3);
+  border-color: var(--hair-strong);
   -webkit-backdrop-filter: blur(14px) saturate(1.6);
   backdrop-filter: blur(14px) saturate(1.6);
   box-shadow: var(--glass-spec), 0 12px 28px rgba(0, 0, 0, 0.40);
@@ -284,7 +390,7 @@ canvas { display: block; }
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 700;
-  color: #f3f1ea;
+  color: var(--ink);
   opacity: 0;
   transition: opacity 0.25s;
 }
@@ -297,7 +403,7 @@ canvas { display: block; }
   position: fixed;
   inset: 0;
   z-index: 35;
-  background: #04060d;
+  background: var(--page-deep);
   opacity: 0;
   pointer-events: none;
 }
@@ -308,7 +414,7 @@ canvas { display: block; }
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: radial-gradient(60% 50% at 50% 50%, rgba(110, 168, 255, 0.08) 0%, transparent 70%), #08080d;
+  background: radial-gradient(60% 50% at 50% 50%, rgba(110, 168, 255, 0.08) 0%, transparent 70%), var(--page);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -339,7 +445,7 @@ canvas { display: block; }
 #loader .cap {
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: #b9b8c0;
+  color: var(--ink-3);
   letter-spacing: 0.32em;
   text-transform: uppercase;
 }
@@ -405,7 +511,7 @@ canvas { display: block; }
 
 .ui-btn {
   background: transparent;
-  color: #b9b8c0;
+  color: var(--ink-3);
   border: none;
   border-radius: 999px;
   padding: 7px 13px;
@@ -418,12 +524,12 @@ canvas { display: block; }
   -webkit-tap-highlight-color: transparent;
 }
 
-.ui-btn:hover { color: #f3f1ea; background: var(--glass-tint-2); }
-.ui-btn:focus-visible { color: #f3f1ea; outline: 2px solid #f3f1ea; outline-offset: 2px; }
+.ui-btn:hover { color: var(--ink); background: var(--glass-tint-2); }
+.ui-btn:focus-visible { color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
 .ui-btn.active {
   background: linear-gradient(180deg, #ffffff 0%, #e6e3d8 100%);
-  color: #0a0a0d;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 12px rgba(255, 255, 255, 0.18);
+  color: var(--on-ink);
+  box-shadow: var(--pill-spec), var(--pill-glow);
 }
 
 /* In the plain view the page scrolls, the pointer is a pointer, and the
@@ -478,9 +584,9 @@ body.ui-table .table-view { padding-top: 28px; }
   gap: 8px;
   padding: 7px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: #c9c8d1;
+  border: 1px solid var(--hair);
+  background: var(--fill-1);
+  color: var(--ink-3);
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
@@ -489,15 +595,15 @@ body.ui-table .table-view { padding-top: 28px; }
 .tv-filter small {
   font-family: ui-monospace, monospace;
   font-size: 0.72rem;
-  color: #86858f;
+  color: var(--ink-4);
   font-variant-numeric: tabular-nums;
 }
-.tv-filter:hover { background: rgba(255, 255, 255, 0.09); color: #f3f1ea; }
-.tv-filter:focus-visible { outline: 2px solid #f3f1ea; outline-offset: 2px; }
+.tv-filter:hover { background: var(--fill-3); color: var(--ink); }
+.tv-filter:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .tv-filter.active {
-  background: #f3f1ea;
-  border-color: #f3f1ea;
-  color: #0a0a0d;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
 }
 .tv-filter.active small { color: #55545c; }
 
@@ -510,32 +616,32 @@ body.ui-table .table-view { padding-top: 28px; }
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #86858f;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--ink-4);
+  border-bottom: 1px solid var(--hair-strong);
   white-space: nowrap;
 }
 
 .tv-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--hair);
   vertical-align: top;
 }
 
 .tv-table tbody tr { cursor: pointer; transition: background 0.12s; }
-.tv-table tbody tr:hover { background: rgba(255, 255, 255, 0.05); }
-.tv-table tbody tr:focus-within { background: rgba(255, 255, 255, 0.07); }
+.tv-table tbody tr:hover { background: var(--fill-1); }
+.tv-table tbody tr:focus-within { background: var(--fill-2); }
 
 .tv-num {
   width: 3.4rem;
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
-  color: #6f6e78;
+  color: var(--ink-5);
   font-variant-numeric: tabular-nums;
 }
 
-.tv-link { color: #f3f1ea; text-decoration: none; font-weight: 600; }
+.tv-link { color: var(--ink); text-decoration: none; font-weight: 600; }
 .tv-link:hover { text-decoration: underline; }
-.tv-link:focus-visible { outline: 2px solid #f3f1ea; outline-offset: 3px; border-radius: 3px; }
+.tv-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 3px; }
 
 .tv-desc { margin-top: 5px; color: #9a99a4; font-size: 0.85rem; line-height: 1.5; max-width: 62ch; }
 
@@ -569,6 +675,15 @@ body.ui-table .table-view { padding-top: 28px; }
   cursor: help;
 }
 .method-tag[data-method="measured"]    { color: #7ee0b0; background: rgba(60, 190, 130, 0.14); border-color: rgba(60, 190, 130, 0.34); }
+/* Mint on a dark field goes invisible on paper; the light theme keeps the hue
+   and takes the lightness the other way. Same for the CDN-failure notice. */
+:root[data-theme-mode="light"] .method-tag[data-method="measured"] { color: #0a6b46; background: rgba(16, 150, 100, 0.13); border-color: rgba(16, 150, 100, 0.34); }
+:root[data-theme-mode="light"] .method-verified { color: #0a6b46; }
+:root[data-theme-mode="light"] .ui-note {
+  background: rgba(255, 232, 235, 0.96);
+  border-color: rgba(190, 60, 85, 0.35);
+  color: #8c1f36;
+}
 .method-tag[data-method="integrated"]  { color: #8fc0f5; background: rgba(90, 150, 230, 0.14); border-color: rgba(90, 150, 230, 0.32); }
 .method-tag[data-method="solved"]      { color: #b7a8f0; background: rgba(140, 120, 230, 0.14); border-color: rgba(140, 120, 230, 0.32); }
 .method-tag[data-method="formula"]     { color: #e8c07a; background: rgba(220, 165, 70, 0.13); border-color: rgba(220, 165, 70, 0.30); }
@@ -592,7 +707,7 @@ body.ui-table .table-view { padding-top: 28px; }
 .tv-tags {
   font-family: ui-monospace, monospace;
   font-size: 0.72rem;
-  color: #7c7b85;
+  color: var(--ink-4);
   letter-spacing: 0.06em;
   white-space: nowrap;
 }

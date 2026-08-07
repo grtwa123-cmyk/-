@@ -51,12 +51,29 @@ const Y_LIMIT = 2.4;         // Vertical scroll clamp
 const TAP_MOVE_THRESHOLD = 10;   // px of accumulated motion before the tap is downgraded
 const TAP_TIME_THRESHOLD = 600;  // ms — longer than this it stops being a tap
 
-// Rest vs. hover look. Each card material runs an onBeforeCompile patch that
-// blends between grayscale (uSat=0) and the colored texture (uSat=1); the
-// opacity multiplier below is applied on top of the depth-cue opacity each
-// frame. Touch devices skip the rest state entirely (no pointer → no hover).
-const REST_SATURATION = 0.0;
-const REST_OPACITY    = 0.45;
+/*
+ * Rest vs. hover look. Each card material runs an onBeforeCompile patch that
+ * blends between grayscale (uSat=0) and the colored texture (uSat=1); the
+ * opacity multiplier is applied on top of the depth-cue opacity each frame.
+ * Touch devices skip the rest state entirely (no pointer → no hover).
+ *
+ * The rest look has to be re-derived per theme, not merely reused. On a dark
+ * wall "grey and half transparent" reads as dormant, and colour arriving under
+ * the pointer is the whole effect. Over a light wall the same numbers leave a
+ * pale grey card carrying white text on a white page — barely visible, and the
+ * titles stop being legible at all. So on light the cards keep most of their
+ * colour and most of their opacity, and hover still lifts them the rest of the
+ * way.
+ */
+const REST = { sat: 0.0, opacity: 0.45 };
+function applyRestLook() {
+  const light = document.documentElement.dataset.themeMode === "light";
+  REST.sat = light ? 0.88 : 0.0;
+  REST.opacity = light ? 0.9 : 0.45;
+}
+applyRestLook();
+document.addEventListener("themechange", applyRestLook);
+
 const HOVER_TWEEN_MS  = 320;
 const hasFineHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -79,6 +96,21 @@ document.getElementById("scene").appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x0a0a0d, 0.026);
+
+/*
+ * WebGL cannot be styled, so the page colour has to be handed to it. Both the
+ * clear colour and the fog take it: the fog is what the far columns dissolve
+ * into, and if it stayed dark on a light page the wall would fade into a grey
+ * band floating in the middle of white.
+ */
+function applySceneTheme() {
+  const page = getComputedStyle(document.documentElement)
+    .getPropertyValue("--page").trim() || "#08080d";
+  renderer.setClearColor(new THREE.Color(page), 1);
+  scene.fog.color.set(page);
+}
+applySceneTheme();
+document.addEventListener("themechange", applySceneTheme);
 
 const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 100);
 let zoom = 1;
@@ -356,9 +388,9 @@ function tick() {
     const baseAlpha = clamp((align - 0.35) / 0.5, 0.06, 1);
     const mat = m.material;
     const h = mat.userData.hover;
-    mat.opacity = baseAlpha * (REST_OPACITY + (1 - REST_OPACITY) * h);
+    mat.opacity = baseAlpha * (REST.opacity + (1 - REST.opacity) * h);
     if (mat.userData.shader) {
-      mat.userData.shader.uniforms.uSat.value = REST_SATURATION + (1 - REST_SATURATION) * h;
+      mat.userData.shader.uniforms.uSat.value = REST.sat + (1 - REST.sat) * h;
     }
     if (introDone && !locked) {
       const s = 1 + Math.max(0, align - 0.6) * 0.16;
