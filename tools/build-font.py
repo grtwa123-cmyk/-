@@ -54,6 +54,11 @@ COVERAGE = os.path.join(ROOT, "assets", "fonts", "coverage.json")
 # Where the site's own text lives. Everything here is scanned, so the symbols
 # that end up in the subset are the ones the pages actually use rather than a
 # list somebody has to remember to update.
+#
+# The scan reads the files as text, so a glyph written as a \u escape is six
+# ASCII characters to it and will not be requested. Write UI glyphs literally.
+# tests/fonts.test.mjs takes the characters off the rendered page rather than
+# out of the source, so it catches the difference.
 TEXT_GLOBS = (
     "i18n/*.js",
     "*.html",

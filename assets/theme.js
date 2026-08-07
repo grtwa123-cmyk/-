@@ -79,7 +79,23 @@
   // pages by hand, so there is one definition of what the control is and no
   // page can drift from it.
   const LABEL = { auto: "Auto", light: "Light", dark: "Dark" };
-  const ICON = { auto: "◐", light: "☀", dark: "☾" };
+  /*
+   * The icon shows what the theme currently *is*, and the word shows what was
+   * asked for — so in auto you can see which way it resolved, which the mode
+   * name alone cannot tell you.
+   *
+   * Both glyphs are in the shipped Pretendard subset. The first attempt used
+   * \u25D0, \u2600 and \u263E for the three modes; Pretendard has no \u25D0 or
+   * \u263E at all, so two of the three silently rendered in whatever face the
+   * OS substituted. tests/fonts.test.mjs now checks the glyphs the chrome
+   * actually renders, not only the ones in the dictionaries.
+   */
+  // Written as literal glyphs, not \u escapes: tools/build-font.py decides
+  // what goes in the subset by scanning this source, and an escape is six
+  // ASCII characters to a scanner. The escapes in the comment above are
+  // deliberately left escaped — those glyphs are absent and must not be
+  // requested.
+  const ICON = { light: "☀", dark: "●" };
 
   function label(m) {
     const t = window.i18n && window.i18n.t;
@@ -109,7 +125,7 @@
     btn.append(icon, text);
 
     const paint = () => {
-      icon.textContent = ICON[mode];
+      icon.textContent = ICON[resolve(mode)];
       text.textContent = label(mode);
       const t = window.i18n && window.i18n.t;
       const name = (t && t("themeLabel")) || "Theme";
