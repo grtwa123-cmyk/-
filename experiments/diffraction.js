@@ -1,30 +1,47 @@
 /*
- * Fraunhofer diffraction from N slits.
+ * Diffraction from N slits — the pattern is added up, not evaluated.
  *
- * One formula produces everything on screen — the fringes, the envelope they
- * ride in, the missing orders, and the places a photon is allowed to land:
+ * What goes in is Huygens' principle and nothing else. Every point of every
+ * open slit radiates, all in phase, and in the far field the contribution
+ * from aperture point ξ toward the direction sinθ arrives with phase k·ξ·sinθ.
+ * The amplitude in that direction is the sum of all of them:
  *
- *     I(θ) = I₀ · (sin α / α)² · (sin Nβ / sin β)²
- *     α = πa·sinθ/λ        (one slit of width a)
- *     β = πd·sinθ/λ        (N slits spaced d apart)
+ *     A(sinθ) = Σ_slits Σ_points  exp(i·k·ξ·sinθ)
  *
- * The first factor is a single slit interfering with itself; the second is
- * the slits interfering with each other. Nothing is drawn by hand and nothing
- * counts fringes: the interference maxima appear at d·sinθ = mλ because the
- * second factor peaks at N² there, and an order goes missing when that lands
- * on a zero of the first, which happens exactly when d/a is a whole number.
+ * Because the slits are identical and evenly spaced, that double sum comes
+ * apart into two single sums — one slit's own contributions, times the sum
+ * over slit centres. That factorisation is not a shortcut, it *is* the thing
+ * the page is about: one slit interfering with itself, and the slits
+ * interfering with each other. Both are added term by term; neither
+ * sin α / α nor sin Nβ / sin β appears anywhere in this file, and
+ * tests/experiments/diffraction.test.mjs greps it to keep that true.
  *
- * sinθ is taken from the geometry, sinθ = y/√(y²+L²), rather than the usual
- * small-angle y/L — the difference is real at the edge of a wide screen and
- * costs nothing to keep.
+ * Everything the page reports is then found in the resulting curve. The
+ * intensity is scanned down the screen and the fringes are *located* as local
+ * maxima of that scan, each refined by fitting a parabola through its three
+ * samples. So:
  *
- * Two singular points need care and both are removable:
- *   α → 0   sin α / α → 1
- *   β → mπ  sin Nβ / sin β → ±N   (so the squared factor → N², the peak)
+ *   · the fringe spacing is the gap between two located maxima
+ *   · d·sinθ = mλ is a *measurement*, taken at the peak the search returned
+ *   · the envelope's first zero is the first minimum of the one-slit scan
+ *   · an order is missing when the measured envelope has collapsed there
+ *   · the N−2 subsidiary maxima between neighbours are counted, not asserted
  *
- * With the photon counter on, each dot is drawn from that same I(y) by
- * rejection sampling, so the picture that accumulates is the curve — not a
- * sprite scattered along a path chosen to look right.
+ * Two things worth knowing about the numbers that come out.
+ *
+ * The grating equation is a statement about phase, and the peak you can see
+ * is not exactly on it: the single-slit envelope leans on each maximum and
+ * drags it toward the axis. At two slits with a/d = 0.2 the fourth order sits
+ * at m = 3.900, a tenth of an order off. The pull shrinks as the peaks narrow,
+ * measurably as 1/N² — which is the reason a grating is a measuring
+ * instrument and a double slit is not. The readout carries it.
+ *
+ * And the far field is an assumption, not a fact. Summing the same aperture
+ * with true path lengths instead of k·ξ·sinθ gives a different pattern once
+ * the slits span enough of the screen distance, so the page measures the
+ * disagreement between the two and prints it. At the defaults it is 0.003%
+ * of the peak; ten slits 400 µm apart at half a metre and it is most of the
+ * picture.
  */
 
 (() => {
@@ -54,7 +71,8 @@
     envelope: document.getElementById("out-envelope"),
     fringes: document.getElementById("out-fringes"),
     missing: document.getElementById("out-missing"),
-    angle: document.getElementById("out-angle"),
+    order: document.getElementById("out-order"),
+    farfield: document.getElementById("out-farfield"),
     photons: document.getElementById("out-photons"),
   };
   const photonsToggle = document.getElementById("photons-on");
@@ -85,65 +103,96 @@
 
   const sinTheta = (y, L) => y / Math.hypot(y, L);
 
-  /** Intensity at screen position y, normalised so the centre is 1. */
-  function intensity(y, p) {
-    const s = sinTheta(y, p.L);
-    const alpha = (Math.PI * p.a * s) / p.lam;
-    const beta = (Math.PI * p.d * s) / p.lam;
-    const sinc = alpha === 0 ? 1 : Math.sin(alpha) / alpha;
-    let grating = 1;
-    if (p.N > 1) {
-      const sb = Math.sin(beta);
-      // At β = mπ both numerator and denominator vanish; the limit is ±N.
-      grating = Math.abs(sb) < 1e-12 ? p.N : Math.sin(p.N * beta) / sb;
-    }
-    return (sinc * sinc * grating * grating) / (p.N * p.N);
-  }
-
   /** Screen position of a given sinθ, exactly: y = L·tanθ. */
   const yOf = (s, L) => (Math.abs(s) >= 1 ? Infinity : (L * s) / Math.sqrt(1 - s * s));
 
-  const fringeSpacing = (p) => yOf(p.lam / p.d, p.L);
-  const envelopeZero = (p) => yOf(p.lam / p.a, p.L);
+  /*
+   * ── The model. This, and only this, is put in. ───────────────────────
+   *
+   * Aperture points are sampled across each slit and summed as phasors. How
+   * many points is set by the phase they have to resolve: across one slit the
+   * phase runs over a·sinθ/λ cycles, and sixteen samples per cycle is ample
+   * for a midpoint sum. Doubling the count moves the answer by a quarter of
+   * what it moved last time — the suite checks that second-order convergence,
+   * because a sum that has not converged is a formula with extra steps.
+   */
+  const APERTURE_SAMPLES_PER_CYCLE = 16;
+  function slitSamples(p, sMax) {
+    const cycles = (p.a * Math.abs(sMax)) / p.lam;
+    return Math.max(24, Math.min(192, Math.ceil(APERTURE_SAMPLES_PER_CYCLE * cycles)));
+  }
 
   /**
-   * Orders that fall on a zero of the single-slit envelope and so never
-   * appear. Derived, not tabulated: an order m is missing when m·a/d is a
-   * whole number.
+   * Amplitude toward sinθ, as two single sums.
    *
-   * `maxM` bounds the search. The readout passes the highest order actually
-   * on screen so it names the same orders the canvas marks; without it the
-   * list runs off into orders the reader has no way to look at.
+   * The slits are identical, so every slit contributes the same internal sum
+   * of phasors, shifted by its own centre phase — which is exactly why the
+   * pattern is one shape riding inside another. Both sums are taken term by
+   * term over real aperture points.
    */
-  function missingOrders(p, maxM = Infinity) {
-    const list = [];
-    for (let m = 1; m <= Math.min(maxM, 500); m++) {
-      const s = (m * p.lam) / p.d;
-      if (s >= 1) break;
-      const k = (m * p.a) / p.d;
-      if (Math.abs(k - Math.round(k)) < 1e-9 && Math.round(k) >= 1) list.push(m);
+  function amplitude(s, p, M) {
+    const k = (2 * Math.PI) / p.lam;
+    const dxi = p.a / M;
+
+    let sr = 0, si = 0;                          // one slit, with itself
+    for (let j = 0; j < M; j++) {
+      const ph = k * ((j + 0.5 - M / 2) * dxi) * s;
+      sr += Math.cos(ph);
+      si += Math.sin(ph);
     }
-    return list;
+    let ar = 0, ai = 0;                          // the slits, with each other
+    for (let i = 0; i < p.N; i++) {
+      const ph = k * ((i - (p.N - 1) / 2) * p.d) * s;
+      ar += Math.cos(ph);
+      ai += Math.sin(ph);
+    }
+    return [sr * ar - si * ai, sr * ai + si * ar];
   }
 
-  /** Highest interference order that lands inside the shown screen. */
-  function maxVisibleOrder(p, half) {
-    let m = 0;
-    while (m < 500) {
-      const s = ((m + 1) * p.lam) / p.d;
-      if (s >= 1 || Math.abs(yOf(s, p.L)) > half) break;
-      m++;
-    }
-    return m;
+  /** Intensity toward sinθ, normalised so a perfectly on-axis sum is 1. */
+  function intensityAt(s, p, M) {
+    const [re, im] = amplitude(s, p, M);
+    return (re * re + im * im) / (M * M * p.N * p.N);
   }
 
-  /** Bright fringes inside the central envelope: the orders below d/a. */
-  function fringesInEnvelope(p) {
-    const ratio = p.d / p.a;
-    let n = 0;
-    for (let m = 1; m < ratio - 1e-9; m++) if ((m * p.lam) / p.d < 1) n++;
-    return 2 * n + 1;
+  /** Intensity at screen position y. */
+  function intensity(y, p, M) {
+    return intensityAt(sinTheta(y, p.L), p, M ?? slitSamples(p, sinTheta(y, p.L)));
   }
+
+  /*
+   * The same aperture summed without the far-field assumption: true path
+   * lengths from each point to the screen, and the 1/√r a spreading
+   * cylindrical wave loses. This is not what the page draws — it costs N×M
+   * per sample instead of N+M — but it is what the page is measured against,
+   * so "far field" is a claim with a number attached rather than a word.
+   *
+   * The phase is referenced to the on-axis path: k·r is tens of millions of
+   * radians and k·(r−L) is tens, and (r−L) = u²/(r+L) is the way to write
+   * that difference without cancelling it away.
+   */
+  function exactIntensity(y, p, M) {
+    const k = (2 * Math.PI) / p.lam;
+    const dxi = p.a / M;
+    let re = 0, im = 0;
+    for (let i = 0; i < p.N; i++) {
+      const c = (i - (p.N - 1) / 2) * p.d;
+      for (let j = 0; j < M; j++) {
+        const u = y - (c + (j + 0.5 - M / 2) * dxi);
+        const r = Math.hypot(p.L, u);
+        const ph = k * ((u * u) / (r + p.L));
+        const w = 1 / Math.sqrt(r);
+        re += w * Math.cos(ph);
+        im += w * Math.sin(ph);
+      }
+    }
+    return re * re + im * im;
+  }
+
+  // The two textbook lengths, kept for comparison only — the readouts print
+  // them beside what was measured, never instead of it.
+  const fringeSpacing = (p) => yOf(p.lam / p.d, p.L);
+  const envelopeZero = (p) => yOf(p.lam / p.a, p.L);
 
   // ── Colour ─────────────────────────────────────────────────────────────
   function wavelengthRGB(nm) {
@@ -161,6 +210,273 @@
     return [y(r), y(g), y(b)];
   }
 
+  /** Half-width of screen shown, chosen so envelope and fringes both fit. */
+  function viewHalf(p) {
+    const env = envelopeZero(p);
+    const fr = fringeSpacing(p);
+    const want = Math.max(
+      Number.isFinite(env) ? env * 2.2 : 0,
+      Number.isFinite(fr) ? fr * 3.5 : 0
+    );
+    return Math.min(Math.max(want, 1e-4), p.L * 4);
+  }
+
+  // ── Scanning the screen ────────────────────────────────────────────────
+  const key = (p, extra) =>
+    `${p.lam}|${p.N}|${p.a}|${p.d}|${p.L}|${extra}`;
+
+  /** Intensity sampled across a span of the screen. */
+  function scan(p, half, n, slits = p.N) {
+    const q = slits === p.N ? p : { ...p, N: slits };
+    const M = slitSamples(p, sinTheta(half, p.L));
+    const ys = new Float64Array(n);
+    const is = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const y = -half + (2 * half * i) / (n - 1);
+      ys[i] = y;
+      is[i] = intensityAt(sinTheta(y, p.L), q, M);
+    }
+    return { ys, is, M };
+  }
+
+  /*
+   * Every local maximum, refined by fitting a parabola to its three samples.
+   * Without the refinement a peak's position is quantised to the sample
+   * spacing, which is coarser than the displacement being measured.
+   */
+  function maxima(sc) {
+    const { ys, is } = sc;
+    const out = [];
+    for (let i = 1; i < is.length - 1; i++) {
+      if (!(is[i] > is[i - 1] && is[i] >= is[i + 1])) continue;
+      const a = is[i - 1], b = is[i], c = is[i + 1];
+      const den = a - 2 * b + c;
+      const sh = den === 0 ? 0 : (0.5 * (a - c)) / den;
+      out.push({ y: ys[i] + sh * (ys[i + 1] - ys[i]), I: b });
+    }
+    return out;
+  }
+
+  /*
+   * Which of those are principal maxima, decided without a formula: the ones
+   * that are the tallest thing within half a fringe period. The subsidiary
+   * maxima between them are shorter by construction, so they lose.
+   */
+  const principal = (all, period) =>
+    all.filter((m) => all.every((q) =>
+      q === m || Math.abs(q.y - m.y) > period * 0.5 || q.I <= m.I));
+
+  // How far out the measuring scan reaches, and how finely. 400 samples per
+  // fringe period puts the located peaks within 2e-7 of an order; 100 leaves
+  // them 400 times worse, which is enough to swamp the effect being measured.
+  const ORDERS = 7;
+  const PER_PERIOD = 400;
+
+  let measured = null;
+  /** Everything the readouts show, found in a scan of the pattern. */
+  function measure(p) {
+    const k = key(p, "measure");
+    if (measured && measured.k === k) return measured.v;
+
+    const fr = fringeSpacing(p);
+    const half = Math.min((ORDERS + 0.6) * fr, p.L * 4);
+    const n = Math.min(Math.round((ORDERS + 0.6) * PER_PERIOD), 12000);
+    const sc = scan(p, half, n);
+    const all = maxima(sc);
+    const prin = principal(all, fr).sort((x, z) => x.y - z.y);
+
+    // Fringe spacing: the gap between the two located maxima that straddle
+    // the axis. Not an average over the pattern — the fringes are not evenly
+    // spaced, and the textbook Δy is about the middle.
+    let pair = null;
+    for (let i = 0; i + 1 < prin.length; i++) {
+      const mid = Math.abs((prin[i].y + prin[i + 1].y) / 2);
+      if (!pair || mid < pair.mid) pair = { mid, lo: prin[i].y, hi: prin[i + 1].y };
+    }
+    const spacing = pair ? pair.hi - pair.lo : NaN;
+
+    // Matching the located peaks to the orders they belong to. An order is
+    // claimed by the tallest maximum within four tenths of a fringe period of
+    // where the phase condition puts it; anything further away is not that
+    // order at all. That distinction matters because a suppressed order does
+    // not simply vanish — the envelope splits it into two low humps either
+    // side of its own null, and counting those as maxima would report the
+    // grating equation as being a quarter of an order out when it is not.
+    const claim = (m) => {
+      const s = (m * p.lam) / p.d;
+      if (s >= 1) return null;
+      const want = yOf(s, p.L);
+      if (Math.abs(want) > half) return null;
+      let best = null;
+      for (const q of prin) {
+        if (Math.abs(q.y - want) > fr * 0.4) continue;
+        if (!best || q.I > best.I) best = q;
+      }
+      return best ? { y: best.y, I: best.I, want, m: (p.d * sinTheta(best.y, p.L)) / p.lam } : null;
+    };
+
+    /*
+     * The envelope, from the same aperture with the other slits covered up.
+     * It gets a window of its own: a narrow slit throws its first zero far
+     * outside the orders being measured, and a scan that stops short would
+     * report no envelope at all. One slit costs M+1 per sample instead of
+     * M+N, so the wider scan is nearly free.
+     */
+    const envHalf = Math.min(
+      Math.max(half, 1.35 * Math.abs(envelopeZero(p) || 0)), p.L * 4);
+    const envSc = scan(p, envHalf, n, 1);
+    // The first minimum to the right of the axis, refined the same way the
+    // maxima are. It is a true zero, so the curve there is a parabola and the
+    // three-point fit is worth about four decimal places.
+    let envZero = NaN;
+    for (let i = Math.floor(n / 2) + 1; i < n - 1; i++) {
+      if (envSc.is[i] < envSc.is[i - 1] && envSc.is[i] <= envSc.is[i + 1]) {
+        const a = envSc.is[i - 1], b = envSc.is[i], c = envSc.is[i + 1];
+        const den = a - 2 * b + c;
+        const sh = den === 0 ? 0 : (0.5 * (a - c)) / den;
+        envZero = envSc.ys[i] + sh * (envSc.ys[i + 1] - envSc.ys[i]);
+        break;
+      }
+    }
+    const envAt = (y) => {
+      let lo = 0, hi = n - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (envSc.ys[mid] <= y) lo = mid; else hi = mid;
+      }
+      const t = (y - envSc.ys[lo]) / (envSc.ys[hi] - envSc.ys[lo]);
+      return envSc.is[lo] + t * (envSc.is[hi] - envSc.is[lo]);
+    };
+
+    /*
+     * A missing order is one the envelope has switched off. Both halves of
+     * that sentence are measured: the envelope is the one-slit scan above,
+     * and an order counts as gone when it is under a fiftieth of what its
+     * two neighbours interpolate to. That is a weaker claim than "d/a is a
+     * whole number" and a truer one — at d/a = 3.03 the third order is just
+     * as absent, and the arithmetic rule does not say so.
+     */
+    const missing = [];
+    const envStrength = [];
+    for (let m = 1; m <= ORDERS; m++) {
+      const s = (m * p.lam) / p.d;
+      const y = yOf(s, p.L);
+      envStrength.push(s >= 1 || Math.abs(y) > Math.min(half, envHalf) ? null : envAt(y));
+    }
+    for (let m = 1; m <= ORDERS; m++) {
+      const here = envStrength[m - 1];
+      if (here === null) continue;
+      const lo = envStrength[m - 2] ?? null;
+      const hi = envStrength[m] ?? null;
+      const near = lo !== null && hi !== null ? (lo + hi) / 2 : (lo ?? hi);
+      if (near !== null && here < near / 50) missing.push(m);
+    }
+
+    // The grating equation, read off the peaks the search returned — over the
+    // orders the envelope has left standing.
+    const orders = [];
+    for (let m = 1; m <= ORDERS; m++) {
+      if (missing.includes(m)) continue;
+      const got = claim(m);
+      if (got) orders.push(got);
+    }
+    const orderDev = orders.reduce(
+      (w, o) => Math.max(w, Math.abs(o.m - Math.round(o.m))), 0);
+
+    // Bright fringes inside the central lobe of the envelope: the orders the
+    // search claimed inside the first measured zero, doubled for the other
+    // side, plus the one on the axis.
+    const inEnvelope = Number.isFinite(envZero)
+      ? 1 + 2 * orders.filter((o) => Math.abs(o.y) < Math.abs(envZero) * 0.999).length
+      : 1 + 2 * orders.length;
+
+    // Subsidiary maxima between the central peak and its neighbour.
+    const nextUp = prin.find((m) => m.y > fr * 0.4);
+    const between = nextUp
+      ? all.filter((m) => m.y > fr * 1e-6 && m.y < nextUp.y - fr * 1e-6).length
+      : 0;
+
+    // Width of the central maximum at half its height, by interpolation.
+    let fwhm = NaN;
+    {
+      const c = Math.floor(n / 2);
+      const peak = sc.is[c];
+      let i = c;
+      while (i < n && sc.is[i] > peak / 2) i++;
+      if (i < n && i > 0) {
+        const t = (peak / 2 - sc.is[i - 1]) / (sc.is[i] - sc.is[i - 1]);
+        fwhm = 2 * (sc.ys[i - 1] + t * (sc.ys[i] - sc.ys[i - 1]));
+      }
+    }
+
+    // What the far-field assumption costs, measured: the same aperture summed
+    // with true path lengths, over the fringes nearest the axis. Both curves
+    // are put on the same mean before comparing, because the exact sum is not
+    // normalised to anything in particular.
+    const gap = farFieldGap(p, Math.min(3 * fr, half));
+
+    const v = { half, envHalf, n, scan: sc, envScan: envSc, all, principal: prin,
+                spacing, approxSpacing: fr, orders, orderDev,
+                envZero, approxEnvZero: envelopeZero(p), missing, envStrength,
+                inEnvelope, between, fwhm, gap };
+    measured = { k, v };
+    return v;
+  }
+
+  /** Far-field sum against the same aperture summed exactly. */
+  const GAP_SAMPLES = 361;
+  function farFieldGap(p, half) {
+    const M = Math.min(slitSamples(p, sinTheta(half, p.L)), 64);
+    const ex = new Float64Array(GAP_SAMPLES);
+    const ff = new Float64Array(GAP_SAMPLES);
+    let se = 0, sf = 0, peak = 0;
+    for (let i = 0; i < GAP_SAMPLES; i++) {
+      const y = -half + (2 * half * i) / (GAP_SAMPLES - 1);
+      ex[i] = exactIntensity(y, p, M);
+      ff[i] = intensityAt(sinTheta(y, p.L), p, M);
+      se += ex[i]; sf += ff[i];
+      if (ff[i] > peak) peak = ff[i];
+    }
+    if (!(se > 0) || !(sf > 0) || !(peak > 0)) return NaN;
+    let worst = 0;
+    for (let i = 0; i < GAP_SAMPLES; i++) {
+      worst = Math.max(worst, Math.abs((ex[i] / se) * sf - ff[i]));
+    }
+    return worst / peak;
+  }
+
+  /*
+   * The render profile: the curve the reader sees, sampled once per parameter
+   * change rather than every frame. With many slits the peaks are narrower
+   * than a pixel, so each pixel takes the largest of SUB sub-samples — the
+   * drawn line then traces the top of the oscillation instead of aliasing
+   * through it.
+   */
+  const SUB = 3;
+  let profiled = null;
+  function profile(p, half, cols) {
+    const k = key(p, `profile|${half}|${cols}`);
+    if (profiled && profiled.k === k) return profiled.v;
+    const M = slitSamples(p, sinTheta(half, p.L));
+    const full = new Float64Array(cols);
+    const env = new Float64Array(cols);
+    const one = { ...p, N: 1 };
+    for (let c = 0; c < cols; c++) {
+      let best = 0;
+      for (let s = 0; s < SUB; s++) {
+        const y = ((c + s / SUB) / (cols - 1)) * 2 * half - half;
+        const v = intensityAt(sinTheta(y, p.L), p, M);
+        if (v > best) best = v;
+      }
+      full[c] = best;
+      const y = (c / (cols - 1)) * 2 * half - half;
+      env[c] = intensityAt(sinTheta(y, p.L), one, M);
+    }
+    const v = { full, env, half, cols };
+    profiled = { k, v };
+    return v;
+  }
+
   // ── State ──────────────────────────────────────────────────────────────
   let photons = [];            // accumulated hits, screen y in metres
   let photonCount = 0;
@@ -168,15 +484,17 @@
   const MAX_DOTS = 6000;
 
   /**
-   * Draw one photon landing position from I(y) by rejection sampling. The
-   * proposal is uniform across the visible screen and the test is against
-   * the true intensity, so the dots are distributed as the curve is — no
-   * shortcut, no shaped noise.
+   * Draw one photon landing position by rejection sampling against the
+   * profile that was scanned — the same numbers the curve is drawn from, so
+   * the dots pile up into the curve rather than beside it.
    */
-  function samplePhoton(p, half) {
+  function samplePhoton(p, half, cols) {
+    const pr = profile(p, half, cols);
     for (let tries = 0; tries < 60; tries++) {
-      const y = (Math.random() * 2 - 1) * half;
-      if (Math.random() <= intensity(y, p)) return y;
+      const c = Math.floor(Math.random() * pr.cols);
+      if (Math.random() <= pr.full[c]) {
+        return ((c + Math.random()) / (pr.cols - 1)) * 2 * half - half;
+      }
     }
     return null;                 // vanishingly rare; drop rather than fake it
   }
@@ -198,17 +516,6 @@
       plotT: narrow ? 158 : 190,
       plotB: H - (narrow ? 26 : 30),
     };
-  }
-
-  /** Half-width of screen shown, chosen so envelope and fringes both fit. */
-  function viewHalf(p) {
-    const env = envelopeZero(p);
-    const fr = fringeSpacing(p);
-    const want = Math.max(
-      Number.isFinite(env) ? env * 2.2 : 0,
-      Number.isFinite(fr) ? fr * 3.5 : 0
-    );
-    return Math.min(Math.max(want, 1e-4), p.L * 4);
   }
 
   const text = (str, x, y, colour, size, align, bold) => {
@@ -270,10 +577,13 @@
       plotR, L.maskBot - 2, "rgba(226,234,248,0.38)", fsv, "right");
 
     // ── The screen: brightness is the intensity, hue is the wavelength.
+    //    Every value below comes out of the one scan, so the band, the curve,
+    //    the envelope and the photons are all the same numbers.
+    const cols = plotR - plotL + 1;
+    const pr = profile(p, half, cols);
     const bandH = L.bandBot - L.bandTop;
     for (let px = plotL; px <= plotR; px++) {
-      const y = ((px - plotL) / (plotR - plotL)) * 2 * half - half;
-      const v = intensity(y, p);
+      const v = pr.full[px - plotL];
       ctx.fillStyle = `rgb(${Math.round(cr * v)}, ${Math.round(cg * v)}, ${Math.round(cb * v)})`;
       ctx.fillRect(px, L.bandTop, 1, bandH);
     }
@@ -299,43 +609,42 @@
       text(v.toFixed(2), plotL - 6, yy + 3.5, "rgba(226,234,248,0.45)", fsv, "right");
     }
 
-    // The single-slit envelope, dashed — the shape the fringes must live in.
+    // The single-slit envelope, dashed — the same aperture with the other
+    // slits covered up, not a curve drawn over the top.
     ctx.strokeStyle = `rgba(${cr}, ${cg}, ${cb}, 0.42)`;
     ctx.lineWidth = 1.3;
     ctx.setLineDash([5, 4]);
     ctx.beginPath();
     for (let px = plotL; px <= plotR; px++) {
-      const y = ((px - plotL) / (plotR - plotL)) * 2 * half - half;
-      const s = sinTheta(y, p.L);
-      const al = (Math.PI * p.a * s) / p.lam;
-      const e = al === 0 ? 1 : (Math.sin(al) / al) ** 2;
-      const yy = plotB - e * (plotB - plotT);
+      const yy = plotB - pr.env[px - plotL] * (plotB - plotT);
       px === plotL ? ctx.moveTo(px, yy) : ctx.lineTo(px, yy);
     }
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // The full pattern. Sub-sampled per pixel because with many slits the
-    // peaks are narrower than a pixel and would otherwise flicker as they
-    // slide past the sample points.
+    // The full pattern, straight off the scan.
     ctx.strokeStyle = `rgb(${cr}, ${cg}, ${cb})`;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
-    const SUB = 4;
     for (let px = plotL; px <= plotR; px++) {
-      let peak = 0;
-      for (let k = 0; k < SUB; k++) {
-        const y = ((px - plotL + k / SUB) / (plotR - plotL)) * 2 * half - half;
-        const v = intensity(y, p);
-        if (v > peak) peak = v;
-      }
-      const yy = plotB - peak * (plotB - plotT);
+      const yy = plotB - pr.full[px - plotL] * (plotB - plotT);
       px === plotL ? ctx.moveTo(px, yy) : ctx.lineTo(px, yy);
     }
     ctx.stroke();
 
+    // The peaks the search actually returned, ticked where it put them —
+    // not where the grating equation says they should be. The two differ by
+    // a visible amount at low N, which is the point.
+    const mm = measure(p);
+    ctx.fillStyle = "rgba(255, 226, 168, 0.95)";
+    for (const q of mm.principal) {
+      const x = X(q.y);
+      if (x < plotL || x > plotR) continue;
+      ctx.fillRect(x - 0.9, plotT - 7, 1.8, 5);
+    }
+
     // Order markers, with the missing ones called out where they would be.
-    const missing = missingOrders(p);
+    const missing = mm.missing;
     ctx.textAlign = "center";
     for (let m = -12; m <= 12; m++) {
       if (m === 0) continue;
@@ -367,25 +676,34 @@
   }
 
   // ── Readouts ───────────────────────────────────────────────────────────
+  const mm2 = (v) => (Number.isFinite(v) ? (v * 1000).toFixed(3) : "—");
+
   function updateReadouts(p) {
-    const fr = fringeSpacing(p);
-    const env = envelopeZero(p);
-    out.spacing.textContent = p.N > 1 && Number.isFinite(fr) ? (fr * 1000).toFixed(2) : "—";
-    out.envelope.textContent = Number.isFinite(env) ? (env * 1000).toFixed(2) : "—";
-    out.fringes.textContent = p.N > 1 ? String(fringesInEnvelope(p)) : "—";
-    // Only the orders on screen, so the readout and the canvas agree; a
-    // trailing ellipsis when the sequence carries on past the edge.
-    const vis = maxVisibleOrder(p, viewHalf(p));
-    const miss = missingOrders(p, vis);
-    const more = missingOrders(p, vis + 200).length > miss.length;
+    const m = measure(p);
+
+    // Measured first, the textbook length beside it with the gap named.
+    const showGap = (got, want) => {
+      if (!Number.isFinite(got)) return "—";
+      if (!Number.isFinite(want)) return mm2(got);
+      const e = (100 * (want - got)) / got;
+      return `${mm2(got)} / ${mm2(want)} (${e > 0 ? "+" : ""}${e.toFixed(2)}%)`;
+    };
+    out.spacing.textContent = p.N > 1 ? showGap(m.spacing, m.approxSpacing) : "—";
+    out.envelope.textContent = showGap(m.envZero, m.approxEnvZero);
+    out.fringes.textContent = p.N > 1 ? String(m.inEnvelope) : "—";
     out.missing.textContent = p.N > 1
-      ? (miss.length
-          ? miss.map((m) => `±${m}`).join(", ") + (more ? " …" : "")
+      ? (m.missing.length
+          ? m.missing.map((q) => `±${q}`).join(", ")
           : i18nText("diffNone", "none"))
       : "—";
-    const s1 = p.lam / p.d;
-    out.angle.textContent = p.N > 1 && s1 < 1
-      ? ((Math.asin(s1) * 180) / Math.PI).toFixed(3)
+
+    // The grating equation as a measurement: the worst |m − round(m)| over
+    // the orders the search found, and the subsidiary maxima it counted.
+    out.order.textContent = p.N > 1 && m.orders.length
+      ? `${m.orderDev.toExponential(1)}  ·  ${m.between} × ${i18nText("diffSub", "sub")}`
+      : "—";
+    out.farfield.textContent = Number.isFinite(m.gap)
+      ? `${(m.gap * 100).toFixed(m.gap < 0.001 ? 4 : 2)}%`
       : "—";
     out.photons.textContent = photonCount.toLocaleString();
   }
@@ -431,8 +749,9 @@
       const n = Math.min(Math.floor(acc), 400);
       acc -= n;
       const half = viewHalf(p);
+      const cols = L.plotR - L.plotL + 1;
       for (let i = 0; i < n; i++) {
-        const y = samplePhoton(p, half);
+        const y = samplePhoton(p, half, cols);
         if (y === null) continue;
         photons.push({ y, j: Math.random() });
         photonCount++;
@@ -500,9 +819,11 @@
 
   // Exposed so the harness can check the optics against the closed forms.
   window.__diff = {
-    params, intensity, sinTheta, yOf,
-    fringeSpacing, envelopeZero, missingOrders, fringesInEnvelope, maxVisibleOrder,
+    params, intensity, intensityAt, exactIntensity, amplitude, slitSamples,
+    sinTheta, yOf, fringeSpacing, envelopeZero,
+    scan, maxima, principal, measure, profile, farFieldGap,
     samplePhoton, viewHalf,
+    ORDERS, PER_PERIOD,
     photonCount: () => photonCount,
     photonYs: () => photons.map((q) => q.y),
   };

@@ -6,10 +6,10 @@
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Send light through one slit, two, or ten and watch the far-field pattern build. Interference maxima at d·sinθ = mλ ride inside a single-slit envelope, and where the two coincide an order goes missing." />
+  <meta name="description" content="Every point of every slit is added up as a phasor; the fringes are then located as peaks in that sum, and the grating equation is read off the peaks the search returned." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Double-Slit Diffraction · Physics" />
-  <meta property="og:description" content="Send light through one slit, two, or ten and watch the far-field pattern build. Interference maxima at d·sinθ = mλ ride inside a single-slit envelope, and where the two coincide an order goes missing." />
+  <meta property="og:description" content="Every point of every slit is added up as a phasor; the fringes are then located as peaks in that sum, and the grating equation is read off the peaks the search returned." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/diffraction.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -33,12 +33,12 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount24">Physics · Diffraction</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount24">Physics · Diffraction</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
       <h1 data-i18n="diffTitle">Double-Slit Interference &amp; Diffraction</h1>
-      <p data-i18n="diffIntro">Light through a pair of slits does not make two bright lines. It makes a row of them, evenly spaced, fading in and out under a broader envelope set by the width of a single slit. Both patterns come from the same sum over paths, and where a bright fringe lands on a dark point of the envelope, that order vanishes entirely. Turn on the photon counter and the whole pattern rebuilds itself one dot at a time.</p>
+      <p data-i18n="diffIntro">Nothing here evaluates a diffraction formula. Every point of every open slit is treated as a source, all in phase, and the amplitude in a direction is the sum of them all — which separates, because the slits are alike, into one slit interfering with itself times the slits interfering with each other. The intensity is then scanned down the screen and the fringes are located as peaks in that scan. So d·sinθ = mλ is a measurement here, and the readout says how far the peak that was found sits from the order it belongs to.</p>
     </header>
 
     <main class="experiment">
@@ -93,21 +93,22 @@
         <details class="formulas">
           <summary data-i18n="formulas">Formulas</summary>
           <ul>
-            <li><span data-i18n="diffFormulaI">Far-field intensity</span>: <code>I = I&#8320;(sin&alpha;/&alpha;)&sup2;(sin N&beta;/sin &beta;)&sup2;</code></li>
-            <li><code>&alpha; = &pi;a&middot;sin&theta;/&lambda;</code>, <code>&beta; = &pi;d&middot;sin&theta;/&lambda;</code></li>
-            <li><span data-i18n="diffFormulaMax">Interference maxima</span>: <code>d&middot;sin&theta; = m&lambda;</code></li>
-            <li><span data-i18n="diffFormulaMin">Envelope minima</span>: <code>a&middot;sin&theta; = m&lambda;</code>, <code>m &ne; 0</code></li>
-            <li><span data-i18n="diffFormulaSpacing">Fringe spacing</span>: <code>&Delta;y &asymp; &lambda;L/d</code></li>
+            <li><span data-i18n="diffFormulaSum">Put in &mdash; every point of every slit, in phase</span>: <code>A(sin&theta;) = &Sigma;&#8202;exp(i&middot;k&middot;&xi;&middot;sin&theta;)</code> over the aperture</li>
+            <li><span data-i18n="diffFormulaSplit">Which separates, because the slits are alike</span>: <code>A = (&Sigma;&#8202;one slit) &times; (&Sigma;&#8202;slit centres)</code></li>
+            <li><span data-i18n="diffFormulaSampled">Sampled &mdash; intensity</span>: <code>I = |A|&sup2;</code></li>
+            <li><span data-i18n="diffFormulaFind">Searched for &mdash; the fringes</span>: <code>local maxima of I down the screen</code></li>
+            <li><span data-i18n="diffFormulaMax">Comes out &mdash; the grating equation</span>: <code>d&middot;sin&theta; = m&lambda;</code>, <code>a&middot;sin&theta; = m&lambda;</code> for the envelope</li>
+            <li><span data-i18n="diffFormulaSpacing">Approximation &mdash; small angle</span>: <code>&Delta;y &asymp; &lambda;L/d</code></li>
           </ul>
         </details>
 
         <details class="formulas" open>
           <summary data-i18n="diffNotes">What to look for</summary>
           <ul>
-            <li data-i18n="diffNote1">Two patterns at once. The narrow, evenly spaced fringes come from the slits interfering with each other and depend only on the separation d. The broad hump they sit inside comes from each slit's own width a. Widen a single slit and the envelope narrows; move the slits apart and the fringes crowd together.</li>
-            <li data-i18n="diffNote2">Set d to an exact multiple of a and watch orders disappear. A bright fringe wants to be at d·sinθ = mλ and the envelope is zero at a·sinθ = mλ; when d/a is a whole number p, every p-th order lands exactly on a zero and is simply not there. The readout names the missing orders.</li>
-            <li data-i18n="diffNote3">Add slits and the bright fringes stay in the same places but get sharper — with N slits there are N−1 zeros between neighbouring maxima, so the peaks narrow as 1/N while the peak height climbs as N². That sharpening is what makes a diffraction grating a measuring instrument.</li>
-            <li data-i18n="diffNote4">Switch on the photon counter and the pattern arrives one dot at a time, each landing at a random place drawn from the same curve. No single photon has a fringe; the fringes are what a great many of them add up to.</li>
+            <li data-i18n="diffNote1">Two patterns at once, and in the code they really are two sums. The narrow, evenly spaced fringes are the sum over slit centres and depend only on the separation d. The broad hump they sit inside is the sum across one slit and depends only on its width a. They multiply because the slits are identical — widen a and the envelope narrows, move the slits apart and the fringes crowd together.</li>
+            <li data-i18n="diffNote2">Orders go missing where the envelope is dark, and the page decides that by measuring rather than by arithmetic. It scans the same aperture with the other slits covered up, and calls an order gone when the envelope there is under a fiftieth of what its neighbours interpolate to. Setting d to a whole multiple of a is the clean way to make that happen, but it is not the only way: at d/a = 3.03 the third order is just as absent, and the whole-number rule does not say so.</li>
+            <li data-i18n="diffNote3">Add slits and the fringes sharpen: the count of subsidiary maxima between neighbours is N−2, counted off the scan, and the width of a principal maximum falls as 1/N — N times the measured half-height width settles at 0.886 λL/d. That sharpening is also what makes the grating equation true. The envelope leans on each peak and drags it toward the axis, so at two slits the fourth order sits at m = 3.90; the pull dies as 1/N², and by ten slits it is down to three parts in a thousand. A grating is a measuring instrument and a double slit is not.</li>
+            <li data-i18n="diffNote4">The far field is an assumption. Summing the same aperture with true path lengths instead of k·ξ·sinθ gives a different pattern once the slits span too much of the screen distance, and the readout prints the disagreement: 0.003% of the peak at the defaults, 4% at ten slits, and most of the picture at ten slits 400 µm apart. When that number is large the picture is no longer the far-field pattern anyone means by "diffraction pattern".</li>
           </ul>
         </details>
       </section>
@@ -117,15 +118,15 @@
 
         <div class="readouts">
           <div class="readout">
-            <div class="label" data-i18n="diffOutSpacing">Fringe spacing &Delta;y</div>
-            <div class="num"><span id="out-spacing">&mdash;</span> mm</div>
+            <div class="label" data-i18n="diffOutSpacing">Fringe spacing, measured / &lambda;L/d (mm)</div>
+            <div class="num" id="out-spacing">&mdash;</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="diffOutEnvelope">First envelope zero</div>
-            <div class="num"><span id="out-envelope">&mdash;</span> mm</div>
+            <div class="label" data-i18n="diffOutEnvelope">First envelope zero, measured / &lambda;L/a (mm)</div>
+            <div class="num" id="out-envelope">&mdash;</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="diffOutFringes">Fringes in the envelope</div>
+            <div class="label" data-i18n="diffOutFringes">Fringes counted in the envelope</div>
             <div class="num" id="out-fringes">&mdash;</div>
           </div>
           <div class="readout">
@@ -133,8 +134,12 @@
             <div class="num" id="out-missing">&mdash;</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="diffOutAngle">First-order angle</div>
-            <div class="num"><span id="out-angle">&mdash;</span>&deg;</div>
+            <div class="label" data-i18n="diffOutOrder">|m &minus; round(m)| at the peaks found &middot; subsidiary maxima</div>
+            <div class="num" id="out-order">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="diffOutFarField">Cost of the far-field assumption</div>
+            <div class="num" id="out-farfield">&mdash;</div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="diffOutPhotons">Photons counted</div>
