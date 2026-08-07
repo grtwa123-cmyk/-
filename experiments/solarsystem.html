@@ -18,6 +18,17 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%2304060d'/&gt;&lt;circle cx='32' cy='32' r='7' fill='%23ffd884'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='10' fill='none' stroke='%237da3d4' stroke-width='1.5'/&gt;&lt;/svg&gt;" />
 <title data-i18n="ssPageTitle">Solar System Tour · Science Lab</title>
 <style>
+  /* Pretendard (SIL OFL 1.1) — see assets/fonts/OFL.txt and the note in
+     styles.css. Self-hosted and subset so the Korean face is the same one
+     on every platform. */
+  @font-face {
+    font-family: "Pretendard Variable";
+    font-weight: 45 920;
+    font-style: normal;
+    font-display: swap;
+    src: url("../assets/fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+  }
+
   :root{
     --bg:#04060d;
     --panel:rgba(12,16,30,.88);
@@ -25,7 +36,7 @@
     --ink:#e9edf8;
     --dim:#94a0bd;
     --mono:ui-monospace,'SF Mono','Cascadia Mono','Consolas',monospace;
-    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;
+    --sans:'Pretendard Variable',Pretendard,system-ui,-apple-system,'Segoe UI','Apple SD Gothic Neo','Noto Sans KR','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans)}

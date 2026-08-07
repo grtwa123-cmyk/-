@@ -19,7 +19,7 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
 import { EXPERIMENTS } from "./experiments.js";
-import { makeCard } from "./card-texture.js";
+import { makeCard, titleFontReady } from "./card-texture.js";
 
 const gsap = window.gsap;
 const i18n = window.i18n;
@@ -168,6 +168,11 @@ function repaint() {
   }
 }
 document.addEventListener("langchange", repaint);
+
+// The cards are bitmaps. If Pretendard is still in flight when they are first
+// drawn they bake in a fallback face and would keep it forever, so repaint
+// once it lands. Resolves immediately when the font is already cached.
+titleFontReady().then(repaint);
 
 // ── Scroll state ──────────────────────────────────────────────────────────
 const st = { s: 0, ts: 0, vs: 0, y: 0, ty: 0, vy: 0 };
