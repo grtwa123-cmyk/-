@@ -179,6 +179,48 @@ const textOf = (d) => Object.values(d).join("");
       `${cjk.length} sampled, ${has.length} unexpectedly in Pretendard`);
 }
 
+// ── The glyphs the chrome itself renders ─────────────────────────────
+{
+  /*
+   * The checks above read the three dictionaries, which is where the *copy*
+   * lives — but not where all the glyphs do. The theme toggle picks its icon
+   * in JavaScript, and its first version used two characters Pretendard does
+   * not have, so they rendered in whatever face the OS substituted and nothing
+   * here noticed. What a reader sees is the thing to check, so this walks the
+   * rendered chrome and takes the characters off the page.
+   *
+   * CJK is excluded: Chinese has no Pretendard coverage at all and falls back
+   * by design, which the check above already asserts.
+   */
+  const p2 = await browser.newPage();
+  await p2.goto(url("physics.html"), { waitUntil: "networkidle" });
+  await p2.waitForTimeout(400);
+  const chrome = await p2.evaluate(() => {
+    const sel = ".theme-btn, .lang-btn, .method-tag, .method-verified, .crumbs,"
+      + " .version-tag, .hub-tab, .site-header h1";
+    const chars = new Set();
+    for (const el of document.querySelectorAll(sel)) {
+      for (const ch of el.textContent) {
+        const o = ch.codePointAt(0);
+        if (o > 0x7F && !(o >= 0x4E00 && o <= 0x9FFF)) chars.add(ch);
+      }
+    }
+    return [...chars];
+  });
+  await p2.close();
+
+  chk("the chrome renders some non-ASCII glyphs worth checking",
+      chrome.length > 0, chrome.join(" "));
+  const res = await covered(chrome);
+  const missing = res.filter(([, has]) => !has).map(([c]) => c);
+  chk("every glyph the chrome draws for itself is in the font, with no fallback",
+      missing.length === 0,
+      missing.length
+        ? `${missing.map((c) => `${c} U+${c.codePointAt(0).toString(16).toUpperCase()}`).join(", ")}`
+          + " — pick a glyph Pretendard has, or rerun tools/build-font.py"
+        : `${chrome.length} checked: ${chrome.join(" ")}`);
+}
+
 // ── The pages actually ask for it ────────────────────────────────────
 {
   const files = [
