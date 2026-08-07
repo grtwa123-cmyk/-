@@ -41,7 +41,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "generatorTitle",   url: "experiments/generator.html",     cat: "Physics",   tags: ["INDUCTION", "FARADAY"], colors: ["#1d1405", "#ffe14a"], method: "measured", motif: "generator" },
   { titleKey: "peTitle",          url: "experiments/photoelectric.html", cat: "Physics",   tags: ["QUANTUM", "PHOTON"],    colors: ["#160b2a", "#b98cff"], method: "measured", motif: "photoelectric" },
   { titleKey: "circuitTitle",     url: "experiments/circuit.html",       cat: "Physics",   tags: ["CIRCUIT", "OHM"],       colors: ["#0a1a1c", "#5fd6c0"], method: "solved", motif: "circuit" },
-  { titleKey: "diffTitle",        url: "experiments/diffraction.html",   cat: "Physics",   tags: ["OPTICS", "QUANTUM"],    colors: ["#101024", "#8ab4ff"], method: "formula", motif: "diffraction" },
+  { titleKey: "diffTitle",        url: "experiments/diffraction.html",   cat: "Physics",   tags: ["OPTICS", "QUANTUM"],    colors: ["#101024", "#8ab4ff"], method: "measured", motif: "diffraction" },
   { titleKey: "lensTitle",        url: "experiments/lens.html",          cat: "Physics",   tags: ["OPTICS", "IMAGE"],      colors: ["#0b1526", "#7fd4ff"], method: "measured", motif: "lens" },
   { titleKey: "resTitle",         url: "experiments/resonance.html",     cat: "Physics",   tags: ["OSCILLATE", "RESONANCE"], colors: ["#24101a", "#ff8aa3"], method: "measured", motif: "resonance" },
   { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#0d0a1e", "#e0a24a"], method: "integrated", motif: "solar" },

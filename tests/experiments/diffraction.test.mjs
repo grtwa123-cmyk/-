@@ -1,3 +1,19 @@
+/*
+ * Diffraction from N slits.
+ *
+ * The page is given Huygens' principle and nothing else: every point of every
+ * open slit radiates in phase, and the amplitude toward a direction is the sum
+ * of them all. Because the slits are alike that double sum separates into one
+ * slit's own sum times the sum over slit centres, and both are added term by
+ * term — the closed form (sin α/α)²(sin Nβ/sin β)² appears nowhere in the file.
+ *
+ * So these checks hold the *located* peaks to the grating equation rather than
+ * assuming it, and hold the page honest about two things it cannot help:
+ * the single-slit envelope drags every maximum off d·sinθ = mλ by an amount
+ * that dies as 1/N², and the far field is an assumption whose cost the page
+ * has to measure rather than assert.
+ */
+
 import { browser, chk, rows, url, BASE as BASE_URL, finish } from '../lib/harness.mjs';
 
 const B = url('experiments/diffraction.html');
@@ -14,100 +30,181 @@ const setV = (id,v) => page.$eval('#'+id,(el,val)=>{el.value=String(val);
   el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));},v);
 const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(), id);
 
-// ── Closed forms, evaluated in-page against the shipped model ──────────
+// ── The sum has actually converged ─────────────────────────────────────
+{
+  // A midpoint sum over the aperture is second order in the sample count, so
+  // each doubling should quarter the change. If it did not, the "sum" would be
+  // a discretisation artefact dressed up as physics.
+  const r = await page.evaluate(() => {
+    const D = window.__diff;
+    const p = { ...D.params(), N: 4 };
+    const half = 6 * D.fringeSpacing(p);
+    const at = (M) => {
+      const out = [];
+      for (let i = 0; i < 1200; i++) {
+        const y = -half + (2 * half * i) / 1199;
+        out.push(D.intensityAt(D.sinTheta(y, p.L), p, M));
+      }
+      return out;
+    };
+    const steps = [12, 24, 48, 96, 192].map(at);
+    const d = [];
+    for (let i = 1; i < steps.length; i++) {
+      let w = 0;
+      for (let j = 0; j < steps[i].length; j++) w = Math.max(w, Math.abs(steps[i][j] - steps[i - 1][j]));
+      d.push(w);
+    }
+    return { d, M: D.slitSamples(p, D.sinTheta(half, p.L)) };
+  });
+  const ratios = r.d.slice(1).map((v, i) => r.d[i] / v);
+  chk('the aperture sum is converged — each doubling quarters the change',
+      ratios.every((q) => q > 3.6 && q < 4.4) && r.d[r.d.length - 1] < 1e-4,
+      `${r.d.map((v) => v.toExponential(2)).join(' → ')}  (ratios ${ratios.map((q) => q.toFixed(2)).join(', ')})`);
+  chk('and the page picks a sample count on the converged side of that',
+      r.M >= 24, `${r.M} points across each slit`);
+}
+
+// ── It reproduces the closed form it never uses ────────────────────────
 {
   const r = await page.evaluate(() => {
     const D = window.__diff;
-    const P = { lam: 550e-9, N: 2, a: 20e-6, d: 100e-6, L: 2 };
-    const out = {};
-    out.centre = D.intensity(0, P);                          // must be 1
-    // interference maxima at d sinθ = mλ must equal the envelope sinc² there
-    out.maxima = [];
-    for (let m = 1; m <= 6; m++) {
-      const s = m * P.lam / P.d;
-      const y = D.yOf(s, P.L);
-      const al = Math.PI * P.a * s / P.lam;
-      out.maxima.push({ m, got: D.intensity(y, P), want: (Math.sin(al)/al) ** 2 });
-    }
-    // envelope zeros at a sinθ = mλ
-    out.zeros = [1,2,3].map(m => D.intensity(D.yOf(m * P.lam / P.a, P.L), P));
-    // N = 2 must equal 4cos²β·sinc² / N²  (normalised)
-    let worst = 0;
-    for (let i = 1; i < 500; i++) {
-      const y = (i/500) * 0.06;
-      const s = D.sinTheta(y, P.L);
-      const al = Math.PI*P.a*s/P.lam, be = Math.PI*P.d*s/P.lam;
-      const want = (Math.sin(al)/al)**2 * 4*Math.cos(be)**2 / 4;
-      worst = Math.max(worst, Math.abs(D.intensity(y, P) - want));
-    }
-    out.twoSlit = worst;
-    // N = 1 must be pure sinc²
-    let w1 = 0;
-    const S = { ...P, N: 1 };
-    for (let i = 1; i < 500; i++) {
-      const y = (i/500) * 0.12;
-      const s = D.sinTheta(y, P.L);
-      const al = Math.PI*P.a*s/P.lam;
-      w1 = Math.max(w1, Math.abs(D.intensity(y, S) - (Math.sin(al)/al)**2));
-    }
-    out.oneSlit = w1;
-    // principal maxima height is N² before normalising -> 1 after, times envelope
-    out.principal = [3,5,8,10].map(N => {
-      const Q = { ...P, N };
-      const s = P.lam / P.d, y = D.yOf(s, P.L);
-      const al = Math.PI*P.a*s/P.lam;
-      return { N, got: D.intensity(y, Q), want: (Math.sin(al)/al)**2 };
-    });
-    // N-1 zeros between neighbouring principal maxima
-    out.zerosBetween = [3,5,8].map(N => {
-      const Q = { ...P, N };
-      let count = 0;
-      for (let k = 1; k < N; k++) {
-        const beta = Math.PI * k / N;                 // sin(Nβ)=0, sin(β)≠0
-        const s = beta * P.lam / (Math.PI * P.d);
-        const v = D.intensity(D.yOf(s, P.L), Q);
-        if (v < 1e-20) count++;
+    // The textbook expression, written here in the checks — the page has no
+    // such line, which is the point of the grep further down.
+    const closed = (y, p) => {
+      const s = D.sinTheta(y, p.L);
+      const al = (Math.PI * p.a * s) / p.lam, be = (Math.PI * p.d * s) / p.lam;
+      const sinc = al === 0 ? 1 : Math.sin(al) / al;
+      let g = 1;
+      if (p.N > 1) { const sb = Math.sin(be); g = Math.abs(sb) < 1e-12 ? p.N : Math.sin(p.N * be) / sb; }
+      return (sinc * sinc * g * g) / (p.N * p.N);
+    };
+    const out = [];
+    for (const o of [{}, { N: 1 }, { N: 10 }, { N: 6, d: 300e-6, a: 60e-6 },
+                     { lam: 380e-9 }, { lam: 750e-9, a: 5e-6 }, { L: 0.5 },
+                     { a: 100e-6, d: 400e-6, N: 4 }]) {
+      const p = { ...D.params(), ...o };
+      const half = 6 * D.fringeSpacing(p);
+      let worst = 0;
+      for (let i = 0; i < 2400; i++) {
+        const y = -half + (2 * half * i) / 2399;
+        worst = Math.max(worst, Math.abs(D.intensityAt(D.sinTheta(y, p.L), p, 128) - closed(y, p)));
       }
-      return { N, count, want: N - 1 };
-    });
-    // missing orders for integer d/a
-    out.missing = [2,3,4,5].map(p => {
-      const Q = { ...P, a: P.d / p };
-      return { p, orders: D.missingOrders(Q) };
-    });
-    // fringe spacing vs λL/d
-    out.spacing = { got: D.fringeSpacing(P), small: P.lam * P.L / P.d };
-    out.envZero = { got: D.envelopeZero(P), small: P.lam * P.L / P.a };
-    // exact geometry, not the small-angle shortcut
-    out.exactGeom = D.sinTheta(0.06, 2) - 0.06/Math.hypot(0.06,2);
+      out.push({ N: p.N, worst });
+    }
     return out;
   });
+  const worst = Math.max(...r.map((x) => x.worst));
+  chk(`the summed pattern is the closed form, to the sum's own resolution — ${r.length} geometries`,
+      worst < 3e-5, `worst |ΔI| = ${worst.toExponential(2)} over 19200 points`);
+}
 
-  chk('centre intensity is exactly 1 after normalising', Math.abs(r.centre-1) < 1e-12, String(r.centre));
-  chk('interference maxima (d·sinθ = mλ) sit exactly on the envelope',
-      r.maxima.every(x => Math.abs(x.got - x.want) < 1e-12),
-      r.maxima.map(x=>`m${x.m}:${x.got.toExponential(2)}`).join(' '));
-  chk('envelope zeros (a·sinθ = mλ) are zero', r.zeros.every(v => v < 1e-24),
-      r.zeros.map(v=>v.toExponential(1)).join(' '));
-  chk('N=2 reduces to 4cos²β·sinc² over 500 points', r.twoSlit < 1e-15, r.twoSlit.toExponential(2));
-  chk('N=1 reduces to pure sinc² over 500 points', r.oneSlit < 1e-15, r.oneSlit.toExponential(2));
-  chk('principal maxima reach the envelope for N = 3,5,8,10',
-      r.principal.every(x => Math.abs(x.got - x.want) < 1e-12),
-      r.principal.map(x=>`N${x.N}:${x.got.toFixed(6)}`).join(' '));
-  chk('N−1 zeros between neighbouring maxima (N = 3,5,8)',
-      r.zerosBetween.every(x => x.count === x.want),
-      r.zerosBetween.map(x=>`N${x.N}:${x.count}/${x.want}`).join(' '));
-  chk('missing orders are the multiples of d/a',
-      r.missing.every(({p,orders}) => orders.length>0 && orders.every(m => m % p === 0)),
-      r.missing.map(x=>`d/a=${x.p}→${x.orders.join(',')}`).join('  '));
-  chk('fringe spacing matches λL/d to 0.01%',
-      Math.abs(r.spacing.got - r.spacing.small)/r.spacing.small < 1e-4,
-      `${(r.spacing.got*1000).toFixed(4)} vs ${(r.spacing.small*1000).toFixed(4)} mm`);
-  chk('envelope zero matches λL/a to 0.1%',
-      Math.abs(r.envZero.got - r.envZero.small)/r.envZero.small < 1e-3,
-      `${(r.envZero.got*1000).toFixed(3)} vs ${(r.envZero.small*1000).toFixed(3)} mm`);
-  chk('sinθ uses the exact geometry, not the small-angle shortcut',
-      Math.abs(r.exactGeom) < 1e-18, r.exactGeom.toExponential(2));
+// ── The grating equation, measured off the peaks that were found ───────
+{
+  const r = await page.evaluate(() => {
+    const D = window.__diff;
+    return [2, 3, 4, 5, 6, 8, 10].map((N) => {
+      const m = D.measure({ ...D.params(), N, a: 10e-6 });
+      return { N, dev: m.orderDev, between: m.between, orders: m.orders.length,
+               fwhmN: (N * m.fwhm) / m.approxSpacing,
+               spacing: m.spacing, approx: m.approxSpacing };
+    });
+  });
+  chk('every located principal maximum is within a tenth of an order of the one it belongs to',
+      r.every((x) => x.dev < 0.05 && x.orders >= 4),
+      r.map((x) => `N${x.N}: ${x.dev.toExponential(1)}`).join(', '));
+
+  // The displacement is the envelope leaning on the peak, so it dies as the
+  // peak narrows: N²·dev is flat where a power law of any other index is not.
+  const flat = r.slice(2).map((x) => x.N * x.N * x.dev);
+  const lo = Math.min(...flat), hi = Math.max(...flat);
+  chk('and the displacement dies as 1/N² — N²·dev is constant to a few percent',
+      (hi - lo) / lo < 0.12 && r[0].dev / r[6].dev > 15,
+      `N²·dev = ${flat.map((v) => v.toFixed(3)).join(', ')};  N=2 is ${(r[0].dev / r[6].dev).toFixed(0)}× worse than N=10`);
+
+  chk('the subsidiary maxima between neighbours are counted, and there are N−2',
+      r.every((x) => x.between === x.N - 2),
+      r.map((x) => `N${x.N}:${x.between}`).join(' '));
+
+  // N·FWHM/(λL/d) → 0.886. N=2 is a cos² pattern and sits at exactly 1.
+  chk('the principal maxima narrow as 1/N, settling at 0.886 λL/d',
+      Math.abs(r[0].fwhmN - 1) < 0.01 && Math.abs(r[6].fwhmN - 0.886) < 0.01
+      && r.slice(1).every((x, i) => x.fwhmN <= r[i].fwhmN + 1e-9),
+      r.map((x) => `N${x.N}:${x.fwhmN.toFixed(4)}`).join(' '));
+
+  chk('and the measured spacing closes on λL/d as they do',
+      Math.abs(r[6].spacing / r[6].approx - 1) < Math.abs(r[0].spacing / r[0].approx - 1) / 8,
+      `N=2 is ${((r[0].spacing / r[0].approx - 1) * 100).toFixed(2)}% off, `
+      + `N=10 is ${((r[6].spacing / r[6].approx - 1) * 100).toFixed(3)}%`);
+}
+
+// ── The envelope, measured off the same aperture with one slit open ────
+{
+  const r = await page.evaluate(() => {
+    const D = window.__diff;
+    return [[20, 2], [50, 2], [100, 2], [10, 2], [20, 0.5], [20, 5], [5, 3]].map(([a, L]) => {
+      const m = D.measure({ ...D.params(), N: 1, a: a * 1e-6, L });
+      return { a, L, got: m.envZero, want: m.approxEnvZero };
+    });
+  });
+  const worst = Math.max(...r.map((x) => Math.abs(x.got / x.want - 1)));
+  chk(`the first envelope zero is found where a·sinθ = λ puts it — ${r.length} geometries`,
+      r.every((x) => Number.isFinite(x.got)) && worst < 1e-4,
+      `worst ${(worst * 100).toExponential(2)}%`);
+}
+
+// ── Missing orders, decided by measuring the envelope ──────────────────
+{
+  const r = await page.evaluate(() => {
+    const D = window.__diff;
+    return [[20, 100], [25, 100], [50, 100], [20, 60], [30, 100], [35, 100], [33, 100]]
+      .map(([a, d]) => {
+        const m = D.measure({ ...D.params(), a: a * 1e-6, d: d * 1e-6, N: 4 });
+        const rule = [];
+        for (let q = 1; q <= D.ORDERS; q++) {
+          const t = (q * a) / d;
+          if (Math.abs(t - Math.round(t)) < 1e-9 && t >= 1) rule.push(q);
+        }
+        return { a, d, missing: m.missing, rule, fringes: m.inEnvelope };
+      });
+  });
+  const exact = r.filter((x) => x.rule.length);
+  chk('where d/a is a whole number the measured collapse names exactly those orders',
+      exact.length >= 4 && exact.every((x) => x.missing.join() === x.rule.join()),
+      exact.map((x) => `d/a=${(x.d / x.a).toFixed(0)}: ${x.missing.join(',')}`).join('  '));
+  chk('and the count of fringes inside the envelope follows from it',
+      exact.every((x) => x.fringes === 2 * Math.round(x.d / x.a) - 1),
+      exact.map((x) => `d/a=${(x.d / x.a).toFixed(0)}: ${x.fringes}`).join('  '));
+  // 2.86 and 3.33 are far enough from a whole number to leave every order
+  // standing; 3.03 is not, and the measurement says so where the rule cannot.
+  const near = r.find((x) => x.a === 33);
+  chk('a near-miss ratio still loses the order, which the whole-number rule cannot say',
+      near.rule.length === 0 && near.missing.length > 0
+      && r.find((x) => x.a === 35).missing.length === 0
+      && r.find((x) => x.a === 30).missing.length === 0,
+      `d/a = 3.03 loses ${near.missing.join(',')}; 2.86 and 3.33 lose nothing`);
+}
+
+// ── The far field is an assumption, and the page prices it ─────────────
+{
+  const r = await page.evaluate(() => {
+    const D = window.__diff;
+    return [{ N: 2 }, { N: 4 }, { N: 6, d: 200e-6 }, { N: 10 },
+            { N: 10, d: 400e-6, L: 0.5 }].map((o) => {
+      const p = { ...D.params(), ...o };
+      const span = (p.N - 1) * p.d + p.a;
+      return { N: p.N, d: p.d, span2: (span * span) / (p.lam * p.L), gap: D.measure(p).gap };
+    });
+  });
+  chk('at the defaults the far-field sum and the exact one agree to a part in 10⁴',
+      r[0].gap < 2e-4, `${(r[0].gap * 100).toFixed(4)}% of the peak`);
+  // Ordered by how much of the screen distance the aperture spans, which is
+  // what governs it — not by N. Ten slits 100 µm apart are a smaller aperture
+  // than six slits 200 µm apart, and the gap follows the aperture.
+  const byspan = [...r].sort((x, z) => x.span2 - z.span2);
+  chk('and the gap grows with the span of the aperture, so the readout is worth reading',
+      byspan.every((x, i) => i === 0 || x.gap > byspan[i - 1].gap)
+      && byspan[byspan.length - 1].gap > 0.3,
+      byspan.map((x) => `span²/λL=${x.span2.toFixed(2)} → ${(x.gap * 100).toFixed(3)}%`).join(', '));
 }
 
 // ── Photon sampling really follows the curve ───────────────────────────
@@ -116,35 +213,57 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
     const D = window.__diff;
     const P = { lam: 550e-9, N: 2, a: 20e-6, d: 100e-6, L: 2 };
     const half = D.viewHalf(P);
+    const COLS = 700;
     const BINS = 40, NPH = 40000;
     const hist = new Array(BINS).fill(0);
     let kept = 0;
     for (let i = 0; i < NPH; i++) {
-      const y = D.samplePhoton(P, half);
+      const y = D.samplePhoton(P, half, COLS);
       if (y === null) continue;
       kept++;
       hist[Math.min(BINS-1, Math.floor(((y+half)/(2*half))*BINS))]++;
     }
-    // expected share of each bin from the true intensity
+    /*
+     * What each bin should hold, taken off the same scanned profile the dots
+     * are rejection-sampled against — so this checks the sampler, not the
+     * optics, which the checks above already cover.
+     *
+     * A column is a uniform interval, not a point, and 700 columns do not
+     * divide into 40 bins: a column that straddles a bin edge has to give
+     * each side its share. Assigning the whole column to whichever bin holds
+     * its centre biases the answer by more than the counting noise does.
+     */
+    const pr = D.profile(P, half, COLS);
     const exp = new Array(BINS).fill(0);
     let tot = 0;
-    for (let b = 0; b < BINS; b++) {
-      let s = 0;
-      for (let k = 0; k < 200; k++) {
-        const y = (-half) + ((b + k/200) / BINS) * 2*half;
-        s += D.intensity(y, P);
+    const binOf = (y) => ((y + half) / (2 * half)) * BINS;
+    for (let c = 0; c < COLS; c++) {
+      const w = pr.full[c];
+      if (w <= 0) continue;
+      tot += w;
+      let lo = binOf((c / (COLS - 1)) * 2 * half - half);
+      let hi = binOf(((c + 1) / (COLS - 1)) * 2 * half - half);
+      lo = Math.max(0, Math.min(BINS, lo)); hi = Math.max(0, Math.min(BINS, hi));
+      if (hi <= lo) { exp[Math.min(BINS - 1, Math.floor(lo))] += w; continue; }
+      for (let b = Math.floor(lo); b < Math.min(BINS, Math.ceil(hi)); b++) {
+        const ov = Math.min(hi, b + 1) - Math.max(lo, b);
+        if (ov > 0) exp[b] += (w * ov) / (hi - lo);
       }
-      exp[b] = s / 200; tot += exp[b];
     }
-    let worst = 0;
+    // The bound comes out of the run: each bin is a binomial draw, so five
+    // standard errors of the largest share is what "agrees" means here.
+    let worst = 0, bound = 0;
     for (let b = 0; b < BINS; b++) {
-      const obs = hist[b] / kept, want = exp[b] / tot;
-      worst = Math.max(worst, Math.abs(obs - want));
+      const want = exp[b] / tot;
+      worst = Math.max(worst, Math.abs(hist[b] / kept - want));
+      bound = Math.max(bound, 5 * Math.sqrt((want * (1 - want)) / kept));
     }
-    return { worst, kept };
+    return { worst, bound, kept };
   });
-  chk('sampled photons reproduce the intensity curve (40 bins, 40k photons)',
-      r.worst < 0.006, `max bin error ${r.worst.toFixed(5)} over ${r.kept} photons`);
+  chk('sampled photons reproduce the profile they are drawn from (40 bins, 40k photons)',
+      r.worst < r.bound,
+      `max bin error ${r.worst.toExponential(2)} against a 5σ bound of ${r.bound.toExponential(2)}, `
+      + `${r.kept} photons`);
 }
 
 // ── UI ────────────────────────────────────────────────────────────────
@@ -152,20 +271,36 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
   await setV('wavelength',550); await setV('slits',2); await setV('width',20);
   await setV('sep',100); await setV('dist',2);
   await page.waitForTimeout(300);
-  const sp = parseFloat(await txt('out-spacing'));
-  chk('readout: Δy = 11.00 mm at 550 nm / 100 µm / 2 m', Math.abs(sp-11.00)<0.02, String(sp));
-  chk('readout: envelope zero = 55.02 mm',
-      Math.abs(parseFloat(await txt('out-envelope'))-55.02)<0.05, await txt('out-envelope'));
-  chk('readout: 9 fringes in the envelope at d/a = 5',
+  const live = await page.evaluate(() => {
+    const m = window.__diff.measure(window.__diff.params());
+    return { spacing: m.spacing, approx: m.approxSpacing, env: m.envZero,
+             envApprox: m.approxEnvZero, dev: m.orderDev, between: m.between, gap: m.gap };
+  });
+  const sp = await txt('out-spacing');
+  chk('the fringe-spacing readout is the measured gap, with λL/d beside it',
+      /^\d+\.\d{3} \/ \d+\.\d{3} \([-+]\d+\.\d{2}%\)$/.test(sp)
+      && Math.abs(parseFloat(sp) - live.spacing * 1000) < 0.002
+      && Math.abs(live.spacing * 1000 - 10.852) < 0.01, sp);
+  const env = await txt('out-envelope');
+  chk('and the envelope readout is the measured zero, with λL/a beside it',
+      /^\d+\.\d{3} \/ \d+\.\d{3} \([-+]?\d+\.\d{2}%\)$/.test(env)
+      && Math.abs(parseFloat(env) - live.env * 1000) < 0.002
+      && Math.abs(live.env * 1000 - 55.021) < 0.01, env);
+  chk('readout: 9 fringes counted in the envelope at d/a = 5',
       (await txt('out-fringes'))==='9', await txt('out-fringes'));
-  chk('readout: missing orders ±5, ±10 at d/a = 5',
-      /^±5,±10(…)?$/.test((await txt('out-missing')).replace(/\s/g,'')), await txt('out-missing'));
-  chk('readout: first-order angle = 0.315°',
-      Math.abs(parseFloat(await txt('out-angle'))-0.315)<0.002, await txt('out-angle'));
+  chk('readout: order 5 is the one the envelope switched off',
+      (await txt('out-missing')).replace(/\s/g,'')==='±5', await txt('out-missing'));
+  const ord = await txt('out-order');
+  chk('the grating-equation readout carries the measured displacement and the count',
+      /^\d\.\de[-+]\d\s+·\s+0\s+×/.test(ord)
+      && Math.abs(parseFloat(ord) - live.dev) < live.dev * 0.05, ord);
+  const ff = await txt('out-farfield');
+  chk('and the far-field readout is the measured disagreement',
+      /^\d+\.\d+%$/.test(ff) && Math.abs(parseFloat(ff) - live.gap * 100) < 0.0002, ff);
 
   await setV('width',25); await page.waitForTimeout(250);   // d/a = 4
-  chk('changing a to give d/a = 4 renames the missing orders',
-      /^±4,±8(…)?$/.test((await txt('out-missing')).replace(/\s/g,'')), await txt('out-missing'));
+  chk('changing a to give d/a = 4 renames the missing order',
+      (await txt('out-missing')).replace(/\s/g,'')==='±4', await txt('out-missing'));
 
   await setV('slits',1); await page.waitForTimeout(250);
   const sepHidden = await page.evaluate(()=>document.getElementById('sep-control').hidden);
@@ -204,6 +339,8 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
     return JSON.stringify([p.lam,p.N,p.a,p.d,p.L,
       document.getElementById('out-spacing').textContent,
       document.getElementById('out-envelope').textContent,
+      document.getElementById('out-order').textContent,
+      document.getElementById('out-farfield').textContent,
       document.getElementById('rate-value').textContent]); });
   const dead = [];
   for (const [id, v] of [['wavelength',700],['slits',6],['width',40],['sep',300],['dist',4],['rate',2000]]) {
@@ -233,6 +370,20 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
   await setV('slits', 7); await page.waitForTimeout(400);
   const b = await shot();
   chk('canvas repaints when the optics change', a!==b && a.length>3000, `len ${a.length}/${b.length}`);
+}
+{
+  chk('the page badges itself as measured and verified',
+      await page.$('.method-tag[data-method="measured"]') !== null
+      && await page.$('.method-verified') !== null);
+
+  const src = await page.evaluate(async (u) => (await fetch(u)).text(), url('experiments/diffraction.js'));
+  const sinc = /Math\.sin\s*\(\s*(al|alpha)[^)]*\)\s*\//.test(src);
+  const grating = /Math\.sin\s*\([^)]*N[^)]*\)\s*\/\s*Math\.sin/.test(src);
+  chk('neither closed form is in the source — the pattern is only ever summed',
+      !sinc && !grating,
+      `sinc ${sinc ? 'present' : 'absent'}, sin Nβ/sin β ${grating ? 'present' : 'absent'}`);
+
+  chk('no console errors after the whole run', errs.length === 0, errs.slice(0, 3).join(' | '));
 }
 await page.close();
 
