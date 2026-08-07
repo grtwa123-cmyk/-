@@ -150,8 +150,25 @@ for (const w of [320, 390, 768]) {
   const p = await ctx.newPage();
   await p.goto(B, { waitUntil:'networkidle' });
   await p.waitForTimeout(700);
-  const o = await p.evaluate(()=>({ doc: document.documentElement.scrollWidth, win: window.innerWidth }));
-  chk(`table: no horizontal overflow at ${w}px`, o.doc <= o.win+1, `doc=${o.doc} win=${o.win}`);
+  /*
+   * The document cannot overflow: index.css puts overflow:hidden on html and
+   * body so the wall can own the viewport, and the scrolling happens inside
+   * .table-view. That made the document-level measurement below unable to
+   * fail — it read 390 = 390 while the method column's nowrap header was
+   * being sliced off at the right edge. So measure the scroller itself, and
+   * the table inside it, which is where the overflow actually lands.
+   */
+  const o = await p.evaluate(() => {
+    const view = document.querySelector('.table-view');
+    const table = document.querySelector('.tv-table');
+    return { doc: document.documentElement.scrollWidth, win: window.innerWidth,
+             view: view.scrollWidth, viewClient: view.clientWidth,
+             table: Math.ceil(table.getBoundingClientRect().width) };
+  });
+  chk(`table: no horizontal overflow at ${w}px`, o.doc <= o.win + 1, `doc=${o.doc} win=${o.win}`);
+  chk(`and the table itself fits the column it is in at ${w}px`,
+      o.view <= o.viewClient + 1 && o.table <= o.viewClient + 1,
+      `table=${o.table} scroller=${o.view}/${o.viewClient}`);
   await ctx.close();
 }
 

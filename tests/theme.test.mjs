@@ -239,17 +239,32 @@ const CONTRAST = `
   };
 `;
 
+/*
+ * index.html is here as the *table* view, which is the one the theme has to
+ * carry: the wall is a WebGL scene with no HTML text in it, while the table is
+ * the whole catalogue as words on the page. Reaching it means what a reader
+ * does — the choice lives in localStorage, there is no ?view= parameter.
+ */
 for (const [mode, page] of [["light", "physics.html"], ["dark", "physics.html"],
-                            ["light", "experiments/lens.html"], ["dark", "experiments/lens.html"]]) {
+                            ["light", "experiments/lens.html"], ["dark", "experiments/lens.html"],
+                            ["light", "index.html"], ["dark", "index.html"]]) {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
-  await p.addInitScript((m) => { try { localStorage.setItem("theme", m); } catch (e) { /* */ } }, mode);
+  await p.addInitScript((m) => {
+    try { localStorage.setItem("theme", m); localStorage.setItem("ui-mode", "table"); }
+    catch (e) { /* */ }
+  }, mode);
   await p.goto(url(page), { waitUntil: "networkidle" });
   await p.waitForTimeout(300);
+  if (page === "index.html") await p.waitForSelector(".tv-table tbody tr", { timeout: 20000 });
 
   const worst = await p.evaluate(new Function(`${CONTRAST}
     const out = [];
-    for (const el of document.querySelectorAll('h1,h2,h3,p,label,a,button,.num,.label,td,th')) {
+    // The chips and the description are spans and divs, so they need naming:
+    // a bare tag list walks straight past a pill whose whole job is colour.
+    const sel = 'h1,h2,h3,p,label,a,button,.num,.label,td,th,small,'
+      + '.tv-desc,.tv-cat,.method-tag,.method-verified';
+    for (const el of document.querySelectorAll(sel)) {
       const st = getComputedStyle(el);
       if (st.display === 'none' || st.visibility === 'hidden' || !el.offsetParent) continue;
       // Only leaf-ish text, so a wrapper's colour is not judged against text
