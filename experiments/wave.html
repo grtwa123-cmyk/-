@@ -6,10 +6,10 @@
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Two coherent point sources radiate circular waves; watch the live amplitude map for constructive and destructive interference fringes." />
+  <meta name="description" content="Two coherent point sources add; the fringes are then located as peaks in the measured intensity, and the measured spacing is printed against the exact hyperbola and against the small-angle &#955;L/d." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Wave Interference · Science Experiments" />
-  <meta property="og:description" content="Two coherent point sources radiate circular waves; watch the live amplitude map for constructive and destructive interference fringes." />
+  <meta property="og:description" content="Two coherent point sources add; the fringes are then located as peaks in the measured intensity, and the measured spacing is printed against the exact hyperbola and against the small-angle &#955;L/d." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/wave.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -33,12 +33,12 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="waveExperimentCount">Physics · Wave interference</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="formula" data-i18n="methodFormula" data-i18n-title="methodFormulaWhy" title="">Closed form</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="waveExperimentCount">Physics · Wave interference</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
       <h1 data-i18n="waveTitle">Wave Interference</h1>
-      <p data-i18n="waveIntro">Two coherent point sources radiate circular waves. Adjust the spacing, wavelength, and amplitudes to watch constructive (bright) and destructive (dark) fringes shift across the field.</p>
+      <p data-i18n="waveIntro">Two coherent point sources radiate circular waves, and nothing beyond their adding together is put in. A screen stands at the right; the intensity is averaged over a whole cycle, scanned down it, and the fringes are located as peaks in that scan. So the fringe spacing beside the picture is a measurement, and it is printed against two predictions: the exact crossing of the hyperbola r₁ − r₂ = qλ, which it sits within a percent of, and the textbook Δy = λL/d, which is 7.6% low here and low everywhere.</p>
     </header>
 
     <main class="experiment">
@@ -81,6 +81,11 @@
           <input type="range" id="speed" min="0" max="3" step="0.05" value="1" />
         </div>
 
+        <div class="control">
+          <label for="show-screen" data-i18n="waveShowScreen">Show the screen</label>
+          <span class="value"><input type="checkbox" id="show-screen" checked /></span>
+        </div>
+
         <div class="buttons">
           <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
           <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
@@ -89,11 +94,22 @@
         <details class="formulas">
           <summary data-i18n="formulas">Formulas</summary>
           <ul>
-            <li><span data-i18n="waveFormulaSuperposition">Superposition</span>: <code>ψ = A₁·cos(k·r₁ − ωt) + A₂·cos(k·r₂ − ωt + Δφ)</code></li>
-            <li><span data-i18n="waveFormulaK">Wave number</span>: <code>k = 2π / λ</code></li>
-            <li><span data-i18n="waveFormulaOmega">Angular frequency</span>: <code>ω = 2π · f = k · v</code></li>
-            <li><span data-i18n="waveFormulaFringe">Fringe spacing (far field)</span>: <code>Δy ≈ λ · L / d</code></li>
-            <li><span data-i18n="waveFormulaPath">Path difference</span>: <code>Δr = |r₂ − r₁|</code> · constructive when <code>Δr = n·λ</code>, destructive when <code>Δr = (n + ½)·λ</code></li>
+            <li><span data-i18n="waveFormulaSuperposition">Put in — superposition</span>: <code>ψ = A₁·att₁·cos(k·r₁ − ωt) + A₂·att₂·cos(k·r₂ − ωt + Δφ)</code>, <code>att = 1/√r</code></li>
+            <li><span data-i18n="waveFormulaIntensity">Sampled — intensity</span>: <code>I = ⟨ψ²⟩ over one cycle</code></li>
+            <li><span data-i18n="waveFormulaFind">Searched for — the fringes</span>: <code>local extrema of I down the screen</code></li>
+            <li><span data-i18n="waveFormulaPath">Comes out — the condition</span>: <code>r₁ − r₂ = n·λ</code> bright, <code>(n + ½)·λ</code> dark</li>
+            <li><span data-i18n="waveFormulaExact">Compared against — the exact crossing</span>: <code>y(q) = (qλ/2)·√(1 + L² / ((d/2)² − (qλ/2)²))</code></li>
+            <li><span data-i18n="waveFormulaFringe">Approximation — narrow and far</span>: <code>Δy ≈ λ·L / d</code>, low by <code>√(1 − (λ/d)²) / √(1 + (d² − λ²)/(4L²))</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="waveNotes">Notes</summary>
+          <ul>
+            <li data-i18n="waveNote1">The bright and dark ticks on the screen are not drawn where a formula says they should be. The intensity is scanned down the screen, its peaks and troughs are found, and each one is refined by fitting a parabola through its three samples — the ticks mark what that search returned, next to the profile it searched.</li>
+            <li data-i18n="waveNote2">Δy = λL/d is not the law. It is what the law collapses to when the geometry is narrow and the screen is far, and the readout shows the bill: it runs low by exactly √(1 − (λ/d)²) ⁄ √(1 + (d² − λ²)/(4L²)), which is two debts at once. The first is obliquity — λ/d is the sine of the fringe direction while the screen measures its tangent — and no amount of moving the screen back repays it: 0.3% at λ/d = 0.075, 6.1% at 0.343, 18% at 0.571. The second is the near screen, and that one does fade with distance, but here L is only 303 px, so it can be the larger of the two: at λ = 24 px and d = 320 px it swells a 0.3% floor into an 11.8% error.</li>
+            <li data-i18n="waveNote3">The exact statement is about path difference. Switch the 1/√r spreading off and every located fringe sits where r₁ − r₂ is a whole number of wavelengths to better than one part in a million — and even that is the resolution of the search rather than a property of the field: raise the scan from 1400 samples to 5600 and it falls to a few parts in a hundred million. Leave the spreading on and the envelope tilts each peak slightly toward the axis, so the bright fringes drift a few parts in a thousand, which is the whole of the gap between the measurement and the exact crossing — while the dark ones, pinned by phase rather than amplitude, hold ten to seventy times tighter. Both numbers are in the readout.</li>
+            <li data-i18n="waveNote4">Turning one source down does not move the fringes, it fades them: the measured visibility follows 2A₁A₂/(A₁²+A₂²) to seven decimal places, reaching 1 only when the two arms are equal. And Δφ slides the whole pattern rigidly — every fringe moves to the crossing for order n + Δφ/2π, so a full turn walks the pattern along by exactly one fringe and leaves it where it started. The spacing at the axis shifts a few percent along the way, which is the screen’s geometry and not the phase: fringes are wider further out.</li>
           </ul>
         </details>
       </section>
@@ -107,24 +123,28 @@
             <div class="num"><span id="out-wavelength">48</span> px</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outFrequency">Frequency</div>
-            <div class="num"><span id="out-frequency">2.50</span> Hz</div>
+            <div class="label" data-i18n="outFringe">Fringe spacing, measured</div>
+            <div class="num"><span id="out-fringe">&mdash;</span> px</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outK">Wave number k</div>
-            <div class="num"><span id="out-k">0.131</span></div>
+            <div class="label" data-i18n="outExact">Exact hyperbola predicts</div>
+            <div class="num"><span id="out-exact">&mdash;</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outOmega">Angular ω</div>
-            <div class="num"><span id="out-omega">15.71</span></div>
+            <div class="label" data-i18n="outApprox">&lambda;L/d predicts</div>
+            <div class="num"><span id="out-approx">&mdash;</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outFringe">Far-field fringe Δy</div>
-            <div class="num"><span id="out-fringe">137</span> px</div>
+            <div class="label" data-i18n="outCount">Bright fringes found</div>
+            <div class="num"><span id="out-count">&mdash;</span></div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outPhase">Δφ</div>
-            <div class="num"><span id="out-phase">0.00</span> rad</div>
+            <div class="label" data-i18n="outOrder">|&delta;/&lambda; &minus; n| with / without the envelope</div>
+            <div class="num" id="out-order">&mdash;</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outVisibility">Visibility, measured / 2A&#8321;A&#8322;/(A&#8321;&sup2;+A&#8322;&sup2;)</div>
+            <div class="num" id="out-visibility">&mdash;</div>
           </div>
         </div>
       </section>
