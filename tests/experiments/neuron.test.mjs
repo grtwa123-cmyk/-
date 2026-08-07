@@ -180,7 +180,9 @@ const MK = `const H = window.__hh;
 
 // ── The live page ─────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   chk('idle before the first stimulus',
       (await txt('out-state')).length > 0 && (await txt('out-peak'))==='—', await txt('out-state'));
   await page.click('#threshold-btn');

@@ -188,7 +188,9 @@ const MK = `const S = window.__sw;
 
 // ── The live page ─────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   await setV('length', 1); await setV('tension', 80); await setV('density', 1.2);
   await page.waitForTimeout(200);
   const c = parseFloat(await txt('out-speed'));

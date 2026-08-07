@@ -134,7 +134,9 @@ const P = 'const M = window.__proj;';
 
 // ── The live page ─────────────────────────────────────────────────────
 {
-  await page.reload({ waitUntil: 'networkidle' });
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(B, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
 
   await setV('velocity', 40); await setV('angle', 45);

@@ -203,7 +203,9 @@ const txt = id => page.evaluate(i=>document.getElementById(i).textContent.trim()
   });
   chk('all genotypes lethal: population reports extinct, no NaN',
       r.next === null && r.finite, JSON.stringify(r));
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(300);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(BASE + 'experiments/selection.html', { waitUntil:'networkidle' }); await page.waitForTimeout(300);
 }
 
 // ---- 12. Readouts wired and internally consistent ----
@@ -263,7 +265,9 @@ const txt = id => page.evaluate(i=>document.getElementById(i).textContent.trim()
 
 // ---- 14. No dead controls ----
 {
-  await page.reload({ waitUntil:'networkidle' }); await page.waitForTimeout(400);
+  // A clean page, not a reload: the controls now live in the query string,
+  // so reloading would bring back whatever the last section left set.
+  await page.goto(BASE + 'experiments/selection.html', { waitUntil:'networkidle' }); await page.waitForTimeout(400);
   const snap = () => page.evaluate(() => {
     const s = window.__ns.state();
     return JSON.stringify([s.N, s.p, s.pDet, s.geno,
