@@ -57,6 +57,58 @@ for (const [locale, want] of [['en-US','en'],['ko-KR','ko'],['zh-CN','zh']]) {
   chk('experiments/ page is translated', /효소/.test(title), title);
 }
 
+// ── Dictionaries carry text, never markup ────────────────────────────────
+{
+  /*
+   * i18n.js assigns with textContent, unconditionally — so a tag inside a
+   * dictionary value is not formatting, it is five visible characters. This
+   * shipped twice before anyone noticed: refractionNote1 carried <code> and
+   * genNote3 carried <strong>, and both pages printed the tags at the reader
+   * in all three languages.
+   *
+   * Inline code in a note belongs in the markup, beside the translated label,
+   * the way the Formulas lists already do it.
+   */
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const dicts = {};
+  globalThis.window = { i18nRegister: (l, d) => { dicts[l] = d; } };
+  for (const loc of ['en', 'ko', 'zh']) {
+    // eslint-disable-next-line no-eval
+    eval(fs.readFileSync(path.join(root, 'i18n', `${loc}.js`), 'utf8'));
+  }
+  /*
+   * Only the keys actually bound through an attribute are held to this. A page
+   * may still pull a string out with t() and inject it with innerHTML on
+   * purpose — solarsystem's comparison caption does exactly that, and its <b>
+   * is meant — but anything reached by data-i18n goes through textContent and
+   * cannot contain a tag.
+   */
+  const bound = new Set();
+  const files = [
+    ...fs.readdirSync(root).filter((f) => f.endsWith('.html')),
+    ...fs.readdirSync(path.join(root, 'experiments'))
+      .filter((f) => f.endsWith('.html')).map((f) => `experiments/${f}`),
+  ];
+  for (const f of files) {
+    const html = fs.readFileSync(path.join(root, f), 'utf8');
+    for (const m of html.matchAll(/data-i18n(?:-aria|-title)?="([A-Za-z0-9_]+)"/g)) {
+      bound.add(m[1]);
+    }
+  }
+  const offenders = [];
+  for (const [loc, d] of Object.entries(dicts)) {
+    for (const k of bound) {
+      const v = d[k];
+      if (typeof v === 'string' && /<\/?[a-zA-Z][^>]*>/.test(v)) offenders.push(`${loc}.${k}`);
+    }
+  }
+  chk(`no data-i18n value contains an HTML tag — ${bound.size} keys, textContent would print it`,
+      offenders.length === 0, offenders.slice(0, 5).join(', '));
+}
+
 // ── No raw keys painted, in DOM or on canvas ─────────────────────────────
 {
   const ctx = await browser.newContext({ locale:'ko-KR', viewport:{width:1100,height:900} });
