@@ -63,8 +63,14 @@ const MK = `const M = window.__md;
   const r = await page.evaluate(new Function(`${MK}
     // measure() reports the *measured* temperature, so the target is kept
     // under its own name rather than being overwritten by the spread.
+    // 6000 steps of equilibration was not always enough for the cold run to
+    // finish crystallising: CI caught it at rms/a 0.367 with psi6 already at
+    // 0.87 — an ordered lattice that had not yet stopped settling, which is
+    // the transient and not the plateau the check is about. The solid is the
+    // slowest thing here to reach equilibrium, so it gets the longest run.
     return [0.15, 0.30, 0.45, 0.80, 1.50, 3.00].map(T =>
-      ({ target: T, ...M.measure(mk({ T, rho:0.8 }), { equil:6000, sample:8000 }) }));`));
+      ({ target: T, ...M.measure(mk({ T, rho:0.8 }),
+                                 { equil: T < 0.5 ? 20000 : 6000, sample: 8000 }) }));`));
   const at = (T) => r.find((x) => x.target === T);
   // "No diffusion" is asked as bounded displacement, not as a small D. In a
   // solid the mean-square displacement plateaus, so D = msd/4t is that
