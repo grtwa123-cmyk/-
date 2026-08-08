@@ -73,7 +73,23 @@
   }
 
   const pistonX = (fr) => BOX.x0 + fr * BOX.fullW;
-  const areaPx = (fr) => fr * BOX.fullW * boxH();
+
+  /*
+   * The chamber the particles are actually in.
+   *
+   * A particle turns around when its *centre* reaches R from a wall, so the
+   * box its centres occupy is 2R narrower and 2R shorter than the one drawn.
+   * That matters, because pressure is compared against N·T/A: measuring the
+   * impulse against the drawn perimeter while the gas occupies the smaller
+   * box made the measurement read 2.6% high at full volume and 10% high at
+   * the stop, and the discrepancy moved with the piston — which reads exactly
+   * like a physical effect and is not one. Both the area and the perimeter
+   * now describe the same box, so the comparison is like with like.
+   */
+  const innerW = (fr) => fr * BOX.fullW - 2 * R;
+  const innerH = () => boxH() - 2 * R;
+  const areaPx = (fr) => innerW(fr) * innerH();
+  const perimeterPx = (fr) => 2 * (innerW(fr) + innerH());
   const idealP = (p) => (p.N * p.T) / areaPx(p.fr) * SPEED2; // px units
   const toU = (pPx) => pPx / SPEED2;                          // display units
 
@@ -90,6 +106,15 @@
     return m * Math.cos(2 * Math.PI * v);
   }
   function maxwellV(T) { return gauss() * Math.sqrt(T * SPEED2); }
+
+  /*
+   * The speed a wall sends back along its own normal. Not a Gaussian: the
+   * particles arriving at a wall in a given time are already weighted by how
+   * fast they are going, so what leaves it is v·exp(−v²/2σ²), whose inverse
+   * transform is σ√(−2 ln U). Drawing this from a Gaussian instead would
+   * under-supply the fast tail and quietly run the gas cool.
+   */
+  const rayleigh = (sig) => sig * Math.sqrt(-2 * Math.log(1 - Math.random()));
 
   function spawn(p) {
     const px = pistonX(p.fr);
@@ -126,23 +151,45 @@
   function step(dt, p) {
     const px = pistonX(p.fr);
 
-    // Weak thermostat: rescale speeds toward the set temperature.
-    let ke = 0;
-    for (const q of parts) ke += q.vx * q.vx + q.vy * q.vy;
-    const Tnow = parts.length ? ke / (2 * parts.length * SPEED2) : p.T;
-    if (Tnow > 1e-9) {
-      const f = 1 + (Math.sqrt(p.T / Tnow) - 1) * Math.min(1, dt * 4);
-      for (const q of parts) { q.vx *= f; q.vy *= f; }
-    }
-
+    /*
+     * Diffuse thermal walls. A particle that reaches a wall is re-emitted
+     * with a fresh draw at the wall's temperature: the normal component from
+     * the flux-weighted Rayleigh distribution, the tangential one Gaussian,
+     * both with σ² = kT/m. This is what a real container does, and it is the
+     * only thing in here that couples the two axes.
+     *
+     * It replaces a global thermostat that rescaled every speed by one
+     * factor. That held the *total* kinetic energy at T and did nothing about
+     * how it was split, and nothing else in an ideal gas can move energy
+     * between x and y — particles do not meet each other. So whatever
+     * imbalance the initial draw happened to produce was frozen in for the
+     * life of the run: at 200 particles the two axes were seen 24% apart, and
+     * since the pressure on a wall answers to the component normal to it, the
+     * reading sat a stable 11% off N·T/A and looked like a real effect.
+     * Equipartition is now something the walls produce rather than something
+     * the initial draw has to get right by luck.
+     */
     let wallHits = 0;
     for (const q of parts) {
       q.x += q.vx * dt;
       q.y += q.vy * dt;
-      if (q.x < BOX.x0 + R)  { q.x = BOX.x0 + R;  impulseAcc += 2 * Math.abs(q.vx); q.vx =  Math.abs(q.vx); wallHits++; }
-      if (q.x > px - R)      { q.x = px - R;      impulseAcc += 2 * Math.abs(q.vx); q.vx = -Math.abs(q.vx); wallHits++; }
-      if (q.y < BOX.y0 + R)  { q.y = BOX.y0 + R;  impulseAcc += 2 * Math.abs(q.vy); q.vy =  Math.abs(q.vy); wallHits++; }
-      if (q.y > BOX.y1 - R)  { q.y = BOX.y1 - R;  impulseAcc += 2 * Math.abs(q.vy); q.vy = -Math.abs(q.vy); wallHits++; }
+      const sig = Math.sqrt(p.T * SPEED2);
+      // The impulse a bounce delivers is |v_in| + |v_out| along the normal —
+      // with a fresh draw on the way out, the two are no longer the same.
+      if (q.x < BOX.x0 + R) {
+        q.x = BOX.x0 + R; impulseAcc += Math.abs(q.vx) + (q.vx = rayleigh(sig));
+        q.vy = gauss() * sig; wallHits++;
+      } else if (q.x > px - R) {
+        q.x = px - R; impulseAcc += Math.abs(q.vx) - (q.vx = -rayleigh(sig));
+        q.vy = gauss() * sig; wallHits++;
+      }
+      if (q.y < BOX.y0 + R) {
+        q.y = BOX.y0 + R; impulseAcc += Math.abs(q.vy) + (q.vy = rayleigh(sig));
+        q.vx = gauss() * sig; wallHits++;
+      } else if (q.y > BOX.y1 - R) {
+        q.y = BOX.y1 - R; impulseAcc += Math.abs(q.vy) - (q.vy = -rayleigh(sig));
+        q.vx = gauss() * sig; wallHits++;
+      }
     }
     // A faint patter of wall hits — more collisions (hotter / more crowded)
     // makes a busier sizzle. Capped so it stays a texture, not a roar.
@@ -157,7 +204,7 @@
 
     windowT += dt;
     if (windowT >= PWINDOW) {
-      const perimeter = 2 * ((px - BOX.x0) + boxH());
+      const perimeter = perimeterPx(p.fr);
       const sample = impulseAcc / (windowT * perimeter);
       pMeas = pMeas === 0 ? sample : pMeas * 0.45 + sample * 0.55;
       impulseAcc = 0;
