@@ -551,7 +551,8 @@ window.i18nRegister("en", {
   kinOutC: "Product C",
   kinOutCollisions: "A·B collisions",
   kinOutMeasured: "Energetic fraction (measured)",
-  kinOutTheory: "Boltzmann e^(−Ea/kT)",
+  kinOutTheory: "Boltzmann e^(−Ea/kT), at the temperature the gas is at",
+  kinOutGasTemp: "Reactant temperature, measured / dial",
 
   atomTitle: "Build an Atom",
   atomDesc: "Drag protons, neutrons, and electrons together: the proton count names the element, electrons set the charge, neutrons make isotopes — with a live stable/unstable readout.",
