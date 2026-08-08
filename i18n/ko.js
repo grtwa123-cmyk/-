@@ -551,7 +551,8 @@ window.i18nRegister("ko", {
   kinOutC: "생성물 C",
   kinOutCollisions: "A·B 충돌 수",
   kinOutMeasured: "에너지 조건 충족률 (측정)",
-  kinOutTheory: "볼츠만 e^(−Ea/kT)",
+  kinOutTheory: "볼츠만 e^(−Ea/kT), 기체의 실제 온도에서",
+  kinOutGasTemp: "반응물 온도, 측정 / 설정",
 
   atomTitle: "원자 만들기",
   atomDesc: "양성자·중성자·전자를 끌어다 붙여 보세요. 양성자 수가 원소를 결정하고, 전자가 전하를, 중성자가 동위원소를 만듭니다 — 안정/불안정도 실시간으로 표시됩니다.",

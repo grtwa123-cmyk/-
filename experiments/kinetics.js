@@ -61,6 +61,7 @@
     b:          document.getElementById("out-b"),
     c:          document.getElementById("out-c"),
     collisions: document.getElementById("out-collisions"),
+    gastemp: document.getElementById("out-gastemp"),
     measured:   document.getElementById("out-measured"),
     theory:     document.getElementById("out-theory"),
   };
@@ -86,6 +87,28 @@
   let nCollisions = 0;          // A–B encounters
   let nEnergetic = 0;           // A–B encounters with E⊥ ≥ Ea (Boltzmann tally)
   let nReactions = 0;           // energetic AND passed the steric roll
+  /*
+   * The temperature the A/B gas is actually at, and the Boltzmann factor
+   * evaluated at it, summed over the collisions that happened.
+   *
+   * Both exist because the set point is not what the gas runs at. Every
+   * reaction merges A + B into one C at (vA+vB)/2, and a two-body merge
+   * cannot conserve both momentum and energy — it destroys |v_rel|²/4, which
+   * is at least Ea by the time it fires. Only *energetic* pairs react, so the
+   * reaction eats the very tail this page is measuring, and the walls are
+   * left refilling it. The steady state sits below the dial: a few tenths of
+   * a percent when twenty reactions have fired, seven percent when seventy
+   * have. Comparing the tally against exp(−Ea/T_dial) therefore reports a
+   * shortfall that is the sim being honest, and looks like the sim being
+   * wrong.
+   *
+   * So the comparison is the Boltzmann factor at the temperature the gas had
+   * *at each collision*, accumulated as the collisions happen. That is the
+   * exact expectation of the tally, not an average of one applied to the
+   * other.
+   */
+  let gasT = 0;                 // sim units, same as the T slider
+  let sumBoltz = 0;             // Σ exp(−Ea/T) over counted A–B collisions
   const flashes = [];           // { x, y, ts } reaction bursts
 
   let gaussSpare = null;
@@ -125,6 +148,8 @@
     nCollisions = 0;
     nEnergetic = 0;
     nReactions = 0;
+    gasT = p.T;
+    sumBoltz = 0;
     flashes.length = 0;
     running = false;
     syncStartBtn();
@@ -143,6 +168,17 @@
     }
     const sub = Math.min(16, Math.max(1, Math.ceil(Math.sqrt(vmax2) * dt / 3)));
     const h = dt / sub;
+
+    // The reactants' own temperature, from their own speeds: in 2D each
+    // particle carries kT of kinetic energy at equilibrium, so ⟨½mv²⟩ is kT.
+    let ke = 0, n = 0;
+    for (const q of parts) {
+      if (q.kind === "C") continue;
+      ke += q.m * (q.vx * q.vx + q.vy * q.vy);
+      n++;
+    }
+    if (n > 0) gasT = ke / (2 * n * SPEED2);
+
     for (let s = 0; s < sub; s++) subStep(h, p);
   }
 
@@ -208,6 +244,7 @@
 
         if (a.kind !== b.kind) {
           nCollisions++;
+          sumBoltz += Math.exp(-p.Ea / Math.max(gasT, 1e-9));
           // Line-of-centres energy with reduced mass μ = m/2 (equal
           // masses): E⊥ = ½·μ·(v_rel·n̂)² = ¼·(v_rel·n̂)². In sim units
           // kT ↔ T·SPEED2; for hard disks at equilibrium this criterion
@@ -349,7 +386,10 @@
     out.c.textContent = String(c);
     out.collisions.textContent = String(nCollisions);
     out.measured.textContent = nCollisions > 0 ? (100 * nEnergetic / nCollisions).toFixed(1) + "%" : "—";
-    out.theory.textContent = (100 * Math.exp(-p.Ea / p.T)).toFixed(1) + "%";
+    out.theory.textContent = nCollisions
+      ? (100 * sumBoltz / nCollisions).toFixed(1) + "%"
+      : (100 * Math.exp(-p.Ea / p.T)).toFixed(1) + "%";
+    out.gastemp.textContent = `${gasT.toFixed(0)} / ${p.T}`;
   }
 
   function updateLabels(p) {
@@ -440,16 +480,21 @@
   // to decide anything, only to compare against.
   window.__kin = {
     params: readParams,
+    particles: () => parts,
     collisions: () => nCollisions,
     energetic: () => nEnergetic,
     reactions: () => nReactions,
     /** Counted successes ÷ counted collisions. */
     measuredFraction: () => (nCollisions ? nEnergetic / nCollisions : NaN),
-    /** The Boltzmann factor for the same settings, for comparison only. */
-    predictedFraction: () => {
-      const p = readParams();
-      return Math.exp(-p.Ea / p.T);
-    },
+    /** The temperature the reactants are actually at, measured off them. */
+    gasTemperature: () => gasT,
+    /**
+     * The Boltzmann factor at the temperature the gas had when each counted
+     * collision happened — the expectation the tally should land on.
+     */
+    predictedFraction: () => (nCollisions ? sumBoltz / nCollisions : NaN),
+    /** And the same factor at the dial, which the gas does not sit at. */
+    setPointFraction: () => Math.exp(-readParams().Ea / readParams().T),
     setRunning: (v) => { running = v; },
     reset,
   };

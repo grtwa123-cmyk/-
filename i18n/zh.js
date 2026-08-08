@@ -551,7 +551,8 @@ window.i18nRegister("zh", {
   kinOutC: "产物 C",
   kinOutCollisions: "A·B 碰撞数",
   kinOutMeasured: "高能碰撞比例（实测）",
-  kinOutTheory: "玻尔兹曼 e^(−Ea/kT)",
+  kinOutTheory: "玻尔兹曼 e^(−Ea/kT)，按气体的实际温度",
+  kinOutGasTemp: "反应物温度，实测 / 设定",
 
   atomTitle: "搭建原子",
   atomDesc: "把质子、中子、电子拖到一起：质子数决定元素，电子决定电荷，中子构成同位素——还实时显示稳定/不稳定。",
