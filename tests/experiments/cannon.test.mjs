@@ -410,12 +410,24 @@ const shapes = await page.evaluate(() => {
 // ── Chrome ───────────────────────────────────────────────────────────
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
+  /*
+   * Wait for the title to actually change rather than for a fixed number of
+   * milliseconds. The zh dictionary is fetched on demand, and on a slow
+   * machine 300 ms is not always enough — which shows up as ko and zh
+   * reporting the same string and the check failing for no reason at all.
+   */
+  const lang = async (code, prev) => {
+    await page.click(`.lang-btn[data-lang="${code}"]`);
+    await page.waitForFunction(
+      (p) => document.querySelector('h1').textContent.trim() !== p, prev,
+      { timeout: 8000 },
+    ).catch(() => {});
+    return h1();
+  };
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(300);
-  const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(300);
-  const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(300);
+  const ko = await lang('ko', en);
+  const zh = await lang('zh', ko);
+  await lang('en', zh);
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 
