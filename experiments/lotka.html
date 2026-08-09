@@ -33,7 +33,7 @@
 
     <div class="crumbs">
       <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount15">Biology · Predator &amp; prey</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount15">Biology · Predator &amp; prey</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -93,9 +93,10 @@
         <details class="formulas" open>
           <summary data-i18n="lotkaNotes">Notes</summary>
           <ul>
-            <li data-i18n="lotkaNote1">Neither species settles down: the populations orbit the fixed point forever, and the predator peak always trails the prey peak by a quarter cycle.</li>
-            <li data-i18n="lotkaNote2">The phase portrait (right) traces one closed loop — the model conserves the quantity V exactly, so the orbit never spirals in or out.</li>
-            <li data-i18n="lotkaNote3">Raising the prey growth α or lowering the predator death γ shifts the equilibrium and stretches the cycle; the readout V should stay essentially constant, a check on the integrator.</li>
+            <li data-i18n="lotkaNote1">Neither species settles at the fixed point, but both average to it.</li>
+            <li data-i18n="lotkaNote2">The period is not 2π/√(αγ) — that is the limit of no swing at all.</li>
+            <li data-i18n="lotkaNote3">Nor is the lag a quarter cycle, except in that same limit.</li>
+            <li data-i18n="lotkaNote4">V is conserved, so its drift is a readout of integration error and nothing else.</li>
           </ul>
         </details>
       </section>
@@ -113,20 +114,28 @@
             <div class="num" id="out-predator">—</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="lotkaOutPreyEq">Prey equilibrium x*</div>
+            <div class="label" data-i18n="lotkaOutPreyEq">Mean prey over a cycle / γ/δ</div>
             <div class="num" id="out-prey-eq">—</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="lotkaOutPredEq">Predator equilibrium y*</div>
+            <div class="label" data-i18n="lotkaOutPredEq">Mean predators over a cycle / α/β</div>
             <div class="num" id="out-pred-eq">—</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="lotkaOutPeriod">Cycle period</div>
+            <div class="label" data-i18n="lotkaOutPeriod">Cycle period, measured / 2π√(αγ)⁻¹</div>
             <div class="num" id="out-period">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutLag">Predator lag, in cycles / ¼</div>
+            <div class="num" id="out-lag">—</div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="lotkaOutInvariant">Invariant V</div>
             <div class="num" id="out-invariant">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="lotkaOutDrift">V drift, relative</div>
+            <div class="num" id="out-drift">—</div>
           </div>
         </div>
       </section>
