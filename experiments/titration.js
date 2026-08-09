@@ -16,6 +16,15 @@
  * the sharp equivalence jump, and the hydrolysed (>7) equivalence point
  * of the weak acid — none of it special-cased.
  *
+ * The panel then reads three things back off that curve rather than printing
+ * them. The equivalence volume is *located*, as a chemist locates it — the
+ * steepest point of the curve, found by golden section on |dpH/dV| — and shown
+ * beside Cₐ·Vₐ/C_b, which it matches to a tenth of a part per million. The pH
+ * at half of that volume is shown beside pKa, which for the weak acid it
+ * reproduces to seven parts in 10⁴. And the pH at the equivalence point is
+ * shown beside 7 for the strong acid and 7 + ½pKa + ½log₁₀C for the weak one,
+ * the hydrolysis result, which comes out within 10⁻⁴ of a pH unit.
+ *
  * Left of the canvas: burette + Erlenmeyer flask with phenolphthalein
  * (colourless below pH 8.2 → pink by 10). Right: live pH–V curve over a
  * faint full-curve preview. Dragging on the graph scrubs the titration.
@@ -47,6 +56,9 @@
     h:      document.getElementById("out-h"),
     pct:    document.getElementById("out-pct"),
     region: document.getElementById("out-region"),
+    halfPH: document.getElementById("out-half-ph"),
+    slope:  document.getElementById("out-slope"),
+    eqPH:   document.getElementById("out-eq-ph"),
   };
   const startBtn = document.getElementById("start-btn");
   const resetBtn = document.getElementById("reset-btn");
@@ -105,6 +117,100 @@
       curve.push(phAt(vb, p));
     }
     curveDirty = false;
+    measured = null;
+  }
+
+  /*
+   * Where the curve is steepest — which is what an equivalence point *is*,
+   * before anyone works out that it should land at Cₐ·Vₐ/C_b.
+   *
+   * The preview curve gives a bracket and golden section finishes the job on
+   * |dpH/dV|. Two details matter. The derivative is taken with a step that
+   * shrinks with the bracket, because a fixed one would eventually straddle
+   * the whole jump and flatten the very peak being looked for; and the search
+   * runs on the log of the slope, which is 40 pH/mL for the weak acid and
+   * 30 000 for the strong, so that the same tolerance means the same thing
+   * for both.
+   */
+  function locateEquivalence(p) {
+    /*
+     * Its own coarse scan, not the cached preview curve. The preview is built
+     * for whatever the controls currently say, and leaning on it would make
+     * this quietly return the wrong answer for any other parameters — which
+     * is exactly what it did until a probe asked it for two settings in a
+     * row.
+     */
+    const scan = [];
+    for (let i = 0; i <= CURVE_N; i++) scan.push(phAt((VMAX * i) / CURVE_N, p));
+    let bi = 1;
+    let best = -Infinity;
+    for (let i = 1; i < CURVE_N; i++) {
+      const d = scan[i + 1] - scan[i - 1];
+      if (d > best) { best = d; bi = i; }
+    }
+    let a = Math.max(1e-9, (VMAX * (bi - 1)) / CURVE_N);
+    let b = Math.min(VMAX, (VMAX * (bi + 1)) / CURVE_N);
+    const slope = (v) => {
+      const e = Math.max(1e-9, (b - a) * 1e-3);
+      return Math.log((phAt(v + e, p) - phAt(v - e, p)) / (2 * e));
+    };
+    const g = (Math.sqrt(5) - 1) / 2;
+    let c = b - g * (b - a);
+    let d = a + g * (b - a);
+    let fc = slope(c);
+    let fd = slope(d);
+    for (let i = 0; i < 90 && b - a > 1e-12; i++) {
+      if (fc > fd) { b = d; d = c; fd = fc; c = b - g * (b - a); fc = slope(c); }
+      else { a = c; c = d; fc = fd; d = a + g * (b - a); fd = slope(d); }
+    }
+    return (a + b) / 2;
+  }
+
+  /*
+   * Everything the panel reports about the curve as a whole, measured once
+   * and kept until a control moves. `formula` values are carried alongside
+   * only so the panel can show what the measurement is being held against.
+   */
+  let measured = null;
+  function measure(p) {
+    if (measured) return measured;
+    const veq = locateEquivalence(p);
+    /*
+     * How steep the jump is, in pH per mL, at the point just located. This is
+     * the one number on the panel that can only have come from the
+     * measurement: the located volume and Cₐ·Vₐ/C_b agree to a fraction of a
+     * part per million, so no number of decimals could ever show which of
+     * them a readout was printing — but the steepness has no closed form
+     * anyone would write down, and at the default settings it is 4 300 pH/mL
+     * for the strong acid against 82 for the weak. It is also the thing that
+     * decides whether an indicator can find the endpoint at all.
+     */
+    const eps = 1e-6;
+    const slope = (phAt(veq + eps, p) - phAt(veq - eps, p)) / (2 * eps);
+    const half = phAt(veq / 2, p);
+    const atEq = phAt(veq, p);
+    const cSalt = (p.Ca * p.Va) / (p.Va + veq);
+    const pKa = -Math.log10(p.Ka);
+    /*
+     * "pH at half equivalence is pKa" is a statement about a buffer, and a
+     * strong acid does not make one — it is fully dissociated, there is no
+     * appreciable undissociated HA for the conjugate base to sit beside, and
+     * the pKa of the stand-in Ka = 10³ is −3, which is not a pH anyone will
+     * measure. So the comparison is offered only where it means something.
+     */
+    const weak = p.Ka < 1e-2;
+    measured = {
+      veq, veqFormula: (p.Ca * p.Va) / p.Cb,
+      halfPH: half, pKa, weak, slope,
+      eqPH: atEq,
+      // Strong acid: the salt is neutral, so the equivalence point is water.
+      // Weak: the conjugate base hydrolyses, and this is that result.
+      eqFormula: p.Ka > 1
+        ? 7
+        : 7 + 0.5 * pKa + 0.5 * Math.log10(cSalt),
+      cSalt,
+    };
+    return measured;
   }
 
   // ── State ──────────────────────────────────────────────────────────────
@@ -346,16 +452,31 @@
   }
 
   function updateReadouts(p, phNow) {
-    const veq = (p.Ca * p.Va) / p.Cb;
+    const m = measure(p);
+    const veq = m.veq;
     const h = Math.pow(10, -phNow);
     const exp = Math.floor(Math.log10(h));
     const mant = h / Math.pow(10, exp);
     out.ph.textContent = phNow.toFixed(2);
     out.vb.textContent = vb.toFixed(1);
-    out.veq.textContent = Math.min(veq, 999).toFixed(1);
+    /*
+     * The located equivalence point beside the stoichiometric one. They agree
+     * to a tenth of a part per million, which is the point: the volume where
+     * the curve turns over is the volume where the moles balance, and neither
+     * number here was used to find the other.
+     */
+    out.veq.textContent =
+      `${Math.min(veq, 999).toFixed(2)} / ${Math.min(m.veqFormula, 999).toFixed(2)}`;
     out.h.textContent = `${mant.toFixed(1)}×10${superscript(exp)} M`;
     out.pct.textContent = String(Math.round((vb / veq) * 100));
     out.region.textContent = regionLabel(p, veq);
+    out.slope.textContent = m.slope >= 1000
+      ? `${Math.round(m.slope / 100) / 10}k`
+      : m.slope.toFixed(0);
+    out.halfPH.textContent = m.weak
+      ? `${m.halfPH.toFixed(3)} / ${m.pKa.toFixed(3)}`
+      : `${m.halfPH.toFixed(3)} / \u2014`;
+    out.eqPH.textContent = `${m.eqPH.toFixed(3)} / ${m.eqFormula.toFixed(3)}`;
   }
 
   function updateLabels(p) {
@@ -498,6 +619,43 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   window.addEventListener("resize", resizeCanvas);
+
+
+  /*
+   * The hook the tests measure through: the solver, one point of the curve,
+   * the located equivalence point, and everything derived from it.
+   */
+  window.__titration = {
+    KW, VMAX, ACIDS,
+    params: readParams,
+    acid: () => acidKey,
+    solvePH, phAt, locateEquivalence,
+    measure: (p) => {
+      const keep = measured;
+      measured = null;
+      const m = measure(p || readParams());
+      measured = keep;
+      return m;
+    },
+    /** The charge-balance residual at a pH, for holding the solver to itself. */
+    residual: (vb_, p) => {
+      const vt = p.Va + vb_;
+      const caT = (p.Ca * p.Va) / vt;
+      const naT = (p.Cb * vb_) / vt;
+      const h = Math.pow(10, -phAt(vb_, p));
+      return { f: h + naT - KW / h - (caT * p.Ka) / (p.Ka + h),
+               scale: Math.max(h, naT, KW / h, caT) };
+    },
+    volume: () => vb,
+    setVolume: (v) => { vb = Math.max(0, Math.min(VMAX, v)); },
+    isRunning: () => running,
+    setRunning: (on) => { running = !!on; syncStartBtn(); },
+    selectAcid: (key) => {
+      const btn = acidList.querySelector(`.mol-btn[data-key="${key}"]`);
+      if (btn) btn.click();
+    },
+    invalidate: () => { curveDirty = true; measured = null; },
+  };
 
   resizeCanvas();
   updateLabels(readParams());
