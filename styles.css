@@ -453,6 +453,31 @@ input[type="text"]:focus-visible {
 
 .property-list { margin-top: 1rem; display: grid; gap: 0.45rem; }
 
+/*
+ * A measurement plot living in the control panel rather than on the stage.
+ * The canvas carries its own backing-store resolution for the display's
+ * pixel ratio, so it is sized here in CSS terms only and left to scale.
+ */
+.plot-figure {
+  margin: 0.9rem 0 0;
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+  backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+  border: var(--glass-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem 0.5rem;
+  box-shadow: var(--glass-spec-soft);
+}
+
+.plot-figure canvas { display: block; width: 100%; height: auto; }
+
+.plot-figure figcaption {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
 .property {
   display: flex;
   justify-content: space-between;

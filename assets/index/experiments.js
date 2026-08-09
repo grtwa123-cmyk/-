@@ -30,7 +30,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "waveTitle",        url: "experiments/wave.html",          cat: "Physics",   tags: ["WAVES", "INTERFERE"],   colors: ["#0a1a2e", "#7ad9ee"], method: "measured", motif: "wave" },
   { titleKey: "dopplerTitle",     url: "experiments/doppler.html",       cat: "Physics",   tags: ["WAVES", "DOPPLER"],     colors: ["#101830", "#ff9b6b"], method: "integrated", motif: "doppler" },
   { titleKey: "cannonTitle",      url: "experiments/cannon.html",        cat: "Physics",   tags: ["GRAVITY", "ORBIT"],     colors: ["#102132", "#5fa4b8"], method: "measured", motif: "cannon" },
-  { titleKey: "orbitsTitle",      url: "experiments/orbit.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#070914", "#d4c065"], method: "integrated", motif: "orbit" },
+  { titleKey: "orbitsTitle",      url: "experiments/orbit.html",         cat: "Physics",   tags: ["GRAVITY", "KEPLER"],    colors: ["#070914", "#d4c065"], method: "measured", motif: "orbit" },
   { titleKey: "impactTitle",      url: "experiments/impact.html",        cat: "Physics",   tags: ["FORCE", "GRAPH"],       colors: ["#1d1908", "#e2a45a"], method: "integrated", motif: "impact" },
   { titleKey: "dnaTitle",         url: "experiments/dna.html",           cat: "Biology",   tags: ["DNA", "HELIX"],         colors: ["#150828", "#e58fff"], method: "model", motif: "dna" },
   { titleKey: "solarSystemTitle", url: "experiments/solarsystem.html",   cat: "Physics",   tags: ["3D", "TOUR"],           colors: ["#0a0e22", "#7da3d4"], method: "integrated", motif: "solarsystem" },
