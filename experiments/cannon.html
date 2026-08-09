@@ -6,10 +6,10 @@
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Newton's Cannon — fire horizontally and find the speed where falling turns into orbiting." />
+  <meta name="description" content="Newton's Cannon — five bound shots, five measured apogees, one straight line whose ends are the circular and escape speeds." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Newton's Cannon · Physics" />
-  <meta property="og:description" content="Newton's Cannon — fire horizontally and find the speed where falling turns into orbiting." />
+  <meta property="og:description" content="Newton's Cannon — five bound shots, five measured apogees, one straight line whose ends are the circular and escape speeds." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/cannon.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -33,7 +33,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount6">Physics · Newton's cannon</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount6">Physics · Newton's cannon</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -65,17 +65,21 @@
         <div class="property-list">
           <div class="property"><span class="property-label" data-i18n="outcome">Outcome</span><span class="property-value" id="prop-outcome">—</span></div>
           <div class="property"><span class="property-label" data-i18n="currentSpeed">Current speed</span><span class="property-value" id="prop-speed">0.00</span></div>
-          <div class="property"><span class="property-label" data-i18n="maxAltitude">Max altitude</span><span class="property-value" id="prop-altitude">0.00</span></div>
-          <div class="property"><span class="property-label" data-i18n="orbitalSpeedRef">Circular orbit</span><span class="property-value" id="prop-vcirc">—</span></div>
-          <div class="property"><span class="property-label" data-i18n="escapeSpeedRef">Escape velocity</span><span class="property-value" id="prop-vesc">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="cannonApsides">Perigee / apogee altitude</span><span class="property-value" id="prop-apsides">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="cannonEcc">Eccentricity, measured</span><span class="property-value" id="prop-ecc">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="cannonPeriod">Period, measured / 2π√(a³/GM)</span><span class="property-value" id="prop-period">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="cannonVCirc">Circular speed, measured / √(GM/r)</span><span class="property-value" id="prop-vcirc">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="cannonVEsc">Escape speed, measured / √(2GM/r)</span><span class="property-value" id="prop-vesc">—</span></div>
         </div>
 
         <details class="formulas">
           <summary data-i18n="cannonNotes">Notes</summary>
           <ul>
             <li data-i18n="cannonNote1">Gravity always pulls the ball toward the planet's center.</li>
-            <li data-i18n="cannonNote2">If horizontal speed matches the curvature of the surface, the ball orbits.</li>
-            <li data-i18n="cannonNote3">Beyond escape velocity, the ball flies away.</li>
+            <li data-i18n="cannonNote2">The two reference speeds are extrapolated from five measured apogees, not evaluated.</li>
+            <li data-i18n="cannonNote3">Everything in the panel is read off the flight, not computed for it.</li>
+            <li data-i18n="cannonNote4">Velocity Verlet keeps the ellipse an ellipse, and angular momentum exact.</li>
+            <li data-i18n="cannonNote5">Beyond escape velocity, the ball flies away.</li>
           </ul>
         </details>
       </section>

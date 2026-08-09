@@ -73,26 +73,37 @@ for (const [T, Ea] of [[300, 400], [600, 400], [300, 800], [900, 200], [500, 100
       `mean z = ${mean.toFixed(2)}, combined ${(mean * Math.sqrt(zs.length)).toFixed(2)}σ`);
 }
 
-// ── The dial is not the temperature ──────────────────────────────────
-{
-  /*
-   * The reaction is a heat sink and the walls are the source, so the gas
-   * settles below the dial — every one of ten runs across two passes came out
-   * on that side, which is what this asserts and all that it asserts.
-   *
-   * Two stronger claims were tried and withdrawn. That the deficit grows with
-   * how much reacting has been done: it does not, it anti-correlates, because
-   * the runs that react hardest are the hot ones where the same lost energy is
-   * a smaller share of the total. And that the correction beats the noise on
-   * those runs: the gap came out 0.0147 against a standard error of 0.0170,
-   * so it does not. The bias is only visible in the aggregate, which is what
-   * the check above is for.
-   */
-  const below = runs.filter((r) => r.honest < r.dial);
-  chk('the gas settles below the dial, because the reaction is a heat sink the walls have to refill',
-      below.length === runs.length,
-      runs.map((r) => `T${r.T}: ${((1 - r.honest / r.dial) * 100).toFixed(1)}% below`).join(', '));
-}
+/*
+ * ── The dial is not the temperature: three claims tried, three withdrawn ──
+ *
+ * The reaction is a heat sink and the walls are the source, so the gas ought
+ * to settle below the dial. Every attempt to hold that as a check has failed
+ * for the same reason, and the record is here so it is not attempted a fourth
+ * time without more run length behind it.
+ *
+ *   1. "The deficit grows with how much reacting has been done." It does not
+ *      — it anti-correlates, because the runs that react hardest are the hot
+ *      ones where the same lost energy is a smaller share of the total.
+ *   2. "The correction beats the noise per run." The gap came out 0.0147
+ *      against a standard error of 0.0170, so it does not.
+ *   3. "Every one of the five settings lands below the dial." This one
+ *      shipped, on the strength of ten runs across two passes that all did.
+ *      It then failed CI, and six repeats found it failing three times: one
+ *      setting or another comes out above, by as much as 4%.
+ *
+ * Four measured passes of the five settings put numbers on why. The mean
+ * deficit over the five is +9.0%, +8.2%, +5.8%, +2.7% — positive every time,
+ * so the effect is real — but its t against the between-setting spread is
+ * 3.37, 2.15, 1.57, 0.82. There is no threshold that keeps a true claim and
+ * rejects a false one at n = 5, and the reason is visible in the raw numbers:
+ * the measured gas temperature of a single 13-second run swings from 21%
+ * below the dial to 11% above it. These runs are not in a steady state.
+ *
+ * What survives is the check above, which is the one that matters: the tally
+ * lands on the Boltzmann factor at the temperature the gas *actually had*,
+ * with no bias left across five settings. Nothing here now asserts which side
+ * of the dial that temperature falls on.
+ */
 
 // ── Arrhenius, without Arrhenius being written down ──────────────────
 {
@@ -182,12 +193,24 @@ for (const [T, Ea] of [[300, 400], [600, 400], [300, 800], [900, 200], [500, 100
 // ── Chrome ───────────────────────────────────────────────────────────
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
+  /*
+   * Wait for the title to actually change rather than for a fixed number of
+   * milliseconds. The zh dictionary is fetched on demand, and on a slow
+   * machine 300 ms is not always enough — which shows up as ko and zh
+   * reporting the same string and the check failing for no reason at all.
+   */
+  const lang = async (code, prev) => {
+    await page.click(`.lang-btn[data-lang="${code}"]`);
+    await page.waitForFunction(
+      (p) => document.querySelector('h1').textContent.trim() !== p, prev,
+      { timeout: 8000 },
+    ).catch(() => {});
+    return h1();
+  };
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
-  const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
-  const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  const ko = await lang('ko', en);
+  const zh = await lang('zh', ko);
+  await lang('en', zh);
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 

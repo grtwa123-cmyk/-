@@ -6,10 +6,10 @@
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
-  <meta name="description" content="Drag on the canvas to place planets and set their initial velocity around a central star." />
+  <meta name="description" content="Launch planets around a star and watch Kepler's third law fit itself to them — measured slope 3/2, and the intercept weighs the star." />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Gravity & Orbits · Physics" />
-  <meta property="og:description" content="Drag on the canvas to place planets and set their initial velocity around a central star." />
+  <meta property="og:description" content="Launch planets around a star and watch Kepler's third law fit itself to them — measured slope 3/2, and the intercept weighs the star." />
   <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/orbit.html" />
   <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
   <meta property="og:image:width" content="1200" />
@@ -33,7 +33,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount7">Physics · Gravity &amp; orbits</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount7">Physics · Gravity &amp; orbits</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -60,19 +60,34 @@
         <p style="color: var(--muted); font-size: 0.9rem; margin: 0.4rem 0 0.8rem;" data-i18n="addPlanetHint">Drag on the canvas to launch a planet.</p>
 
         <div class="buttons">
-          <button id="clear-btn" type="button" class="secondary" data-i18n="clearBtn">Clear</button>
+          <button id="system-btn" type="button" data-i18n="orbitsSystemBtn">Launch a system</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
         </div>
 
         <div class="property-list">
-          <div class="property"><span class="property-label" data-i18n="planetCount">Planets</span><span class="property-value" id="prop-count">0</span></div>
+          <div class="property"><span class="property-label" data-i18n="planetCount">Planets, in flight / measured</span><span class="property-value" id="prop-count">0 / 0</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsSlope">Slope of log T vs log a, measured / 3&frasl;2</span><span class="property-value" id="prop-slope">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsGM">GM from the intercept, measured / set</span><span class="property-value" id="prop-gm">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsResid">Fit residual, max |&Delta; log T|</span><span class="property-value" id="prop-resid">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsAxis">Selected planet: semi-major axis</span><span class="property-value" id="prop-axis">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsEcc">Eccentricity, measured</span><span class="property-value" id="prop-ecc">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsPeriod">Period, measured / 2&pi;&radic;(a&sup3;/GM)</span><span class="property-value" id="prop-period">&mdash;</span></div>
+          <div class="property"><span class="property-label" data-i18n="orbitsDrift">Perihelion drift, rad per orbit</span><span class="property-value" id="prop-drift">&mdash;</span></div>
         </div>
+
+        <figure class="plot-figure">
+          <canvas id="kepler-plot" width="560" height="400" role="img" aria-label="Log-log plot of orbital period against semi-major axis"></canvas>
+          <figcaption data-i18n="orbitsPlotCaption">Every closed orbit, plotted. A power law is a straight line on log axes, and its slope is the exponent.</figcaption>
+        </figure>
 
         <details class="formulas">
           <summary data-i18n="orbitsNotes">Notes</summary>
           <ul>
             <li data-i18n="orbitsNote1">Each planet only feels the central star's pull.</li>
-            <li data-i18n="orbitsNote2">A short drag gives a slow planet. A perpendicular drag near orbital speed gives a near-circular orbit.</li>
-            <li data-i18n="orbitsNote3">Planets that fly off the edge or pass through the star are removed.</li>
+            <li data-i18n="orbitsNote2">The 3&frasl;2 is fitted to your planets, not printed.</li>
+            <li data-i18n="orbitsNote3">The same fit weighs the star: its intercept is GM.</li>
+            <li data-i18n="orbitsNote4">The ellipse holding still is what marks out the inverse square.</li>
+            <li data-i18n="orbitsNote5">Every planet gets its own step, sized from its own periapsis.</li>
           </ul>
         </details>
       </section>
@@ -86,6 +101,7 @@
   <script src="../i18n.js" defer></script>
   <script src="../assets/sfx.js" defer></script>
   <script src="../assets/reduced-motion.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
   <script src="../assets/url-state.js" defer></script>
   <script src="orbit.js" defer></script>
 </body>
