@@ -33,7 +33,7 @@
 
     <div class="crumbs">
       <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount11">Chemistry · Titration</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="solved" data-i18n="methodSolved" data-i18n-title="methodSolvedWhy" title="">Solved</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount11">Chemistry · Titration</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -112,8 +112,20 @@
             <div class="num"><span id="out-vb">0.0</span> mL</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="outVeq">Equivalence volume</div>
-            <div class="num"><span id="out-veq">25.0</span> mL</div>
+            <div class="label" data-i18n="outVeq">Equivalence volume, located / Cₐ·Vₐ/C_b</div>
+            <div class="num"><span id="out-veq">25.00 / 25.00</span> mL</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outSlope">Steepness at equivalence, pH/mL</div>
+            <div class="num" id="out-slope">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outHalfPH">pH at half equivalence / pKa</div>
+            <div class="num" id="out-half-ph">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="outEqPH">pH at equivalence / hydrolysis</div>
+            <div class="num" id="out-eq-ph">—</div>
           </div>
           <div class="readout">
             <div class="label" data-i18n="outHplus">[H&#8314;]</div>

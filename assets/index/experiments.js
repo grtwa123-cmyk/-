@@ -47,7 +47,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "solarTitle",       url: "experiments/solar.html",         cat: "Physics",   tags: ["GRAVITY", "N-BODY"],    colors: ["#0d0a1e", "#e0a24a"], method: "integrated", motif: "solar" },
   { titleKey: "moleculeTitle",    url: "experiments/molecule.html",      cat: "Chemistry", tags: ["3D", "MODEL"],          colors: ["#0a1f15", "#6fbf8a"], method: "model", motif: "molecule" },
   { titleKey: "crystalTitle",     url: "experiments/crystal.html",       cat: "Chemistry", tags: ["LATTICE", "3D"],        colors: ["#0a1822", "#6fc4d4"], method: "model", motif: "crystal" },
-  { titleKey: "titrationTitle",   url: "experiments/titration.html",     cat: "Chemistry", tags: ["ACID", "PH"],           colors: ["#200a1c", "#f06ac0"], method: "solved", motif: "titration" },
+  { titleKey: "titrationTitle",   url: "experiments/titration.html",     cat: "Chemistry", tags: ["ACID", "PH"],           colors: ["#200a1c", "#f06ac0"], method: "measured", motif: "titration" },
   { titleKey: "gasTitle",         url: "experiments/gas.html",           cat: "Chemistry", tags: ["GAS", "KINETIC"],       colors: ["#231407", "#f0b060"], method: "measured", motif: "gas" },
   { titleKey: "decayTitle",       url: "experiments/decay.html",         cat: "Chemistry", tags: ["NUCLEAR", "HALF-LIFE"], colors: ["#0a1e14", "#6effc6"], method: "measured", motif: "decay" },
   { titleKey: "elTitle",          url: "experiments/electrolysis.html",  cat: "Chemistry", tags: ["REDOX", "FARADAY"],     colors: ["#0a1626", "#8cdcff"], method: "measured", motif: "electrolysis" },

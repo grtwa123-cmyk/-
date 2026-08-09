@@ -58,6 +58,7 @@ const VERIFIED = new Set([
   "experiments/projectile.html", "experiments/refraction.html",
   "experiments/resonance.html",
   "experiments/selection.html", "experiments/spectra.html", "experiments/string.html",
+  "experiments/titration.html",
   "experiments/wave.html",
 ]);
 const CAT_KEY = {
