@@ -33,7 +33,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount9">Physics · Egg drop</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span></span>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount9">Physics · Egg drop</span><span class="version-tag">v2.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -48,7 +48,7 @@
         <div class="control">
           <label for="drop-height" data-i18n="dropHeightLabel">Drop height</label>
           <span class="value"><span id="drop-height-value">1.50</span> m</span>
-          <input type="range" id="drop-height" min="0.1" max="15" step="0.1" value="1.5" />
+          <input type="range" id="drop-height" min="0.02" max="12" step="0.02" value="0.50" />
         </div>
 
         <div class="control" style="margin-bottom: 0.4rem;">
@@ -68,10 +68,11 @@
 
         <div class="property-list">
           <div class="property"><span class="property-label" data-i18n="propVerdict">Verdict</span><span class="property-value" id="prop-verdict">—</span></div>
-          <div class="property"><span class="property-label" data-i18n="propImpactVelocity">Impact velocity</span><span class="property-value" id="prop-impact-v">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propImpactVelocity">Impact speed, measured / √(2gh)</span><span class="property-value" id="prop-impact-v">—</span></div>
           <div class="property"><span class="property-label" data-i18n="propPeakForce">Peak force</span><span class="property-value" id="prop-peak-f">—</span></div>
           <div class="property"><span class="property-label" data-i18n="propAvgForce">Average force</span><span class="property-value" id="prop-avg-f">—</span></div>
-          <div class="property"><span class="property-label" data-i18n="propImpulse">Impulse</span><span class="property-value" id="prop-impulse">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propImpulse">Impulse ∫F dt / momentum removed</span><span class="property-value" id="prop-impulse">—</span></div>
+          <div class="property"><span class="property-label" data-i18n="propRestitution">Restitution, measured</span><span class="property-value" id="prop-restitution">—</span></div>
           <div class="property"><span class="property-label" data-i18n="propCollisionTime">Collision time</span><span class="property-value" id="prop-collision-t">—</span></div>
         </div>
 
@@ -82,9 +83,11 @@
         <details class="formulas">
           <summary data-i18n="impactNotes">Notes</summary>
           <ul>
-            <li data-i18n="impactNote1">Impulse J = m·Δv depends only on the egg's mass and impact speed.</li>
+            <li data-i18n="impactNote1">The impulse is the area under the curve, not m·Δv typed in.</li>
             <li data-i18n="impactNote2">Average force F̄ = J / Δt. Longer collisions give smaller forces.</li>
-            <li data-i18n="impactNote3">Peak force is what breaks the egg. For a half-sine, peak ≈ (π/2) × average.</li>
+            <li data-i18n="impactNote3">Stiffness and collision time are one dial, not two.</li>
+            <li data-i18n="impactNote4">Hunt–Crossley, so the force starts at zero and never pulls.</li>
+            <li data-i18n="impactNote5">Where each floor starts breaking the egg is bisected, not written down.</li>
           </ul>
         </details>
       </section>
