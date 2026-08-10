@@ -8,13 +8,6 @@
     "themeLight"
   ],
   "pages": {
-    "404": [
-      "mmRateAxis",
-      "themeAuto",
-      "themeDark",
-      "themeLabel",
-      "themeLight"
-    ],
     "biology": [
       "backHome",
       "biologyHubPageTitle",

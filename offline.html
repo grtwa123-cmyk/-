@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Offline — Science Lab." />
+  <!-- Nothing should reach this from a search result. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Offline · Science Lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;text x='32' y='44' font-size='30' text-anchor='middle' fill='%236ea8ff' font-family='monospace'&gt;··&lt;/text&gt;&lt;/svg&gt;" />
+  <!--
+    Anchored to the site root for the same reason 404.html is: the service
+    worker serves this page in place of whatever path was asked for, including
+    a nested one like experiments/nope.html, where relative URLs would resolve
+    against the wrong directory.
+  -->
+  <script>
+    (function () {
+      var seg = location.pathname.split("/")[1];
+      var base = document.createElement("base");
+      base.href = (seg && seg.indexOf(".") === -1) ? "/" + seg + "/" : "/";
+      document.head.appendChild(base);
+    })();
+  </script>
+  <script src="assets/theme.js"></script>
+  <script src="assets/offline.js" defer></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <h1>Offline</h1>
+      <p>
+        There is no network, and this page was never loaded while there was
+        one, so there is no copy of it stored here. Anything you have already
+        opened still works — the simulations run entirely in your browser.
+      </p>
+    </header>
+    <main class="card-grid" aria-label="Where to go next">
+      <a class="card" href="index.html">
+        <h2>Index</h2>
+        <p>Every experiment. Falls back to the plain table without a network.</p>
+        <span class="tag">Home</span>
+      </a>
+      <a class="card" href="physics.html">
+        <h2>Physics</h2>
+        <p>Motion, waves, gravity, optics, electricity, quanta.</p>
+        <span class="tag">Hub</span>
+      </a>
+      <a class="card" href="chemistry.html">
+        <h2>Chemistry</h2>
+        <p>Reactions, structure, spectra, phases.</p>
+        <span class="tag">Hub</span>
+      </a>
+      <a class="card" href="biology.html">
+        <h2>Biology</h2>
+        <p>Populations, enzymes, neurons, selection.</p>
+        <span class="tag">Hub</span>
+      </a>
+    </main>
+  </div>
+</body>
+</html>
