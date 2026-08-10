@@ -156,6 +156,7 @@ port to collide with `npm run serve`.
 | Suite | What it holds to |
 | --- | --- |
 | `smoke` | Catalogue entries resolve to real files and defined title keys, `en`/`ko`/`zh` key sets are identical, every experiment is linked from its hub, and the landing page, hubs and one experiment per category load with no console error. |
+| `offline` | The worker installs and takes control, a visited experiment still loads with its stylesheet and simulation once the server is stopped, a page never visited gets the offline notice, an older version's cache is deleted on activate, and nothing cross-origin is stored. Also the half that would fail silently: a file the worker has cached is still fetched fresh while online. The outage is a real one — the suite runs its own server and closes it, because `setOffline` does not reach a service worker's own `fetch()` and every check passed without a worker at all until it did. |
 | `i18n` | Each locale fetches exactly one dictionary, switching loads on demand without refetching, subdirectory pages resolve the path, and no element ever shows a raw key. Also that the per-page chunks on disk are the ones `tools/split-i18n.py` writes, that no page needs the full-dictionary fallback, and — by cutting a key out of a served chunk — that the fallback works when one does. |
 | `reduced-motion` | Ten simulations hold still under `prefers-reduced-motion`, stay painted and responsive, and resume on Play — and are untouched without the preference. |
 | `view-switcher` | Wall and table, persistence, category filters, and that table mode requests no CDN and creates no WebGL context. Also that the table *fits*: the landing page puts `overflow: hidden` on `html` and `body` so the wall can own the viewport, which meant the usual document-level overflow check could not fail — it read 390 = 390 while a nowrap heading held the table at 488px and sliced it off at the edge. The scroller and the table are measured instead. |
@@ -183,6 +184,8 @@ Playwright. `smoke` alone will skip its browser section and still run the rest
 ├── chemistry.html              Chemistry hub (grid view)
 ├── biology.html                Biology hub (grid view)
 ├── 404.html                    Graceful not-found fallback
+├── offline.html                Shown for a page never visited, with no network
+├── sw.js                       Service worker — network first, cache as fallback
 ├── styles.css                  Shared hub / experiment styles + per-theme tokens
 ├── i18n.js                     Loader + data-i18n binding; fetches one page's chunk
 ├── i18n/

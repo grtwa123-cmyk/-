@@ -212,6 +212,10 @@ def main():
     manifest, total = {}, {lang: 0 for lang in LANGS}
     for name, rel in pages():
         own = scripts_of(rel)
+        # 404.html and offline.html carry no translated text and never load the
+        # runtime, so a chunk for them would be three files nothing fetches.
+        if not any(s.endswith("i18n.js") for s in own):
+            continue
         keys = literals([rel] + own) & all_keys
         keys = close_over(keys, all_keys) | dynamic_for(own, all_keys) | shared
         manifest[name] = sorted(keys)
