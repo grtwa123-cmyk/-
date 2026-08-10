@@ -21,5 +21,19 @@
     "U+1F507",
     "U+1F50A"
   ],
-  "unsupportedChars": "ᴛ⃗⇌∈∝∬⊕⊙⊥⏸─═♯✕⟨⟩🔇🔊"
+  "unsupportedChars": "ᴛ⃗⇌∈∝∬⊕⊙⊥⏸─═♯✕⟨⟩🔇🔊",
+  "faces": {
+    "latin": {
+      "file": "PretendardVariable.latin.woff2",
+      "unicodeRange": "U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF",
+      "codepoints": 288,
+      "kb": 58.8
+    },
+    "hangul": {
+      "file": "PretendardVariable.hangul.woff2",
+      "unicodeRange": "U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF",
+      "codepoints": 2401,
+      "kb": 400.2
+    }
+  }
 }

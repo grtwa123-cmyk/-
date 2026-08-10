@@ -51,10 +51,19 @@ const TAG_FONT   = '500 15px ui-monospace,"SF Mono",Consolas,monospace';
  * Canvas text does not reflow when a webfont arrives — whatever face was
  * available at draw time is baked into the bitmap. Callers await this before
  * their first paint, and the wall repaints again if it resolves late.
+ *
+ * `text` is what the cards are about to draw, and passing it is what keeps the
+ * request honest. Pretendard ships as two files split by unicode-range
+ * (index.css), and a face is fetched only when a character it declares is
+ * used — but drawing into a canvas does not count as usage, so on this page
+ * nothing would ask for either of them. Priming with a fixed sample instead
+ * would have to contain a Hangul character to cover the Korean wall, and then
+ * every English reader would pay 400 KB for a face their titles never touch.
+ * Ask for the actual titles and each language fetches exactly its own halves.
  */
-export function titleFontReady() {
+export function titleFontReady(text = "A") {
   if (!document.fonts || !document.fonts.load) return Promise.resolve();
-  return document.fonts.load(TITLE_FONT, "가A").catch(() => {});
+  return document.fonts.load(TITLE_FONT, text).catch(() => {});
 }
 
 export const CARD_SIZE = Object.freeze({ w: CARD_W, h: CARD_H });

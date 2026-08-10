@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Rebuild assets/fonts/PretendardVariable.subset.woff2.
+Rebuild the two Pretendard subsets the site serves.
 
 The site ships one self-hosted font rather than pulling one from a CDN. That
 is not only a privacy or offline nicety: the whole reason for adopting
@@ -20,9 +20,32 @@ ideographs, so Chinese still falls through to the system stack — see the
 Shipping all 11 172 syllables costs 1.7 MB. Shipping only the 758 the site
 currently uses costs 187 KB but breaks the moment anyone writes a new Korean
 word. The middle is KS X 1001: the 2 350 syllables of the national standard,
-which covers ordinary Korean prose, costs 453 KB, and already contains every
-syllable in the three dictionaries. tests/fonts.test.mjs fails if that ever
-stops being true, and names the characters that fell outside.
+which covers ordinary Korean prose and already contains every syllable in the
+three dictionaries. tests/fonts.test.mjs fails if that ever stops being true,
+and names the characters that fell outside.
+
+Why two files
+-------------
+Those syllables are 400 KB of the 459 KB, and two readers in three never see
+one of them: the English copy has no Hangul at all, and the Chinese copy is
+ideographs that Pretendard does not carry either way. Served as one file, that
+was 69-73% of a first visit spent on glyphs most readers never render.
+
+So the subset is cut in two along the Hangul blocks and each half is declared
+with the `unicode-range` it covers. The ranges below are complementary and
+exhaustive, and the same pair of strings both partitions the glyphs here and
+is written into the CSS, so a character cannot land in one file while the
+stylesheet asks the other for it. The browser then fetches the Hangul half
+only once a Hangul character is actually laid out:
+
+    English / Chinese first visit    59 KB
+    Korean first visit              459 KB   (unchanged)
+
+Canvas is the exception to "actually laid out": text drawn into a canvas does
+not register as usage, and the wall draws every card title that way. It calls
+titleFontReady() in assets/index/card-texture.js, which asks for "가A" - one
+character from each face - before its first paint. That string is load
+bearing, and tests/fonts.test.mjs holds the wall to it.
 
 Usage
 -----
@@ -48,8 +71,34 @@ UPSTREAM = (
     "/packages/pretendard/dist/web/variable/woff2/PretendardVariable.woff2"
 )
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "assets", "fonts", "PretendardVariable.subset.woff2")
-COVERAGE = os.path.join(ROOT, "assets", "fonts", "coverage.json")
+FONTS = os.path.join(ROOT, "assets", "fonts")
+COVERAGE = os.path.join(FONTS, "coverage.json")
+
+# The two halves, each with the CSS `unicode-range` that will be declared for
+# it. Hangul gets the four blocks the script can draw from - modern jamo, the
+# compatibility jamo the subset carries, and the syllables - and Latin gets the
+# exact complement, so between them they name every codepoint once. Keeping the
+# split and the declaration in one place is the point: the partition below is
+# derived from these strings rather than written out a second time.
+FACES = (
+    ("latin",
+     "U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF"),
+    ("hangul",
+     "U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF"),
+)
+
+
+def parse_range(spec):
+    """A CSS unicode-range string as a list of inclusive (lo, hi) pairs."""
+    out = []
+    for part in spec.split(","):
+        lo, _, hi = part.strip()[2:].partition("-")
+        out.append((int(lo, 16), int(hi or lo, 16)))
+    return out
+
+
+def in_range(cp, spec):
+    return any(lo <= cp <= hi for lo, hi in parse_range(spec))
 
 # Where the site's own text lives. Everything here is scanned, so the symbols
 # that end up in the subset are the ones the pages actually use rather than a
@@ -131,21 +180,38 @@ def main():
               f"({len(supported)} in Pretendard, {len(unsupported)} not)")
         print(f"codepoints requested: {len(cps)}")
 
-        spec = os.path.join(tmp, "unicodes.txt")
-        io.open(spec, "w").write(",".join(f"U+{c:04X}" for c in sorted(cps)))
+        os.makedirs(FONTS, exist_ok=True)
+        faces = {}
+        for name, rng in FACES:
+            mine = sorted(c for c in cps if in_range(c, rng))
+            out = os.path.join(FONTS, f"PretendardVariable.{name}.woff2")
+            spec = os.path.join(tmp, f"{name}.txt")
+            io.open(spec, "w").write(",".join(f"U+{c:04X}" for c in mine))
+            subprocess.run(
+                [
+                    sys.executable, "-m", "fontTools.subset", src,
+                    f"--unicodes-file={spec}",
+                    "--flavor=woff2",
+                    "--layout-features=*",
+                    "--no-hinting",
+                    f"--output-file={out}",
+                ],
+                check=True,
+            )
+            kb = os.path.getsize(out) / 1024
+            faces[name] = {
+                "file": os.path.basename(out),
+                "unicodeRange": rng,
+                "codepoints": len(mine),
+                "kb": round(kb, 1),
+            }
+            print(f"  {name:6s}: {len(mine):5d} codepoints  {kb:6.1f} KB  ->  {out}")
 
-        os.makedirs(os.path.dirname(OUT), exist_ok=True)
-        subprocess.run(
-            [
-                sys.executable, "-m", "fontTools.subset", src,
-                f"--unicodes-file={spec}",
-                "--flavor=woff2",
-                "--layout-features=*",
-                "--no-hinting",
-                f"--output-file={OUT}",
-            ],
-            check=True,
-        )
+        # Every requested codepoint has to land in exactly one file, or the
+        # stylesheet sends the browser to a face that does not have it and the
+        # character quietly falls back to a system font.
+        placed = sum(f["codepoints"] for f in faces.values())
+        assert placed == len(cps), f"{len(cps) - placed} codepoints fell between the faces"
 
         # Only record the ones a reader could actually meet on a page: CJK is
         # a whole script Pretendard does not carry and is noted in the CSS, so
@@ -163,11 +229,14 @@ def main():
             "pretendard": VERSION,
             "unsupported": [f"U+{c:04X}" for c in notable],
             "unsupportedChars": "".join(chr(c) for c in notable),
+            # What each half ended up holding, and the unicode-range the
+            # stylesheets must declare for it. tests/fonts.test.mjs reads this
+            # back and fails if a hand-edited @font-face has drifted from the
+            # split the glyphs were actually cut along.
+            "faces": faces,
         }, ensure_ascii=False, indent=2) + "\n")
         print(f"  coverage: {len(notable)} non-CJK characters fall back "
               f"->  {COVERAGE}")
-
-    print(f"  subset  : {os.path.getsize(OUT) / 1024:.1f} KB  ->  {OUT}")
 
 
 if __name__ == "__main__":
