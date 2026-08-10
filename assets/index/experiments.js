@@ -28,7 +28,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "projectileTitle",  url: "experiments/projectile.html",    cat: "Physics",   tags: ["MOTION", "DRAG"],       colors: ["#1a2742", "#f0a85e"], method: "measured", motif: "projectile" },
   { titleKey: "pendulumTitle",    url: "experiments/pendulum.html",      cat: "Physics",   tags: ["MOTION", "OSCILLATE"],  colors: ["#0c1a36", "#5db0d6"], method: "measured", motif: "pendulum" },
   { titleKey: "waveTitle",        url: "experiments/wave.html",          cat: "Physics",   tags: ["WAVES", "INTERFERE"],   colors: ["#0a1a2e", "#7ad9ee"], method: "measured", motif: "wave" },
-  { titleKey: "dopplerTitle",     url: "experiments/doppler.html",       cat: "Physics",   tags: ["WAVES", "DOPPLER"],     colors: ["#101830", "#ff9b6b"], method: "integrated", motif: "doppler" },
+  { titleKey: "dopplerTitle",     url: "experiments/doppler.html",       cat: "Physics",   tags: ["WAVES", "DOPPLER"],     colors: ["#101830", "#ff9b6b"], method: "measured", motif: "doppler" },
   { titleKey: "cannonTitle",      url: "experiments/cannon.html",        cat: "Physics",   tags: ["GRAVITY", "ORBIT"],     colors: ["#102132", "#5fa4b8"], method: "measured", motif: "cannon" },
   { titleKey: "orbitsTitle",      url: "experiments/orbit.html",         cat: "Physics",   tags: ["GRAVITY", "KEPLER"],    colors: ["#070914", "#d4c065"], method: "measured", motif: "orbit" },
   { titleKey: "impactTitle",      url: "experiments/impact.html",        cat: "Physics",   tags: ["FORCE", "IMPULSE"],     colors: ["#1d1908", "#e2a45a"], method: "measured", motif: "impact" },
