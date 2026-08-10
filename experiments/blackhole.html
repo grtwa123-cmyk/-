@@ -21,13 +21,23 @@
   <style>
   /* Pretendard (SIL OFL 1.1) — see assets/fonts/OFL.txt and the note in
      styles.css. Self-hosted and subset so the Korean face is the same one
-     on every platform. */
+     on every platform, and cut in two along the Hangul blocks so a reader who
+     renders no Hangul fetches 59 KB instead of 459 KB. */
   @font-face {
     font-family: "Pretendard Variable";
     font-weight: 45 920;
     font-style: normal;
     font-display: swap;
-    src: url("../assets/fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+    src: url("../assets/fonts/PretendardVariable.latin.woff2") format("woff2-variations");
+    unicode-range: U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF;
+  }
+  @font-face {
+    font-family: "Pretendard Variable";
+    font-weight: 45 920;
+    font-style: normal;
+    font-display: swap;
+    src: url("../assets/fonts/PretendardVariable.hangul.woff2") format("woff2-variations");
+    unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF;
   }
 
     :root {

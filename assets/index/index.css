@@ -23,13 +23,28 @@
  *
  * Pretendard carries no CJK ideographs, so Chinese still falls through to the
  * system faces further down --font-ui.
+ *
+ * Two files split along the Hangul blocks and declared by unicode-range, so a
+ * reader who never renders a Hangul character never fetches the 400 KB half —
+ * see the fuller note in styles.css. The wall is the one place that needs
+ * care: canvas text does not count as usage, so card-texture.js primes both
+ * faces with "가A" before its first paint.
  */
 @font-face {
   font-family: "Pretendard Variable";
   font-weight: 45 920;
   font-style: normal;
   font-display: swap;
-  src: url("../fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+  src: url("../fonts/PretendardVariable.latin.woff2") format("woff2-variations");
+  unicode-range: U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF;
+}
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("../fonts/PretendardVariable.hangul.woff2") format("woff2-variations");
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF;
 }
 
 :root {

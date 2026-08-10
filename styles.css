@@ -32,13 +32,34 @@
  *
  * Pretendard carries no CJK ideographs, so Chinese still falls through to the
  * system faces further down --font-ui.
+ *
+ * Two files, not one. The Hangul syllables are 400 KB of the 459 KB, and only
+ * the Korean copy ever renders them — English has none, and Chinese is
+ * ideographs this font does not carry either way. Split along the Hangul
+ * blocks and declared by unicode-range, the browser fetches the big half only
+ * when a Hangul character is actually laid out, which takes an English or
+ * Chinese first visit from 459 KB of font to 59 KB.
+ *
+ * The two ranges are complementary and exhaustive, and are generated together
+ * with the files by tools/build-font.py — it echoes them into
+ * assets/fonts/coverage.json, and tests/fonts.test.mjs fails if what is
+ * declared here has drifted from how the glyphs were actually cut.
  */
 @font-face {
   font-family: "Pretendard Variable";
   font-weight: 45 920;
   font-style: normal;
   font-display: swap;
-  src: url("assets/fonts/PretendardVariable.subset.woff2") format("woff2-variations");
+  src: url("assets/fonts/PretendardVariable.latin.woff2") format("woff2-variations");
+  unicode-range: U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF;
+}
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("assets/fonts/PretendardVariable.hangul.woff2") format("woff2-variations");
+  unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF;
 }
 
 :root {

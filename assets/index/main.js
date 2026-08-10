@@ -199,12 +199,33 @@ function repaint() {
     m.material.map.needsUpdate = true;
   }
 }
-document.addEventListener("langchange", repaint);
+/** Every card title as one string — what the next repaint will actually draw. */
+const titleText = () => EXPERIMENTS.map((e) => tr(e.titleKey)).join("");
 
-// The cards are bitmaps. If Pretendard is still in flight when they are first
-// drawn they bake in a fallback face and would keep it forever, so repaint
-// once it lands. Resolves immediately when the font is already cached.
-titleFontReady().then(repaint);
+/*
+ * The cards are bitmaps. If Pretendard is still in flight when they are first
+ * drawn they bake in a fallback face and would keep it forever, so repaint
+ * once it lands. Resolves immediately when the font is already cached.
+ *
+ * A language change needs both halves of this. The copy should swap over at
+ * once, in whatever face is already here — but Pretendard is split by
+ * unicode-range, so switching to Korean asks for a 400 KB face that has not
+ * been fetched yet, and the immediate repaint would bake a system fallback
+ * into every card. Hence the second repaint when the face for the new titles
+ * arrives.
+ *
+ * Nothing in tests/fonts.test.mjs covers this handler. Reaching it means
+ * running the wall, the wall needs Three.js from a CDN, and CI has no route
+ * off the machine — index.html falls back to the table view there. The suite
+ * checks titleFontReady() directly instead, which is the part that can be
+ * reached; deleting the second repaint below is a change the tests would not
+ * notice.
+ */
+function repaintWhenFontReady() {
+  titleFontReady(titleText()).then(repaint);
+}
+document.addEventListener("langchange", () => { repaint(); repaintWhenFontReady(); });
+repaintWhenFontReady();
 
 // ── Scroll state ──────────────────────────────────────────────────────────
 const st = { s: 0, ts: 0, vs: 0, y: 0, ty: 0, vy: 0 };
