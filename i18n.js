@@ -6,6 +6,20 @@
  * of it. They now sit in i18n/<lang>.js and only the active language is
  * fetched — a little over 27 KB gzipped rather than three times that.
  *
+ * Only the active language, and now only the active page. A page displays
+ * between 5 and 115 of the 1333 keys, so it loads i18n/pages/<lang>/<page>.js
+ * — a few kilobytes instead of 98 — cut by tools/split-i18n.py from the same
+ * dictionaries, which stay in the repo as the fallback below.
+ *
+ * That fallback is what makes the split safe to get wrong. The chunks are cut
+ * by reading source, and source can be read imperfectly: a key assembled at
+ * runtime is invisible to a literal scan. So a key that misses its chunk
+ * fetches the whole dictionary and repaints, and the page is merely slower
+ * rather than showing a reader a raw key name. tests/i18n.test.mjs asserts the
+ * net never fires — every experiment suite drives its page's controls, which
+ * is what reaches the keys a passive page load never asks for — so a chunk
+ * that is short is a test failure, not a silent tax on the reader.
+ *
  * The dictionary is pulled in with an injected classic <script> rather than
  * import() or fetch(), because both of those are blocked under file:// and the
  * README promises that opening index.html directly works.
@@ -27,13 +41,44 @@
     return src ? src.replace(/[^/]*$/, "") : "";
   })();
 
+  /*
+   * Which chunk this page wants. The name is the file's own, so /index.html,
+   * /experiments/wave.html and a directory URL ending in / all land on the
+   * chunk tools/split-i18n.py wrote for them. Basenames are unique across the
+   * site, so the directory does not need to be part of it.
+   */
+  const PAGE = (() => {
+    const last = location.pathname.split("/").pop();
+    return last && last.endsWith(".html") ? last.slice(0, -5) : "index";
+  })();
+
   const translations = Object.create(null);
   const pending = Object.create(null);
+  // Which languages have the whole dictionary rather than just this page's
+  // slice, so the fallback is attempted once and never loops.
+  const complete = Object.create(null);
 
-  // Called by each i18n/<lang>.js as it executes.
-  window.i18nRegister = (lang, dict) => { translations[lang] = dict; };
+  /*
+   * Called by every i18n file as it executes. Merged rather than assigned: a
+   * language can arrive in two pieces, the page's chunk first and the full
+   * dictionary afterwards if something asked for a key the chunk lacked.
+   */
+  window.i18nRegister = (lang, dict) => {
+    translations[lang] = Object.assign(translations[lang] || Object.create(null), dict);
+  };
 
-  /** Fetch a dictionary once; callers queue up behind an in-flight load. */
+  function inject(src, done) {
+    const el = document.createElement("script");
+    el.src = src;
+    el.async = false;
+    el.onload = () => done(true);
+    // A dictionary that fails to load leaves the markup's English in place
+    // rather than blanking the page.
+    el.onerror = () => done(false);
+    document.head.appendChild(el);
+  }
+
+  /** Fetch a language once; callers queue up behind an in-flight load. */
   function loadLang(lang, done) {
     if (translations[lang]) { done(true); return; }
     if (pending[lang]) { pending[lang].push(done); return; }
@@ -45,14 +90,34 @@
       for (const cb of queue) cb(ok);
     };
 
-    const el = document.createElement("script");
-    el.src = `${BASE}i18n/${lang}.js`;
-    el.async = false;
-    el.onload = () => finish(Boolean(translations[lang]));
-    // A dictionary that fails to load leaves the markup's English in place
-    // rather than blanking the page.
-    el.onerror = () => finish(false);
-    document.head.appendChild(el);
+    inject(`${BASE}i18n/pages/${lang}/${PAGE}.js`, (ok) => {
+      if (ok && translations[lang]) { finish(true); return; }
+      // No chunk for this page — a new page whose chunk has not been
+      // generated yet. The whole dictionary is always there.
+      loadFull(lang, () => finish(Boolean(translations[lang])));
+    });
+  }
+
+  /** Pull in the whole dictionary for a language, at most once. */
+  function loadFull(lang, done) {
+    if (complete[lang]) { if (done) done(); return; }
+    complete[lang] = true;
+    inject(`${BASE}i18n/${lang}.js`, () => { if (done) done(); });
+  }
+
+  /*
+   * Keys the page asked for that its chunk did not have. Kept for
+   * tests/i18n.test.mjs, which fails if any page fills this in: every entry
+   * is a reader waiting on a second request for a string that should have
+   * shipped with the first.
+   */
+  const misses = [];
+  window.__i18nMisses = misses;
+
+  function noteMiss(key) {
+    if (misses.indexOf(key) === -1) misses.push(key);
+    if (complete[current]) return;
+    loadFull(current, () => paint(current));
   }
 
   function getStoredLang() {
@@ -89,7 +154,10 @@
    */
   function t(key) {
     const dict = translations[current];
-    return dict ? dict[key] : undefined;
+    if (!dict) return undefined;            // not loaded yet, not a miss
+    if (key in dict) return dict[key];
+    noteMiss(key);
+    return undefined;
   }
 
   /** Paint the active dictionary onto the document. */
@@ -99,8 +167,11 @@
 
     if (dict) {
       document.querySelectorAll("[data-i18n]").forEach((el) => {
-        const val = dict[el.dataset.i18n];
-        if (val === undefined) return;      // keep the English in the markup
+        const key = el.dataset.i18n;
+        const val = dict[key];
+        // Keep the English in the markup, and say so: a data-i18n key the
+        // chunk does not carry is the same defect as one t() could not find.
+        if (val === undefined) { noteMiss(key); return; }
         if (el.tagName === "TITLE") document.title = val;
         else el.textContent = val;
       });
