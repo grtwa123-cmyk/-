@@ -302,11 +302,24 @@
     const D = Number.isFinite(dSmoothed) ? dSmoothed : 0;
     const p = params();
     // Lindemann, not the diffusion constant. A solid vibrates about fixed
-    // sites, so its mean-square displacement plateaus and rms/a settles —
-    // 0.13 at T* = 0.15, 0.25 at T* = 0.3, both steady however long you watch.
-    // A liquid's runs away: past 1 within a few time units at T* = 0.45. The
-    // ratio msd/t does the same job eventually but decays as 1/t on the way,
-    // so a freshly built lattice reads as melting for the first few seconds.
+    // sites, so its mean-square displacement plateaus and rms/a settles near
+    // 0.18 at T* = 0.15. A liquid's runs away: past 1 within a few time units
+    // at T* = 0.45. The ratio msd/t does the same job eventually but decays as
+    // 1/t on the way, so a freshly built lattice reads as melting for the
+    // first few seconds.
+    //
+    // "Plateaus" is the typical run, not every run. Across 40 solid-preset
+    // runs the median was 0.180 at both t = 12 and t = 30 — flat, as the
+    // vibration picture says — but the tail was not: the largest went 0.332 to
+    // 0.462, and 4 of 40 had crossed 0.35 by t = 30 with ψ₆ still above 0.79.
+    // Those are hops, not melting. A hundred particles under periodic
+    // boundaries nucleate a dislocation now and then, it glides, and a row of
+    // atoms lands one lattice vector over: local order survives, displacement
+    // from the original sites does not. Lindemann cannot tell that from
+    // melting, so the badge will occasionally say melting for a crystal that
+    // is merely defective. Left as it is — the alternative is a criterion that
+    // quietly forgives real melting too — and tests/experiments/phases.test.mjs
+    // asserts only what the readout can actually deliver.
     if (psi > 0.5 && (!msdRef || Math.sqrt(msd()) < 0.35 * S.a)) {
       // Before the reference is taken there is no displacement evidence at
       // all, and falling through to "melting" would be asserting something

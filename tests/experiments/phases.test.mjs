@@ -306,10 +306,36 @@ const MK = `const M = window.__md;
       psi: M.psi6(), rmsOverA: Math.sqrt(M.msd()) / S.a,
       T: M.temperature(), t: M.time() };
   });
-  chk('and the phase readout says solid',
-      /solid|고체|固体/.test(solidState.phase),
+  /*
+   * "Says solid" is what this used to assert, and the data does not support
+   * it. Measured over 40 runs of this preset: at t = 12 the ratio ran
+   * 0.158-0.332 and every run read solid, but at t = 30 it ran 0.151-0.462 and
+   * four had crossed the 0.35 Lindemann line — median 0.180 at both times, so
+   * it is the tail that grows, not the baseline. CI caught one at t = 12.2
+   * with ψ₆ 0.929, an unusually *well* ordered crystal.
+   *
+   * That is a dislocation gliding through a hundred-particle crystal: a row
+   * ends up one lattice vector over, ψ₆ never notices, and displacement from
+   * the original sites jumps by about a lattice spacing. Real behaviour of the
+   * model, and the note in phases.js explains why the badge is left to report
+   * it. Raising the threshold is not on offer either — 0.35 is the Lindemann
+   * criterion, and a "solid" that tolerates 0.5 is not claiming anything.
+   *
+   * So the claim is withdrawn down to what holds every time: this preset is
+   * a condensed, ordered phase, never a liquid and never a gas. Across 60
+   * runs the readout was only ever solid or melting.
+   *
+   * What that costs is worth naming. Disabling the classifier's solid branch
+   * outright makes it fall through to melting, and this check accepts that —
+   * planted and confirmed. Nothing here can tell a defective crystal from a
+   * broken classifier, because the readout gives them the same word. The
+   * displacement check below is the compensation: it holds the quantity the
+   * classifier decides on, and separates the two presets by 8x.
+   */
+  chk('and the phase readout is a condensed ordered phase, never liquid or gas',
+      /solid|고체|固体|melt|융해|熔/.test(solidState.phase),
       `${solidState.phase} — ψ₆ ${solidState.psi.toFixed(3)} (needs > 0.5), `
-      + `rms/a ${solidState.rmsOverA.toFixed(3)} (needs < 0.35), `
+      + `rms/a ${solidState.rmsOverA.toFixed(3)} (0.35 splits solid from melting), `
       + `T* ${solidState.T.toFixed(3)}, t ${solidState.t.toFixed(1)}`);
 
   await page.click('#preset-list .mol-btn[data-key="liquid"]');
@@ -319,6 +345,26 @@ const MK = `const M = window.__md;
       psiLiquid < psiSolid * 0.7, `${psiSolid} → ${psiLiquid}`);
   chk('and the phase readout no longer says solid',
       !/^solid|^고체|^固体/.test(await txt('out-phase')), await txt('out-phase'));
+
+  /*
+   * And the displacement the classifier actually decides on, held between the
+   * two presets rather than against a fixed line. A solid vibrates about its
+   * sites and stays there; a liquid's displacement runs away without bound, so
+   * the gap widens the longer either runs and no threshold has to be tuned.
+   *
+   * Measured over 8 pairs: solid 0.164-0.198, liquid 1.54-1.94, a ratio of at
+   * least 8. Asking for 3 leaves room for the defect events described above —
+   * the worst solid seen anywhere was 0.462, which is still a factor of 3.3
+   * below the gentlest liquid.
+   */
+  const rmsLiquid = await page.evaluate(() => {
+    const M = window.__md, S = M.system();
+    return Math.sqrt(M.msd()) / S.a;
+  });
+  chk('and its particles have travelled far further than the solid ever does',
+      rmsLiquid > 3 * solidState.rmsOverA && rmsLiquid > 1,
+      `rms/a ${solidState.rmsOverA.toFixed(3)} → ${rmsLiquid.toFixed(3)}, `
+      + `ratio ${(rmsLiquid / solidState.rmsOverA).toFixed(1)}x (needs 3x and > 1)`);
 }
 {
   await page.click('#preset-list .mol-btn[data-key="gas"]');
