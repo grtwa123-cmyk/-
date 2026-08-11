@@ -13,6 +13,18 @@
  * extension, and for a `.js` file containing `export` it quietly reports
  * success without fully parsing — a genuine syntax error exits 0. Copying to a
  * `.mjs` temp file first is what makes the check real.
+ *
+ * Inline scripts count. Selecting files by a .js extension left 55 KB of
+ * JavaScript in eight <script> blocks unparsed — 34 KB of it the solar system
+ * tour, 12 KB the black hole — which is to say the two largest scripts on the
+ * site were exempt from the gate that exists because a stray brace there is a
+ * blank page rather than a build failure. They are extracted and checked with
+ * everything else.
+ *
+ * Not every <script> holds JavaScript, and guessing wrong turns this gate into
+ * a false alarm that never stops: blackhole.html keeps its fragment shader in
+ * one and an import map in another. Blocks are selected by type, so GLSL and
+ * JSON are left alone.
  */
 
 import { execFileSync, execSync } from "node:child_process";
@@ -66,6 +78,48 @@ for (const file of tracked.filter((f) => f.endsWith(".js"))) {
     failures.push(`${file}: ${msg.trim()}`);
   }
 }
+/*
+ * The same check for script blocks written into HTML.
+ *
+ * A block is JavaScript if it has no type or a JavaScript one — anything else
+ * is somebody else's language and is skipped rather than failed. The temp copy
+ * is padded with the blank lines the block sits below in the page, so node
+ * reports a line number that matches the HTML file: pointing at the top of a
+ * 34 KB block, which the first version did, barely narrows it down.
+ */
+const JS_TYPES = new Set(["", "module", "text/javascript",
+                          "application/javascript", "text/ecmascript"]);
+let inlineChecked = 0, inlineSkipped = 0;
+
+for (const file of tracked.filter((f) => f.endsWith(".html"))) {
+  const src = fs.readFileSync(path.join(root, file), "utf8");
+  const re = /<script([^>]*)>([\s\S]*?)<\/script>/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const [, attrs, body] = m;
+    if (/\ssrc\s*=/.test(attrs)) continue;            // an external file, checked above
+    const typeMatch = attrs.match(/\stype\s*=\s*["']?([^"'\s>]+)/);
+    const type = (typeMatch ? typeMatch[1] : "").toLowerCase();
+    if (!JS_TYPES.has(type)) { inlineSkipped++; continue; }
+    if (!body.trim()) continue;
+
+    const line = src.slice(0, m.index).split("\n").length;
+    const isModule = type === "module" || /^\s*(import\s|export\s|export\{)/m.test(body);
+    const target = path.join(tmp, `${file.replace(/[/\\]/g, "_")}_${line}`
+                                 + (isModule ? ".mjs" : ".js"));
+    fs.writeFileSync(target, "\n".repeat(line - 1) + body);
+    try {
+      execFileSync(process.execPath, ["--check", target], { stdio: "pipe" });
+      inlineChecked++;
+    } catch (err) {
+      const out = String(err.stderr || err.message);
+      const msg = out.split("\n").find((l) => /Error/.test(l)) || "syntax error";
+      const at = out.match(/^[^\n]*?:(\d+)$/m);
+      failures.push(`${file}:${at ? at[1] : line}: inline <script>: ${msg.trim()}`);
+    }
+  }
+}
+
 fs.rmSync(tmp, { recursive: true, force: true });
 
 // ── 2. .editorconfig ──────────────────────────────────────────────────────
@@ -90,4 +144,6 @@ if (failures.length) {
   console.error(`\n${failures.length} problem(s)`);
   process.exit(1);
 }
-console.log(`lint: ${checked} JS files parsed, ${text.length} files match .editorconfig — clean`);
+console.log(`lint: ${checked} JS files and ${inlineChecked} inline scripts parsed `
+  + `(${inlineSkipped} non-JS blocks skipped), `
+  + `${text.length} files match .editorconfig — clean`);
