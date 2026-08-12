@@ -140,6 +140,15 @@
   let impulseAcc = 0;                       // Σ 2|v⊥| since window start
   let windowT = 0;
   let pMeas = 0;                            // px units, smoothed per window
+  /*
+   * How many pressure windows have closed since the gas was last disturbed.
+   * The pressure is a rolling average over PWINDOW, so this is the honest
+   * measure of how much evidence is behind the number on screen — and the
+   * only one a test can wait on that does not depend on how fast the machine
+   * is. tests/experiments/gas.test.mjs samples against it rather than against
+   * a stopwatch.
+   */
+  let nWindows = 0;
   const PWINDOW = 0.4;                      // s
 
   // ── State ──────────────────────────────────────────────────────────────
@@ -209,6 +218,7 @@
       pMeas = pMeas === 0 ? sample : pMeas * 0.45 + sample * 0.55;
       impulseAcc = 0;
       windowT = 0;
+      nWindows++;
     }
   }
 
@@ -474,6 +484,8 @@
     predictedPressure: () => toU(idealP(readParams())),
     area: () => areaPx(readParams().fr),
     count: () => parts.length,
+    /** Closed pressure windows — simulated progress, not elapsed seconds. */
+    windows: () => nWindows,
     particles: () => parts,
     setRunning: (v) => { paused = !v; },
   };

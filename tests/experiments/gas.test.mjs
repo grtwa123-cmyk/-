@@ -39,14 +39,33 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
 }, v);
 
 /** Settle, then average the reading. Never via Reset — that restores defaults. */
-async function sample(cfg, secs = 7) {
+/*
+ * Sample by pressure windows, not by seconds.
+ *
+ * This waited 2 600 ms for the gas to settle and then averaged for seven
+ * seconds of wall-clock, which meant the evidence behind every number here
+ * depended on how busy the machine was. It failed on a loaded runner with the
+ * worst point 32% off its ideal and four checks going down together — a
+ * shortage of samples, not a disagreement about physics.
+ *
+ * The pressure is a rolling average over PWINDOW = 0.4 s, so a closed window
+ * is the natural unit of evidence and gas.js now counts them. Six windows to
+ * settle and eighteen to average are what seven idle seconds used to buy; a
+ * loaded machine now takes longer and gets the same number of them.
+ */
+const SETTLE_WINDOWS = 6;
+const AVG_WINDOWS = 18;
+
+async function sample(cfg, windows = AVG_WINDOWS) {
   for (const [k, v] of Object.entries(cfg)) await setV(k, v);
-  await page.waitForTimeout(2600);
-  return page.evaluate(async (s) => {
+  const from = await page.evaluate(() => window.__gas.windows());
+  await page.waitForFunction(
+    (w) => window.__gas.windows() >= w, from + SETTLE_WINDOWS, { timeout: 60000 });
+  return page.evaluate(async (want) => {
     const g = window.__gas;
     const ps = [], ax = [], kt = [];
-    const t0 = performance.now();
-    while (performance.now() - t0 < s * 1000) {
+    const start = g.windows();
+    while (g.windows() - start < want) {
       await new Promise((ok) => setTimeout(ok, 170));
       ps.push(g.measuredPressure());
       let sx = 0, sy = 0;
@@ -58,7 +77,7 @@ async function sample(cfg, secs = 7) {
     const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     return { P: mean(ps), ideal: g.predictedPressure(), area: g.area(),
              n: g.count(), imbalance: ax, kT: mean(kt), T: g.params().T };
-  }, secs);
+  }, windows);
 }
 
 const fit = (xs, ys) => {
@@ -142,7 +161,7 @@ const all = [];
 
 // ── The walls do the thermalising ────────────────────────────────────
 {
-  const r = await sample({ temp: 400, volume: 80, count: 200 }, 6);
+  const r = await sample({ temp: 400, volume: 80, count: 200 }, 15);
   // Averaged over the window, not read off one frame: a snapshot of 200
   // particles carries a 7% standard error all by itself, so a single-frame
   // reading against a 12% bound is a coin toss — which it duly lost on the
@@ -214,7 +233,7 @@ const all = [];
 
 // ── The live page ────────────────────────────────────────────────────
 {
-  await sample({ temp: 300, volume: 70, count: 120 }, 4);
+  await sample({ temp: 300, volume: 70, count: 120 }, 10);
   // One round trip: the tally moves between frames, so reading the DOM in a
   // second call and comparing it to a windowed mean would only be measuring
   // how long the round trip took.
