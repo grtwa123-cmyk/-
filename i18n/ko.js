@@ -134,6 +134,7 @@ window.i18nRegister("ko", {
   launchBtn: "발사",
   launchingBtn: "발사 중…",
   resetBtn: "초기화",
+  csvExportBtn: "CSV 내보내기",
   motionPaused: "애니메이션 일시정지 — 시스템이 동작 줄임을 요청했습니다.",
   motionPlaying: "애니메이션 재생 중.",
   motionPlay: "재생",

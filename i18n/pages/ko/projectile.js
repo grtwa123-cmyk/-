@@ -2,6 +2,7 @@ window.i18nRegister("ko", {
   "angleLabel": "발사 각도 θ",
   "backToHub": "← 뒤로",
   "controls": "조작",
+  "csvExportBtn": "CSV 내보내기",
   "experimentCount": "물리 · 포물선 운동",
   "formulaMaxHeight": "최대 높이",
   "formulaRange": "도달 거리",

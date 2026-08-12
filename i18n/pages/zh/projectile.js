@@ -2,6 +2,7 @@ window.i18nRegister("zh", {
   "angleLabel": "发射角 θ",
   "backToHub": "← 返回",
   "controls": "控制",
+  "csvExportBtn": "导出 CSV",
   "experimentCount": "物理 · 抛体运动",
   "formulaMaxHeight": "最大高度",
   "formulaRange": "射程",

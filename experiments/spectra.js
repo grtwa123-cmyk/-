@@ -544,6 +544,33 @@
 
   // Exposed purely so the test harness can assert the Rydberg wavelengths.
   // Exposed so the harness can hold the measurement against the closed form.
+  /*
+   * The lines this atom has actually emitted, with how many times each was
+   * seen — the list the Rydberg fit is made from, not the full table of what
+   * hydrogen is capable of emitting.
+   */
+  if (window.CSVExport) {
+    window.CSVExport.attach("csv-btn", () => {
+      const ls = [...lines.values()];
+      if (!ls.length) return null;
+      const meta = {
+        start_level_n: parseInt(inputs.level.value, 10),
+        lines_seen: ls.length,
+        R_reference_m1: R_H,
+      };
+      if (measuredR) meta.fitted_R_m1 = measuredR.R;
+      return {
+        name: "hydrogen-spectrum.csv",
+        title: "Hydrogen Spectrum",
+        columns: ["wavelength_nm", "n_lower", "n_upper", "series", "count",
+                  "photon_energy_eV"],
+        rows: ls.map((l) => [l.nm, l.n1, l.n2, seriesName(l.n1) || "", l.count,
+                             photonEnergy(l.n1, l.n2)]),
+        meta: meta,
+      };
+    });
+  }
+
   window.__spectra = {
     wavelengthOf, photonEnergy, energyOf, fitRydberg, seriesName,
     R_H, E_RYD, HC, N_MAX,

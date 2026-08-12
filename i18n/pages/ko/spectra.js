@@ -1,6 +1,7 @@
 window.i18nRegister("ko", {
   "backToHub": "← 뒤로",
   "controls": "조작",
+  "csvExportBtn": "CSV 내보내기",
   "experimentCount20": "화학 · 수소 스펙트럼",
   "formulas": "공식",
   "methodMeasured": "측정됨",

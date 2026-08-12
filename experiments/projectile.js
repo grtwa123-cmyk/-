@@ -482,6 +482,33 @@
   window.addEventListener('resize', resizeCanvas);
 
   // Exposed so the harness can hold the measurement against the closed form.
+  /*
+   * The trajectory, as measured, for anyone who wants to plot it themselves.
+   * Built at click time from the current flight rather than from a cached
+   * copy, so the file holds what the panel is showing.
+   */
+  if (window.CSVExport) {
+    window.CSVExport.attach("csv-btn", () => {
+      const f = flight;
+      if (!f) return null;
+      const q = readParams();
+      return {
+        name: "projectile-v" + q.v0 + "-a" + q.theta + "-b" + q.b + ".csv",
+        title: "Projectile Motion",
+        columns: ["t_s", "x_m", "y_m", "speed_ms"],
+        rows: f.path.map((s) => [s.t, s.x, s.y, s.v]),
+        meta: {
+          v0_ms: q.v0, angle_deg: q.theta, g_ms2: q.g, drag_b: q.b, step_h_s: H,
+          measured_range_m: f.R, measured_apex_m: f.H,
+          measured_flight_time_s: f.T,
+          measured_landing_speed_ms: f.vLand,
+          measured_landing_angle_deg: f.angLand,
+          vacuum_range_m: vacRange(q),
+        },
+      };
+    });
+  }
+
   window.__proj = {
     H, params: readParams, fly, bestAngle,
     vacRange, vacHeight, vacTime,

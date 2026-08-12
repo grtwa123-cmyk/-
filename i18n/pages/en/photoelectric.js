@@ -1,6 +1,7 @@
 window.i18nRegister("en", {
   "backToHub": "← Back",
   "controls": "Controls",
+  "csvExportBtn": "Export CSV",
   "experimentCount21": "Physics · Photoelectric effect",
   "formulas": "Formulas",
   "metalAg": "Silver",

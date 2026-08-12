@@ -1,6 +1,7 @@
 window.i18nRegister("zh", {
   "backToHub": "← 返回",
   "controls": "控制",
+  "csvExportBtn": "导出 CSV",
   "experimentCount20": "化学 · 氢原子光谱",
   "formulas": "公式",
   "methodMeasured": "实测",

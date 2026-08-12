@@ -1,6 +1,7 @@
 window.i18nRegister("zh", {
   "backToHub": "← 返回",
   "controls": "控制",
+  "csvExportBtn": "导出 CSV",
   "experimentCount21": "物理 · 光电效应",
   "formulas": "公式",
   "metalAg": "银",

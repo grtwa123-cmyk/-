@@ -612,6 +612,36 @@
 
   // Exposed so the test harness can assert Einstein's equation directly.
   // Exposed so the harness can hold the measurement against the closed form.
+  /*
+   * The measured (frequency, stopping voltage) points and the fit through
+   * them — the whole of the evidence for the value of h this page reports, so
+   * a reader can redo the regression rather than take it on trust.
+   */
+  if (window.CSVExport) {
+    window.CSVExport.attach("csv-btn", () => {
+      const pts = [...points.values()];
+      if (!pts.length) return null;
+      const q = params();
+      const meta = {
+        metal: metal, work_function_eV: METALS[metal],
+        wavelength_nm: q.nm, intensity: q.intensity, collector_V: q.volts,
+      };
+      // Only claim a fit once one has been made; an empty column would read
+      // as a measurement of zero.
+      if (planck) {
+        meta.fitted_h_Js = planck.h;
+        meta.fitted_work_function_eV = planck.phi;
+      }
+      return {
+        name: "photoelectric-" + metal + ".csv",
+        title: "Photoelectric Effect",
+        columns: ["metal", "frequency_Hz", "stopping_voltage_V"],
+        rows: pts.map((s) => [s.metal, s.f, s.ke]),
+        meta: meta,
+      };
+    });
+  }
+
   window.__pe = {
     photonEnergy, keMax, thresholdNm, freqOf, H_PLANCK, HC, METALS, params,
     emitOne, arrivals, stoppingVoltage, fitPlanck, measurePlanck,

@@ -1,6 +1,7 @@
 window.i18nRegister("en", {
   "backToHub": "← Back",
   "controls": "Controls",
+  "csvExportBtn": "Export CSV",
   "experimentCount20": "Chemistry · Hydrogen spectrum",
   "formulas": "Formulas",
   "methodMeasured": "Measured",
