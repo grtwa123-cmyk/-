@@ -616,6 +616,43 @@ body.ui-table .table-view { padding-top: 28px; }
 
 .tv-head h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
 .tv-head p  { margin-top: 8px; color: var(--ink-3); font-size: 0.95rem; }
+/* The one paragraph that says what the badges are for. Held narrower than the
+   table so it reads as prose rather than as another row of data. */
+.tv-principle { max-width: 62ch; color: var(--ink-4); }
+
+/* ── Method legend ───────────────────────────────────────────────────
+   The badges used to explain themselves in a title tooltip, which is no
+   explanation at all on a touchscreen. Two columns on a wide page, stacked on
+   a narrow one; the term keeps its marker so the shape ties back to the row. */
+.tv-legend { margin: 28px 0 8px; padding-top: 20px; border-top: 1px solid var(--hair); }
+.tv-legend h2 {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-4);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+.tv-legend dl {
+  margin-top: 14px;
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 10px 18px; align-items: baseline;
+}
+.tv-legend dt {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.82rem; font-weight: 600; color: var(--ink-2); white-space: nowrap;
+}
+.tv-legend dd { font-size: 0.85rem; line-height: 1.55; color: var(--ink-4); }
+/* The count comes from the catalogue, so it is data rather than label. */
+.tv-legend-n {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 0.7rem; font-variant-numeric: tabular-nums;
+  color: var(--ink-5); background: var(--fill-2);
+  border-radius: 999px; padding: 0.05rem 0.4rem;
+}
+/* Verified is a separate claim from the six methods, and reads as one. */
+.tv-legend-verified { color: var(--cat-biology); }
+@media (max-width: 640px) {
+  .tv-legend dl { grid-template-columns: 1fr; gap: 4px 0; }
+  .tv-legend dd { margin-bottom: 10px; }
+}
 
 .tv-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 18px; }
 

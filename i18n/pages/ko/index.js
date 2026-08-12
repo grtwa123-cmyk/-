@@ -101,6 +101,7 @@ window.i18nRegister("ko", {
   "tvColTopics": "주제",
   "tvFilterLabel": "분야로 거르기",
   "tvIntro": "실험 전체를 한 페이지에. 줄을 누르면 열립니다.",
+  "tvPrinciple": "여기 있는 모든 실험은 메커니즘을 실제로 돌린 뒤 교과서의 결과를 그 안에서 읽어냅니다. 측정할 수 있는 페이지는 측정하고, 그럴 수 없는 페이지는 아닌 척하는 대신 각 행의 배지가 그 사실을 밝힙니다.",
   "uiTable": "표",
   "uiWall": "벽",
   "uiWallUnavailable": "3D 벽을 불러오지 못해 표로 보여 드립니다.",

@@ -101,6 +101,7 @@ window.i18nRegister("zh", {
   "tvColTopics": "主题",
   "tvFilterLabel": "按分类筛选",
   "tvIntro": "所有实验都在这一页。点选一行即可打开。",
+  "tvPrinciple": "这里的每个实验都真实运行其机制，再从中读出教科书的结果。能够测量自身物理的页面就去测量；不能的，则由该行的徽章如实说明，而不加掩饰。",
   "uiTable": "表格",
   "uiWall": "墙",
   "uiWallUnavailable": "3D 墙未能加载，改以表格呈现。",
