@@ -172,6 +172,86 @@ for (const w of [320, 390, 768]) {
   await ctx.close();
 }
 
+// ── The method legend ────────────────────────────────────────────────
+{
+  /*
+   * The six badges used to explain themselves only through a title tooltip,
+   * which never opens on a touchscreen — on a phone they were six words with
+   * no way to find out what any of them claimed. The legend puts the same
+   * text on the page, and its counts come from the catalogue rather than
+   * being written down, so it cannot drift away from the table above it.
+   */
+  const ctx = await browser.newContext({ viewport: { width: 1100, height: 1000 } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { try { localStorage.setItem('ui-mode', 'table'); } catch (e) { /* */ } });
+  await page.goto(B, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.tv-legend dt', { timeout: 20000 });
+
+  const seen = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.tv-legend dt')].map((dt, i) => ({
+      label: dt.textContent.replace(/\d+$/, '').trim(),
+      count: Number((dt.querySelector('.tv-legend-n') || {}).textContent),
+      why: (document.querySelectorAll('.tv-legend dd')[i] || {}).textContent || '',
+    }));
+    // What the table itself shows, to hold the legend against.
+    const tally = {};
+    for (const tag of document.querySelectorAll('.tv-table .method-tag')) {
+      const k = tag.dataset.method;
+      tally[k] = (tally[k] || 0) + 1;
+    }
+    return {
+      rows,
+      tally,
+      verifiedRows: document.querySelectorAll('.tv-table .method-verified').length,
+      principle: (document.querySelector('.tv-principle') || {}).textContent || '',
+    };
+  });
+
+  chk('the plain view carries a legend for the badges',
+      seen.rows.length >= 5, `${seen.rows.length} entries`);
+  chk('and every entry explains itself in a full sentence, not a key',
+      seen.rows.every((r) => r.why.length > 30 && !/^[a-z]+[A-Z]/.test(r.why)),
+      seen.rows.map((r) => `${r.label}:${r.why.length}`).join(' '));
+
+  // The whole point of computing them: legend and table cannot disagree.
+  const legendTotal = seen.rows.slice(0, -1).reduce((a, r) => a + r.count, 0);
+  const tableTotal = Object.values(seen.tally).reduce((a, n) => a + n, 0);
+  chk('the legend counts add up to the catalogue it is describing',
+      legendTotal === tableTotal, `legend ${legendTotal} vs table ${tableTotal}`);
+  chk('and the Verified count is the number of rows carrying the mark',
+      seen.rows[seen.rows.length - 1].count === seen.verifiedRows,
+      `legend ${seen.rows[seen.rows.length - 1].count} vs ${seen.verifiedRows} rows`);
+
+  // A method with no pages would be a category describing nothing.
+  chk('no method is listed that no experiment uses',
+      seen.rows.slice(0, -1).every((r) => r.count > 0),
+      seen.rows.map((r) => `${r.label}=${r.count}`).join(' '));
+
+  chk('and the page states the principle the badges exist for',
+      seen.principle.length > 60 && /measure/i.test(seen.principle),
+      seen.principle.slice(0, 60));
+
+  // Korean too — the legend is built in JS, which is where translations get
+  // forgotten, and the counts must survive the rebuild.
+  await page.click('.lang-btn[data-lang="ko"]');
+  await page.waitForFunction(() => {
+    const dd = document.querySelector('.tv-legend dd');
+    return dd && /[가-힣]/.test(dd.textContent);
+  }, { timeout: 20000 }).catch(() => {});
+  const ko = await page.evaluate(() => ({
+    why: (document.querySelector('.tv-legend dd') || {}).textContent || '',
+    principle: (document.querySelector('.tv-principle') || {}).textContent || '',
+    counts: [...document.querySelectorAll('.tv-legend-n')].map((n) => Number(n.textContent)),
+  }));
+  chk('the legend translates', /[가-힣]/.test(ko.why), ko.why.slice(0, 40));
+  chk('and so does the principle', /[가-힣]/.test(ko.principle), ko.principle.slice(0, 40));
+  chk('and the counts survive the re-render',
+      ko.counts.length === seen.rows.length
+        && ko.counts.every((n, i) => n === seen.rows[i].count),
+      `${ko.counts.join(',')} vs ${seen.rows.map((r) => r.count).join(',')}`);
+  await ctx.close();
+}
+
 console.log('\n=== view switcher verification ===');
 
 await finish('View switcher');

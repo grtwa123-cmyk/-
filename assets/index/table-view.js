@@ -71,6 +71,14 @@ const CAT_KEY = {
 const tr = (key, fallback) =>
   (window.i18n && window.i18n.t(key)) || fallback || key;
 
+/*
+ * The order the legend lists them in: most of the site first, least of it
+ * last. `formula` has no pages at the moment and the legend leaves it out
+ * rather than printing a category with nothing in it — add one and it
+ * reappears on its own.
+ */
+const METHOD_ORDER = ["measured", "integrated", "solved", "formula", "model", "illustrated"];
+
 /** A badge's shape marker: decorative, so the label is what gets read out. */
 function mark(glyph) {
   const s = document.createElement("span");
@@ -203,6 +211,59 @@ function buildTable() {
   return table;
 }
 
+/*
+ * What the badges in the method column mean, spelled out on the page.
+ *
+ * They already carried an explanation, in a `title` tooltip — which is to say
+ * they carried one for readers with a mouse and nobody else. A tooltip never
+ * opens on a touchscreen, so on a phone the six badges were six words with no
+ * way to find out what any of them claimed.
+ *
+ * The counts are taken from the catalogue rather than written down, so the
+ * legend cannot come to disagree with the table above it, and a method with
+ * no pages simply does not appear.
+ */
+function buildLegend() {
+  const tally = {};
+  for (const e of EXPERIMENTS) tally[e.method] = (tally[e.method] || 0) + 1;
+
+  const sec = document.createElement("section");
+  sec.className = "tv-legend";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = tr("methodLegend", "How the numbers are produced");
+  sec.appendChild(h2);
+
+  const dl = document.createElement("dl");
+  const row = (glyph, label, count, why, extra) => {
+    const dt = document.createElement("dt");
+    if (extra) dt.className = extra;
+    dt.append(mark(glyph), label);
+    if (count !== null) {
+      const n = document.createElement("span");
+      n.className = "tv-legend-n";
+      n.textContent = String(count);
+      dt.appendChild(n);
+    }
+    const dd = document.createElement("dd");
+    dd.textContent = why;
+    dl.append(dt, dd);
+  };
+
+  for (const m of METHOD_ORDER) {
+    if (!tally[m]) continue;
+    row(METHOD_MARK[m], tr(METHOD_KEY[m], m), tally[m], tr(METHOD_KEY[m] + "Why", ""));
+  }
+  // Verified is not a method but a second, independent claim, so it sits
+  // apart from the six and is counted the same way the rows are marked.
+  row("✓", tr("methodVerified", "Verified"),
+      EXPERIMENTS.filter((e) => VERIFIED.has(e.url)).length,
+      tr("methodVerifiedWhy", ""), "tv-legend-verified");
+
+  sec.appendChild(dl);
+  return sec;
+}
+
 function render() {
   if (!root) return;
   root.textContent = "";
@@ -214,9 +275,14 @@ function render() {
   const p = document.createElement("p");
   p.textContent = tr("tvIntro",
     "Every experiment on one page. Pick a row to open it.");
-  head.append(h1, p);
+  // The thing that makes this catalogue different from a list of animations,
+  // said on the front door instead of only in the source.
+  const principle = document.createElement("p");
+  principle.className = "tv-principle";
+  principle.textContent = tr("tvPrinciple", "");
+  head.append(h1, p, principle);
 
-  root.append(head, buildFilters(), buildTable());
+  root.append(head, buildFilters(), buildTable(), buildLegend());
 }
 
 /** Mount the plain view into `el` and keep it in step with the language. */

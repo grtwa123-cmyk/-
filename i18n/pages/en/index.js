@@ -101,6 +101,7 @@ window.i18nRegister("en", {
   "tvColTopics": "Topics",
   "tvFilterLabel": "Filter by category",
   "tvIntro": "Every experiment on one page. Pick a row to open it.",
+  "tvPrinciple": "Every experiment here runs a mechanism and reads the textbook result back out of it. Where a page can measure its own physics it does, and where it cannot, the badge on its row says so instead of pretending otherwise.",
   "uiTable": "Table",
   "uiWall": "Wall",
   "uiWallUnavailable": "The 3D wall could not load, so here is the plain view.",
