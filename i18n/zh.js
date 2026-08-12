@@ -42,6 +42,7 @@ window.i18nRegister("zh", {
   webglUnavailable: "查看此 3D 模型需要 WebGL，但当前浏览器已将其禁用。",
   formulas: "公式",
   resetBtn: "重置",
+  csvExportBtn: "导出 CSV",
   motionPaused: "动画已暂停 — 系统设置要求减少动效。",
   motionPlaying: "动画播放中。",
   motionPlay: "播放",

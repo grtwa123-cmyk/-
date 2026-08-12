@@ -134,6 +134,7 @@ window.i18nRegister("en", {
   launchBtn: "Launch",
   launchingBtn: "Launching…",
   resetBtn: "Reset",
+  csvExportBtn: "Export CSV",
   motionPaused: "Animation paused — your system asks for reduced motion.",
   motionPlaying: "Animation running.",
   motionPlay: "Play",

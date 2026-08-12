@@ -1490,6 +1490,7 @@
     "photoelectric": [
       "backToHub",
       "controls",
+      "csvExportBtn",
       "experimentCount21",
       "formulas",
       "metalAg",
@@ -1549,6 +1550,7 @@
       "angleLabel",
       "backToHub",
       "controls",
+      "csvExportBtn",
       "experimentCount",
       "formulaMaxHeight",
       "formulaRange",
@@ -1990,6 +1992,7 @@
     "spectra": [
       "backToHub",
       "controls",
+      "csvExportBtn",
       "experimentCount20",
       "formulas",
       "methodMeasured",

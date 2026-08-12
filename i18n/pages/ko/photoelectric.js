@@ -1,6 +1,7 @@
 window.i18nRegister("ko", {
   "backToHub": "← 뒤로",
   "controls": "조작",
+  "csvExportBtn": "CSV 내보내기",
   "experimentCount21": "물리 · 광전효과",
   "formulas": "공식",
   "metalAg": "은",

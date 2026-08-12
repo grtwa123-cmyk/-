@@ -2,6 +2,7 @@ window.i18nRegister("en", {
   "angleLabel": "Launch angle θ",
   "backToHub": "← Back",
   "controls": "Controls",
+  "csvExportBtn": "Export CSV",
   "experimentCount": "Physics · Projectile",
   "formulaMaxHeight": "Max height",
   "formulaRange": "Range",
