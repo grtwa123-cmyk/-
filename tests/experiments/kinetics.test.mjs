@@ -37,10 +37,53 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
   el.dispatchEvent(new Event('change', { bubbles: true }));
 }, v);
 
-async function run(T, Ea, ms = 13000, N = 100) {
+/*
+ * Wait for collisions, not for seconds.
+ *
+ * This used to run for 13 000 ms of wall-clock, which meant the amount of
+ * physics behind every number below depended on how busy the machine was.
+ * CI is busy, and it failed here — two checks at once, which is a systematic
+ * shift rather than the independent noise the thresholds were set for.
+ *
+ * The tell is in the spread of z. Idle and unhurried it is 0.61, not the 1.00
+ * the binomial model assumes: `predictedFraction` accumulates over the very
+ * collisions it is compared against, so the two share their sampling noise
+ * and most of it cancels. At that spread |z| > 3 is five sigma and cannot
+ * happen. Starve the run and the cancellation goes with it — 0.91 at four
+ * seconds, 1.08 at two — and under six busy loops on four cores one setting
+ * reached 2.88 against a threshold of 3.
+ *
+ * So each setting waits for a number of collisions instead. A loaded machine
+ * then takes longer in wall-clock and arrives at the same statistics, which
+ * is the whole point.
+ *
+ * The number cannot be the same for all of them, because they cannot all
+ * supply the same evidence. A hot gas over a low barrier reacts away its own
+ * reactants: T900/Ea200 counts 685 collisions by ten seconds, 862 by thirty
+ * and 889 by forty-five, with A and B down from 50 each to 7 — its rate is
+ * heading for zero and no amount of waiting reaches four figures. The others
+ * keep going: T300/Ea400 passes 1366 by twenty seconds.
+ *
+ * One gate for all of them therefore means the slowest one's ceiling for
+ * everybody, and that is not free either. Set at 500 it took the barrier-
+ * ratio check below from 1620 collisions to 500 at T300/Ea800, where the
+ * measured fraction is 0.04 — twenty successes instead of sixty-five — and
+ * that check started failing under load instead. So the targets are per
+ * setting, each one what that setting can actually produce.
+ */
+const COLLISIONS = {
+  '300/400': 1200,
+  '600/400': 900,
+  '300/800': 1200,
+  '900/200': 600,     // its ceiling is about 890, and slow to get there
+  '500/1000': 1200,
+};
+
+async function run(T, Ea, minC = COLLISIONS[`${T}/${Ea}`] || 900, N = 100) {
   await setV('temp', T); await setV('ea', Ea); await setV('count', N);
   await page.evaluate(() => { window.__kin.reset(); window.__kin.setRunning(true); });
-  await page.waitForTimeout(ms);
+  await page.waitForFunction(
+    (want) => window.__kin.collisions() >= want, minC, { timeout: 90000 });
   return page.evaluate(() => {
     const K = window.__kin, p = K.params();
     const parts = K.particles ? K.particles() : null;
