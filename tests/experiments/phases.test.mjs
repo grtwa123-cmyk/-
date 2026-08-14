@@ -72,15 +72,30 @@ const MK = `const M = window.__md;
       ({ target: T, ...M.measure(mk({ T, rho:0.8 }),
                                  { equil: T < 0.5 ? 20000 : 6000, sample: 8000 }) }));`));
   const at = (T) => r.find((x) => x.target === T);
-  // "No diffusion" is asked as bounded displacement, not as a small D. In a
-  // solid the mean-square displacement plateaus, so D = msd/4t is that
-  // plateau divided by however long you happened to watch — it decays as 1/t
-  // and is not a transport coefficient at all. rms/a is flat in time:
-  // 0.15–0.19 at T* = 0.15 over four offline replicates, against 1.8–2.1 in
-  // the liquid, so the two do not come close to overlapping.
-  chk('cold: the particles hold a lattice — ψ₆ near 0.9, displacement bounded',
-      at(0.15).psi > 0.75 && at(0.15).rmsOverA < 0.35,
-      `ψ₆ ${at(0.15).psi.toFixed(3)}, rms/a ${at(0.15).rmsOverA.toFixed(3)}`);
+  /*
+   * "No diffusion" is asked as bounded displacement, not as a small D. In a
+   * solid the mean-square displacement plateaus, so D = msd/4t is that plateau
+   * divided by however long you happened to watch — it decays as 1/t and is
+   * not a transport coefficient at all.
+   *
+   * Held against the liquid rather than against a fixed line, for the reason
+   * #78 withdrew the same claim from the phase badge: rms/a < 0.35 is the
+   * Lindemann criterion, and a hundred-particle crystal breaks it a few
+   * percent of the time by nucleating a dislocation and gliding it — a row
+   * lands one lattice vector over, ψ₆ never notices, and displacement from the
+   * original sites jumps. CI caught exactly that here, rms/a 0.357 with ψ₆ at
+   * 0.868, after the equilibration had already been tripled once for it.
+   *
+   * The separation is what survives. Fourteen replicates of this measurement:
+   * cold 0.15–0.196, hot 1.65–2.19, a factor of 8. Asking for 3 leaves room
+   * for the defect events, whose worst seen anywhere was 0.462 — still 3.6
+   * times below the gentlest liquid.
+   */
+  chk('cold: the particles hold a lattice — ψ₆ near 0.9, displacement far below the liquid',
+      at(0.15).psi > 0.75 && at(0.80).rmsOverA > 3 * at(0.15).rmsOverA,
+      `ψ₆ ${at(0.15).psi.toFixed(3)}, rms/a ${at(0.15).rmsOverA.toFixed(3)} `
+      + `vs liquid ${at(0.80).rmsOverA.toFixed(3)} `
+      + `(${(at(0.80).rmsOverA / at(0.15).rmsOverA).toFixed(1)}x)`);
   chk('hot: the order is gone and the particles diffuse freely',
       at(1.50).psi < 0.35 && at(1.50).D > 2e-2,
       `ψ₆ ${at(1.50).psi.toFixed(3)}, D ${at(1.50).D.toExponential(1)}`);
