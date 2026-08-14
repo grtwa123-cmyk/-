@@ -10,6 +10,8 @@
  */
 import { browser, BASE, chk, finish } from '../lib/harness.mjs';
 import { installCdnCache } from '../lib/cdn-cache.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const open = async (file, { cdn = true, w = 1280 } = {}) => {
   const p = await browser.newPage({ viewport: { width: w, height: 900 } });
@@ -29,6 +31,25 @@ const text = (p, sel) => p.$eval(sel, e => e.textContent.trim()).catch(() => '<n
   const { p, errs } = await open('solarsystem.html');
   await p.waitForTimeout(4000);
   chk('solarsystem boots with three.js', await p.$('#stage canvas') !== null);
+
+  /*
+   * The simulation used to be a <script> block inside the page and is now a
+   * file. Moving it is only safe while the tag keeps the block's position and
+   * its timing: it has to come after three.js, which it reads at its first
+   * statement, and it has to be a classic blocking script. `defer` would push
+   * it past DOMContentLoaded — the scene would build late, the CDN-failure
+   * notice would fire late, and nothing else here would notice, because the
+   * page still works, just differently. So the tag itself is checked.
+   */
+  const html = fs.readFileSync(
+    path.join(import.meta.dirname, '..', '..', 'experiments', 'solarsystem.html'), 'utf8');
+  const tag = html.match(/<script[^>]*\bsrc="solarsystem\.js"[^>]*>/);
+  chk('the simulation is loaded from its own file', Boolean(tag), tag ? tag[0] : 'no tag');
+  chk('as a blocking script, not deferred or async',
+      Boolean(tag) && !/\b(defer|async)\b/.test(tag[0]), tag ? tag[0] : '');
+  chk('and after the three.js it reads on its first line',
+      Boolean(tag) && html.indexOf('three.min.js') < html.indexOf('src="solarsystem.js"'),
+      `three.js at ${html.indexOf('three.min.js')}, ours at ${html.indexOf('src="solarsystem.js"')}`);
   chk('solarsystem has no console errors', errs.length === 0, errs.slice(0, 2).join(' | '));
   chk('the loader is gone', await p.$('#loading') === null);
 

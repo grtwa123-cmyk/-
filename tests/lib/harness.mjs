@@ -73,6 +73,34 @@ export const browser = await chromium.launch({
 export const rows = [];
 export const chk = (n, ok, d = "") => rows.push({ n, ok, d });
 
+/*
+ * A suite that dies still knows something.
+ *
+ * Results are buffered and printed by finish(), so anything that throws first
+ * — a selector that never appears, a click on a control the page failed to
+ * build — took every check gathered up to that point down with it. The stack
+ * trace named the line that threw and nothing about the twenty checks that had
+ * already passed or failed, which is the half that says *why*.
+ *
+ * Found by planting one: loading the solar system's simulation before three.js
+ * makes its source checks fail and then, forty lines later, kills the suite on
+ * a chip that was never rendered. The failures were correct and invisible.
+ */
+let reported = false;
+for (const event of ["uncaughtException", "unhandledRejection"]) {
+  process.on(event, (err) => {
+    if (!reported && rows.length) {
+      reported = true;
+      console.log("\n=== results gathered before the crash ===");
+      for (const r of rows) {
+        console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.n}${r.ok || !r.d ? "" : "  ::  " + r.d}`);
+      }
+    }
+    console.error(`\n${event}: ${(err && err.stack) || err}`);
+    process.exit(1);
+  });
+}
+
 /** Print the results, tear everything down, exit non-zero on any failure. */
 export async function finish(title) {
   let failed = 0;

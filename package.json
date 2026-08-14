@@ -1,6 +1,6 @@
 {
   "name": "science-lab",
-  "version": "1.43.1",
+  "version": "1.44.0",
   "private": true,
   "description": "Browser-based science sandbox: 36 hands-on physics, chemistry and biology simulations rendered with vanilla HTML, CSS, Canvas and WebGL — including real 3D molecule, crystal and DNA models and procedural Web Audio sound. No build step, no runtime dependencies.",
   "homepage": "https://grtwa123-cmyk.github.io/-/",
