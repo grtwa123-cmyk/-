@@ -26,11 +26,33 @@
   let master = null;
   let updateButton = () => {};
 
+  /*
+   * Nothing exists before the reader has touched the page.
+   *
+   * The header above always claimed the context was created on the first
+   * gesture; it was really created on the first *sound*, whichever came
+   * first, and simulations start making sounds immediately. A gas page
+   * playing a click per wall bounce opened a context on load and produced
+   * fifty-five "The AudioContext was not allowed to start" warnings before
+   * anyone had clicked anything — and not one audible sound, because a
+   * context blocked by the autoplay policy is silent regardless.
+   *
+   * So sound requests before the first gesture are dropped, which is what
+   * was audibly happening anyway, minus the console full of warnings and the
+   * context nobody could hear.
+   */
+  let gestured = false;
+  // Drones built before that first gesture, waiting to be wired up. Four
+  // pages construct one at load time and keep a handle for the life of the
+  // page, so they cannot simply be refused — they are built late instead.
+  const waiting = [];
+
   function ensure() {
     if (ctx) {
       if (ctx.state === "suspended") ctx.resume();
       return ctx;
     }
+    if (!gestured) return null;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
     try {
@@ -45,7 +67,12 @@
   }
 
   // Unlock / resume on any gesture (also recovers after a tab switch).
-  const unlock = () => { const c = ensure(); if (c && c.state === "suspended") c.resume(); };
+  const unlock = () => {
+    gestured = true;
+    const c = ensure();
+    if (c && c.state === "suspended") c.resume();
+    if (c && waiting.length) for (const d of waiting.splice(0)) d.build();
+  };
   ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
     window.addEventListener(ev, unlock, { passive: true }));
   document.addEventListener("visibilitychange", () => { if (!document.hidden) unlock(); });
@@ -133,9 +160,23 @@
   // ── Continuous drone with settable pitch/level (hum, pressure) ────────
   class Drone {
     constructor(opts = {}) {
-      const { type = "sine", freq = 120, gain = 0, partials = 0 } = opts;
-      this.ok = !!ensure();
-      if (!this.ok) return;
+      this.opts = { type: "sine", freq: 120, gain: 0, partials: 0, ...opts };
+      this.ok = false;
+      if (ensure()) this.build();
+      else waiting.push(this);          // built on the first gesture instead
+    }
+    /*
+     * Wiring, split out of the constructor so a drone can be asked for before
+     * there is a context to hang it on. Whatever the page set in the meantime
+     * is carried across: a page that constructs a drone at load and then
+     * tracks a slider would otherwise come up at its construction pitch.
+     */
+    build() {
+      if (this.ok || !ensure()) return;
+      const { type, partials } = this.opts;
+      const freq = this.wantFreq === undefined ? this.opts.freq : this.wantFreq;
+      const gain = this.wantGain === undefined ? this.opts.gain : this.wantGain;
+      this.ok = true;
       const t = now();
       this.o = ctx.createOscillator();
       this.g = ctx.createGain();
@@ -157,17 +198,21 @@
       }
     }
     setFreq(f) {
+      this.wantFreq = f;                // remembered even before there is sound
       if (!this.ok) return;
       this.o.frequency.setTargetAtTime(clampF(f), now(), 0.05);
       if (this.o2) this.o2.frequency.setTargetAtTime(clampF(f * 2), now(), 0.05);
     }
     setGain(v) {
+      this.wantGain = v;
       if (!this.ok) return;
       const g = Math.max(0, v);
       this.g.gain.setTargetAtTime(g, now(), 0.06);
       if (this.g2) this.g2.gain.setTargetAtTime(g * 0.4, now(), 0.06);
     }
     stop() {
+      const i = waiting.indexOf(this);
+      if (i >= 0) waiting.splice(i, 1);
       if (!this.ok) return;
       try { this.o.stop(); if (this.o2) this.o2.stop(); } catch (_) {}
       this.ok = false;
