@@ -79,22 +79,77 @@ const COLLISIONS = {
   '500/1000': 1200,
 };
 
+const snapshot = () => page.evaluate(() => {
+  const K = window.__kin, p = K.params();
+  const parts = K.particles ? K.particles() : null;
+  return { T: p.T, Ea: p.Ea, N: p.N,
+           c: K.collisions(), e: K.energetic(), rx: K.reactions(),
+           f: K.measuredFraction(), honest: K.predictedFraction(),
+           dial: K.setPointFraction(), gasT: K.gasTemperature(),
+           counts: parts && parts.reduce((a, q) => (a[q.kind] = (a[q.kind] || 0) + 1, a), {}) };
+});
+
+/*
+ * Run a setting, and take a reading at the halfway mark as well as the end.
+ *
+ * The halfway reading is not used by any check. It is here because this suite
+ * has now gone red on CI twice with a discrepancy no sample size explains —
+ * measured 0.1579 against a predicted 0.1290 in the one failure captured in
+ * full — and neither of the two causes proposed for it survived being tested.
+ * A loaded runner does not reproduce it: six busy loops on four cores leave
+ * the collision counts alone (936 -> 992, 1620 -> 1616) and the unfixed code
+ * passed under them. Nor does an equilibration transient: the per-segment
+ * gap starts at +0.009, +0.010, -0.010 across three runs, sign and all.
+ *
+ * So the next failure has to carry its own evidence. Splitting the run in two
+ * separates the three explanations that remain: a fluctuation puts the halves
+ * on either side at random, a drift makes the second half systematically
+ * different, and a bad early sample leaves the first half alone as the
+ * outlier. None of that can be recovered after the fact from a single number.
+ *
+ * The halves are worth reading even on a green run. They show the gas moving a
+ * long way inside one measurement — T900/Ea200 reads 992 in the first half and
+ * 665 in the second, against a dial of 900, as a low barrier burns the
+ * reactants away — and the prediction is accumulated per collision at whatever
+ * the temperature was at the time, so the two track each other down. That
+ * shared drift is what makes z under-dispersed at 0.61 rather than 1.00. The
+ * temperature itself is instantaneous, not smoothed, so a lagging estimate is
+ * not among the candidates.
+ */
 async function run(T, Ea, minC = COLLISIONS[`${T}/${Ea}`] || 900, N = 100) {
   await setV('temp', T); await setV('ea', Ea); await setV('count', N);
   await page.evaluate(() => { window.__kin.reset(); window.__kin.setRunning(true); });
   await page.waitForFunction(
+    (want) => window.__kin.collisions() >= want, Math.floor(minC / 2), { timeout: 90000 });
+  const mid = await snapshot();
+  await page.waitForFunction(
     (want) => window.__kin.collisions() >= want, minC, { timeout: 90000 });
-  return page.evaluate(() => {
-    const K = window.__kin, p = K.params();
-    const parts = K.particles ? K.particles() : null;
-    return { T: p.T, Ea: p.Ea, N: p.N,
-             c: K.collisions(), e: K.energetic(), rx: K.reactions(),
-             f: K.measuredFraction(), honest: K.predictedFraction(),
-             dial: K.setPointFraction(), gasT: K.gasTemperature(),
-             counts: parts && parts.reduce((a, q) => (a[q.kind] = (a[q.kind] || 0) + 1, a), {}) };
-  });
+  const end = await snapshot();
+  // The second half on its own, by difference — the running totals are
+  // cumulative, so the halves have to be separated by subtraction.
+  const dc = end.c - mid.c;
+  end.halves = {
+    first: { c: mid.c, f: mid.f, honest: mid.honest, gasT: mid.gasT },
+    second: dc > 0
+      ? { c: dc, f: (end.e - mid.e) / dc,
+          honest: (end.honest * end.c - mid.honest * mid.c) / dc, gasT: end.gasT }
+      : null,
+  };
+  return end;
 }
 const z = (r, want) => (r.f - want) / Math.sqrt((want * (1 - want)) / r.c);
+
+/** Everything known about a setting, for a failure message to carry. */
+function forensics(r) {
+  const h = r.halves || {};
+  const half = (x) => (x ? `f=${x.f.toFixed(4)} pred=${x.honest.toFixed(4)} `
+                          + `d=${(x.f - x.honest >= 0 ? '+' : '') + (x.f - x.honest).toFixed(4)} `
+                          + `T=${x.gasT.toFixed(1)} n=${x.c}` : 'n/a');
+  return `T${r.T}/Ea${r.Ea}: c=${r.c} f=${r.f.toFixed(4)} pred=${r.honest.toFixed(4)} `
+    + `dial=${r.dial.toFixed(4)} gasT=${r.gasT.toFixed(1)} rx=${r.rx} `
+    + `left=${JSON.stringify(r.counts)}\n      first half  ${half(h.first)}`
+    + `\n      second half ${half(h.second)}`;
+}
 
 // ── The tally lands on the Boltzmann factor ──────────────────────────
 const runs = [];
@@ -106,14 +161,15 @@ for (const [T, Ea] of [[300, 400], [600, 400], [300, 800], [900, 200], [500, 100
   const worst = Math.max(...zs.map(Math.abs));
   chk(`the counted success rate is e^(−Ea/kT) at the temperature the gas is at — ${runs.length} settings`,
       runs.every((r) => r.c > 400) && worst < 3,
-      runs.map((r, i) => `T${r.T}/Ea${r.Ea}: ${r.f.toFixed(4)} vs ${r.honest.toFixed(4)} (z=${zs[i].toFixed(2)})`).join(', '));
+      runs.map((r, i) => `z=${zs[i].toFixed(2)}  ${forensics(r)}`).join('\n    '));
 
   // Five independent runs, so the mean of their z is a standard normal
   // divided by √5. This is the check that a systematic bias trips.
   const mean = zs.reduce((a, b) => a + b) / zs.length;
   chk('and with no bias left across the five',
       Math.abs(mean) * Math.sqrt(zs.length) < 2.5,
-      `mean z = ${mean.toFixed(2)}, combined ${(mean * Math.sqrt(zs.length)).toFixed(2)}σ`);
+      `mean z = ${mean.toFixed(2)}, combined ${(mean * Math.sqrt(zs.length)).toFixed(2)}σ\n    `
+      + runs.map((r, i) => `z=${zs[i].toFixed(2)}  ${forensics(r)}`).join('\n    '));
 }
 
 /*
