@@ -114,26 +114,81 @@ const nearest = (trace, t) =>
 
 // ── The half-life slider is the half-life ────────────────────────────
 {
-  const rows = [];
-  for (const T of [1, 3, 6]) {
-    await setV('count', 400); await setV('halflife', T); await setV('rate', 4);
-    await page.waitForTimeout(150);
-    const trace = await run(9000, 150);
-    // Where the count first crosses half, by interpolating the trace.
-    const N0 = trace[0].total;
-    let hit = null;
+  /*
+   * Reading a half-life off a counting experiment is not the same as
+   * watching for one crossing, and the first version of this check did the
+   * second while claiming the first.
+   *
+   * Two things were biting. The count is noisy — on a single crossing σ is
+   * 1/(√N₀·ln2) of a half-life, 5.9% at N₀ = 600 — and the curve between
+   * two samples is exponential, so a chord drawn across a coarse gap reads
+   * the crossing late. Sampling every 150 ms at playback rate 4 is 0.6 of a
+   * half-life per sample when T½ is 1, and the check read T½ = 1 as
+   * 1.055 ± 0.060 over eight runs. Sampling the same page ten times finer
+   * gave 0.981, so the 5.5% lean was the measurement, not the model. CI drew
+   * a 1.18 on top of it and went red at the 18% bound.
+   *
+   * Three changes, none of which loosen anything. The playback rate is set
+   * per dial so every run spans four half-lives in the same wall time, which
+   * pins the sample spacing at 6–7% of T½ whatever T½ is. Crossings are
+   * interpolated in log(alive), the straight line for a decay, so a gap the
+   * machine happened to widen no longer biases the answer. And three
+   * crossings are used instead of one.
+   *
+   * Over twelve repetitions of all three settings that leaves: per setting
+   * σ ≤ 4.0%, worst single draw 10.2%; mean of the three σ = 2.0%, worst
+   * 4.5%. Both bounds below are 3.5σ, so the per-setting one is 14% — four
+   * points tighter than the bound that was flaking.
+   */
+  const HALVES = 3, SPAN = 6500;
+
+  /** Where the count passes `target`, interpolated in log(alive). */
+  const crossing = (trace, target) => {
     for (let i = 1; i < trace.length; i++) {
-      if (trace[i].alive <= N0 / 2 && trace[i - 1].alive > N0 / 2) {
-        const f = (trace[i - 1].alive - N0 / 2) / (trace[i - 1].alive - trace[i].alive);
-        hit = trace[i - 1].t + f * (trace[i].t - trace[i - 1].t);
-        break;
+      const a = trace[i - 1], b = trace[i];
+      if (b.alive <= target && a.alive > target) {
+        const f = Math.log(a.alive / target) / Math.log(a.alive / Math.max(b.alive, 0.5));
+        return a.t + f * (b.t - a.t);
       }
     }
-    rows.push({ set: T, measured: hit });
+    return null;
+  };
+
+  const rows = [];
+  for (const T of [1, 3, 6]) {
+    const rate = Math.min(4, Math.max(0.2,
+      Math.round((HALVES + 1) * T / (SPAN / 1000) * 10) / 10));
+    await setV('count', 600); await setV('halflife', T); await setV('rate', rate);
+    await page.waitForTimeout(150);
+    const trace = await run(SPAN, 60);
+    const N0 = trace[0].total;
+    // Each crossing is an estimate on its own: the k-th one should land at
+    // k half-lives, so k-th time ÷ k is the half-life k different ways.
+    const est = [];
+    for (let k = 1; k <= HALVES; k++) {
+      const hit = crossing(trace, N0 / Math.pow(2, k));
+      if (hit !== null) est.push(hit / k);
+    }
+    rows.push({ set: T, n: est.length,
+      measured: est.length >= 2 ? est.reduce((s, v) => s + v, 0) / est.length : null });
   }
-  const ok = rows.every((r) => r.measured !== null && Math.abs(r.measured / r.set - 1) < 0.18);
+
+  const detail = rows.map((r) => `set ${r.set} → `
+    + (r.measured === null ? `only ${r.n} crossings` : `${r.measured.toFixed(2)} `
+      + `(${((r.measured / r.set - 1) * 100).toFixed(1)}%, ${r.n} crossings)`)).join(', ');
+
   chk('the time the count actually takes to halve is the half-life on the slider',
-      ok, rows.map((r) => `set ${r.set} → measured ${r.measured === null ? '—' : r.measured.toFixed(2)}`).join(', '));
+      rows.every((r) => r.measured !== null && Math.abs(r.measured / r.set - 1) < 0.14),
+      detail);
+
+  // Noise moves the three dials independently; a half-life that is wrong —
+  // a mis-scaled dt, an exponent off by a factor — moves all three the same
+  // way and lands here long before any single one leaves its own bound.
+  const errs = rows.filter((r) => r.measured !== null).map((r) => r.measured / r.set - 1);
+  const lean = errs.length ? errs.reduce((s, e) => s + e, 0) / errs.length : NaN;
+  chk('and the three dials do not lean together, which is what a wrong one would do',
+      errs.length === 3 && Math.abs(lean) < 0.07,
+      `mean error ${(lean * 100).toFixed(1)}% over ${errs.length} dials — ${detail}`);
 }
 
 // ── The live page ────────────────────────────────────────────────────
