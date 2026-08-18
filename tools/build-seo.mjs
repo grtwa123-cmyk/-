@@ -49,6 +49,30 @@ fs.writeFileSync(path.join(ROOT, "robots.txt"),
   `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
 console.log("robots.txt");
 
+// ── the count in index.html's social text ─────────────────────────────────
+// Three meta tags open by saying how many experiments there are. That number
+// was written by hand and went stale the first time the catalogue grew: the
+// epidemic page made it 37 while all three still said 36. Nothing noticed,
+// because nothing was looking. So it is generated here, from the same array
+// the sitemap comes from, and tests/smoke.mjs fails if the file drifts.
+{
+  const idx = path.join(ROOT, "index.html");
+  const before = fs.readFileSync(idx, "utf8");
+  const after = before.replace(
+    /(<meta (?:name|property)="(?:[a-z:]*)description" content=")\d+( hands-on)/g,
+    `$1${EXPERIMENTS.length}$2`);
+  const tags = (before.match(
+    /<meta (?:name|property)="(?:[a-z:]*)description" content="\d+ hands-on/g) || []).length;
+  if (tags !== 3) {
+    console.error(`index.html: expected 3 counted description tags, found ${tags} — `
+      + "the pattern in tools/build-seo.mjs no longer matches the page");
+    process.exit(1);
+  }
+  if (after !== before) fs.writeFileSync(idx, after);
+  console.log(`index.html — ${tags} description tags say ${EXPERIMENTS.length}`
+    + `${after === before ? "" : " (updated)"}`);
+}
+
 // ── The social card ───────────────────────────────────────────────────────
 const chromiumPath = process.env.CHROMIUM_PATH;
 if (!chromiumPath || !fs.existsSync(chromiumPath)) {

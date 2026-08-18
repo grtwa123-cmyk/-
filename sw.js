@@ -30,7 +30,7 @@
 // Bumped with the package version; tests/offline.test.mjs fails if the two
 // disagree. The name is the whole invalidation story — a new version is a new
 // cache, and activate deletes every older one.
-const VERSION = "1.47.0";
+const VERSION = "1.47.1";
 const CACHE = `science-lab-v${VERSION}`;
 
 // The one page that has to be there before it is ever requested: it is what a
