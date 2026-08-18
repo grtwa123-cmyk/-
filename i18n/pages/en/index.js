@@ -24,6 +24,8 @@ window.i18nRegister("en", {
   "dopplerTitle": "Doppler Effect",
   "elDesc": "Split water above 1.23 V and collect H₂ and O₂ in the exact 2:1 ratio dictated by Faraday's laws — every mole on screen comes from Q = nzF.",
   "elTitle": "Electrolysis of Water",
+  "epidemicDesc": "Individuals meet, transmit and recover; R₀ is counted out of the run, and the final size then lands on r = 1 − e^(−R₀r), an equation with no closed form.",
+  "epidemicTitle": "Epidemic — R₀ Counted",
   "eqDesc": "A + B ⇌ C, one molecule at a time. The equilibrium constant is never entered — it is measured from the counts and comes out as k₀/k₋. Disturb the mixture and the shift is a result, not a rule.",
   "eqTitle": "Chemical Equilibrium & Le Chatelier",
   "gasDesc": "Bounce particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT, and compressing the piston rides the isotherm.",
