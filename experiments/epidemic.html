@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="An outbreak where nobody is told the answer: individuals meet, transmit and recover, and R₀ is counted out of the run — then the final size and the peak land on the textbook curves nothing typed in." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Epidemic — R₀ counted, not assumed · Biology" />
+  <meta property="og:description" content="An outbreak where nobody is told the answer: individuals meet, transmit and recover, and R₀ is counted out of the run — then the final size and the peak land on the textbook curves nothing typed in." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/epidemic.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M8 50 Q22 48 30 30 Q36 14 56 12' fill='none' stroke='%23ff6b8a' stroke-width='3' stroke-linecap='round'/&gt;&lt;circle cx='30' cy='30' r='3.5' fill='%23ff6b8a'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="epiPageTitle">Epidemic · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="epiCrumb">Biology · Epidemic</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="epiTitle">Epidemic — R₀ Counted, Not Assumed</h1>
+      <p data-i18n="epiIntro">Nobody here is told how contagious the disease is. Individuals meet at random, sometimes pass it on, and recover — and R₀ is counted afterwards out of what actually happened. Then two textbook results the simulation has never heard of turn up on their own: how many end up infected, and how high the wave gets.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="pop" data-i18n="epiPopLabel">Population</label>
+          <span class="value"><span id="pop-value">1200</span></span>
+          <input type="range" id="pop" min="300" max="3000" step="100" value="1200" />
+        </div>
+
+        <div class="control">
+          <label for="contact" data-i18n="epiContactLabel">Contacts per day</label>
+          <span class="value"><span id="contact-value">4.0</span></span>
+          <input type="range" id="contact" min="0.5" max="10" step="0.5" value="4" />
+        </div>
+
+        <div class="control">
+          <label for="transmit" data-i18n="epiTransmitLabel">Chance a contact infects</label>
+          <span class="value"><span id="transmit-value">0.50</span></span>
+          <input type="range" id="transmit" min="0.05" max="1" step="0.05" value="0.5" />
+        </div>
+
+        <div class="control">
+          <label for="recover" data-i18n="epiRecoverLabel">Recovery rate γ</label>
+          <span class="value"><span id="recover-value">1.00</span></span>
+          <input type="range" id="recover" min="0.25" max="3" step="0.05" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="epiSpeedLabel">Steps per frame</label>
+          <span class="value"><span id="speed-value">4</span></span>
+          <input type="range" id="speed" min="1" max="20" step="1" value="4" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="epiFormulaR0">Basic reproduction number</span>: <code>R₀ = β / γ</code></li>
+            <li><span data-i18n="epiFormulaFinal">Final size</span>: <code>r = 1 − e^(−R₀·r)</code></li>
+            <li><span data-i18n="epiFormulaPeak">Peak infectious</span>: <code>1 − (1 + ln R₀) / R₀</code></li>
+            <li><span data-i18n="epiFormulaThreshold">Threshold</span>: <code>R₀ &gt; 1</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="epiNotes">Notes</summary>
+          <ul>
+            <li data-i18n="epiNote1">Nothing in the simulation knows R₀. It is counted: every transmission that happened, divided by the infectious time that was available to cause one, times the average length of an infection. Both halves are tallied as the run goes.</li>
+            <li data-i18n="epiNote2">The final size is the interesting one. It solves r = 1 − e^(−R₀r), which has no closed form at all — you cannot write the answer down, only find it. The page bisects for it and puts it beside what the population actually did.</li>
+            <li data-i18n="epiNote3">Contacts are drawn from the whole population, not from a neighbourhood. That is what "well mixed" means, and it is the assumption both formulas rest on — a disease that spreads through a map moves as a wave and ends somewhere else entirely. The moving dots are a picture, not the contact network.</li>
+            <li data-i18n="epiNote4">Near R₀ = 1 the threshold is a tendency, not a promise. A few seeds can die out by luck in a population that would otherwise burn through, so the verdict reports what this run did rather than what the theory expects.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="860" height="440" aria-label="A population of dots turning from susceptible to infectious to recovered, beside the three counts plotted against time"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="epiOutS">Susceptible</div>
+            <div class="num" id="out-s">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutI">Infectious</div>
+            <div class="num" id="out-i">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutR">Recovered</div>
+            <div class="num" id="out-r">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutBeta">Transmission rate β, counted</div>
+            <div class="num" id="out-beta">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutPeriod">Infectious period, measured</div>
+            <div class="num" id="out-period">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutR0">R₀ = β × period</div>
+            <div class="num" id="out-r0">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutFinal">Ever infected / r = 1 − e^(−R₀r)</div>
+            <div class="num"><span id="out-final">—</span> / <span id="out-final-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutPeak">Peak infectious / theory</div>
+            <div class="num"><span id="out-peak">—</span> / <span id="out-peak-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutVerdict">This outbreak</div>
+            <div class="num" id="out-verdict">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="epiOutTime">Days elapsed</div>
+            <div class="num" id="out-time">0.0</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="epidemic.js" defer></script>
+</body>
+</html>

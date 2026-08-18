@@ -595,6 +595,24 @@ const RENDERERS = {
     p.dot(X(Km), Y(0.5), 3.4);
   },
 
+  // Epidemic: the three SIR curves crossing — susceptible falling away,
+  // infectious rising to a hump and back down, recovered climbing to meet it.
+  epidemic(p, s) {
+    const X = (t) => s * t * 1.4;
+    const logistic = (t, k, m) => 1 / (1 + Math.exp(-k * (t - m)));
+    const S = (t) => s * (0.86 - 1.6 * logistic(t, 3.6, 0));
+    const R = (t) => s * (0.86 - 1.6 * logistic(t, 3.6, 0.34));
+    const I = (t) => s * (0.86 - 2.5 * Math.exp(-6 * t * t));
+    for (const f of [S, R, I]) {
+      for (let i = 0; i < 18; i++) {
+        const a = -1 + (2 * i) / 18, b = -1 + (2 * (i + 1)) / 18;
+        p.line(X(a), f(a), X(b), f(b));
+      }
+    }
+    p.line(-s * 1.4, s * 0.86, s * 1.4, s * 0.86);      // time axis
+    p.dot(X(0), I(0), 3.4);                              // the peak
+  },
+
   // Natural selection: a logistic sweep from rare to fixed, with a finite
   // population drifting either side of the deterministic curve.
   selection(p, s) {

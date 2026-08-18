@@ -8,6 +8,8 @@ window.i18nRegister("en", {
   "categoryPhysics": "Physics",
   "dnaDesc": "Type a 5'→3' DNA sequence and the antiparallel complement, hydrogen bonds, and a rotating B-form helix snap into place. GC content, melting temperature, and an mRNA transcript update live.",
   "dnaTitle": "DNA Double Helix",
+  "epidemicDesc": "Individuals meet, transmit and recover; R₀ is counted out of the run, and the final size then lands on r = 1 − e^(−R₀r), an equation with no closed form.",
+  "epidemicTitle": "Epidemic — R₀ Counted",
   "hhDesc": "Four coupled equations and two kinds of ion gate. Nothing checks for a threshold, yet one appears — and it is sharp enough that a thousandth more current turns silence into a full spike.",
   "hhTitle": "Nerve Impulse — Hodgkin–Huxley",
   "lotkaDesc": "Foxes and rabbits, integrated and then measured. The time average of each population over one whole cycle turns out to be exactly the fixed point it never sits at — Volterra's theorem, holding to a part in 10⁴ on swings five times its size — while the cycle itself runs up to 28% slower than the textbook 2π/√(αγ).",
