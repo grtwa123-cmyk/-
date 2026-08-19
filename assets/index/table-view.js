@@ -50,6 +50,7 @@ const VERIFIED = new Set([
   "experiments/circuit.html", "experiments/decay.html", "experiments/diffraction.html",
   "experiments/doppler.html",
   "experiments/epidemic.html",
+  "experiments/expression.html",
   "experiments/electrolysis.html",
   "experiments/enzyme.html", "experiments/gas.html", "experiments/generator.html",
   "experiments/impact.html", "experiments/kinetics.html",

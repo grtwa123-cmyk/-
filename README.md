@@ -1,6 +1,6 @@
 # Science Lab
 
-> A browser-based science sandbox — **37 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **38 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
@@ -280,7 +280,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 37 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 38 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift, CSS animations are short-circuited via a media query in `styles.css`, and the 3D viewers start held still — a JS animation loop can't be reached by the media query, so `gl3d.js` checks the preference itself and the on-screen control reflects it, leaving the reader free to start the rotation.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

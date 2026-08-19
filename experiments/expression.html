@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="A field of identical cells transcribing one gene. Nothing is told what a Poisson distribution is — but leave the gene on and the spread of counts across the cells turns out to have variance exactly equal to its mean, and letting the gene switch off widens it by precisely the burst size." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Gene Expression — where a Poisson comes from · Biology" />
+  <meta property="og:description" content="A field of identical cells transcribing one gene. Nothing is told what a Poisson distribution is — but leave the gene on and the spread of counts across the cells turns out to have variance exactly equal to its mean." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/expression.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;rect x='10' y='34' width='7' height='14' rx='2' fill='%23ff6b8a'/&gt;&lt;rect x='21' y='22' width='7' height='26' rx='2' fill='%23ff6b8a'/&gt;&lt;rect x='32' y='14' width='7' height='34' rx='2' fill='%23ff6b8a'/&gt;&lt;rect x='43' y='28' width='7' height='20' rx='2' fill='%23ff6b8a'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="exprPageTitle">Gene Expression · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="exprCrumb">Biology · Gene Expression</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="exprTitle">Gene Expression — Where a Poisson Comes From</h1>
+      <p data-i18n="exprIntro">Every cell here is identical and none of them is told what to hold. A gene switches on and off, transcribes while it is on, and each molecule eventually degrades — that is the whole mechanism, written in molecules and coin flips. Look across the cells afterwards and the spread of their counts is not arbitrary: leave the gene on and the variance comes out equal to the mean, exactly. Let it start switching and the extra width tells you how big the bursts were.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="cells" data-i18n="exprCellsLabel">Cells</label>
+          <span class="value"><span id="cells-value">800</span></span>
+          <input type="range" id="cells" min="200" max="2000" step="100" value="800" />
+        </div>
+
+        <div class="control">
+          <label for="rate" data-i18n="exprRateLabel">Transcription rate while on</label>
+          <span class="value"><span id="rate-value">20</span></span>
+          <input type="range" id="rate" min="5" max="60" step="1" value="20" />
+        </div>
+
+        <div class="control">
+          <label for="kon" data-i18n="exprKonLabel">Gene switches on</label>
+          <span class="value"><span id="kon-value">1.0</span></span>
+          <input type="range" id="kon" min="0.1" max="5" step="0.1" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="koff" data-i18n="exprKoffLabel">Gene switches off</label>
+          <span class="value"><span id="koff-value">never</span></span>
+          <input type="range" id="koff" min="0" max="5" step="0.1" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="decay" data-i18n="exprDecayLabel">mRNA decay rate γ</label>
+          <span class="value"><span id="decay-value">1.00</span></span>
+          <input type="range" id="decay" min="0.25" max="2" step="0.05" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="exprSpeedLabel">Steps per frame</label>
+          <span class="value"><span id="speed-value">10</span></span>
+          <input type="range" id="speed" min="1" max="40" step="1" value="10" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="exprFormulaMean">Mean copy number</span>: <code>m = k·k<sub>on</sub> / (γ(k<sub>on</sub>+k<sub>off</sub>))</code></li>
+            <li><span data-i18n="exprFormulaFano">Fano factor</span>: <code>F = 1 + k·k<sub>off</sub> / ((k<sub>on</sub>+k<sub>off</sub>)(k<sub>on</sub>+k<sub>off</sub>+γ))</code></li>
+            <li><span data-i18n="exprFormulaPoisson">Gene never off</span>: <code>F = 1</code></li>
+            <li><span data-i18n="exprFormulaDuty">Fraction of time on</span>: <code>k<sub>on</sub> / (k<sub>on</sub>+k<sub>off</sub>)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="exprNotes">Notes</summary>
+          <ul>
+            <li data-i18n="exprNote1">The mechanism has no distribution in it. A gene flips between two states, transcribes while it is on, and each molecule degrades on its own. The shape across the cells is a consequence, and the page counts it rather than drawing it.</li>
+            <li data-i18n="exprNote2">Set the gene to never switch off and the Fano factor — variance divided by mean — goes to 1 and stays there whatever the other dials say. That is the signature of a Poisson, and it is the reason counting noise is called Poisson noise in the first place.</li>
+            <li data-i18n="exprNote3">Start switching the gene off and the width grows past the mean. Rare, productive bursts spread the population out much further than steady transcription at the same average, so two genes with identical mean expression can be quite different cells to be.</li>
+            <li data-i18n="exprNote4">The measurement is one snapshot across the cells, not an average over time. The cells are independent of one another, which is what makes a snapshot a clean sample; successive snapshots of the same field are not independent, so nothing here averages them together.</li>
+            <li data-i18n="exprNote5">The pale curve over the histogram is the Poisson with the same mean as the measurement. It is drawn for comparison and never read back into the model.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="860" height="430" aria-label="A field of cells, each shaded by how many mRNA molecules it holds, beside a histogram of those counts with a Poisson curve of the same mean drawn over it"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="exprOutMean">Mean mRNA per cell / theory</div>
+            <div class="num"><span id="out-mean">—</span> / <span id="out-mean-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutVariance">Variance across cells</div>
+            <div class="num" id="out-variance">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutFano">Fano = variance / mean, counted / theory</div>
+            <div class="num"><span id="out-fano">—</span> / <span id="out-fano-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutShape">What the width says</div>
+            <div class="num" id="out-shape">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutDuty">Genes on right now / theory</div>
+            <div class="num"><span id="out-duty">—</span> / <span id="out-duty-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutSilent">Cells holding nothing</div>
+            <div class="num" id="out-silent">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="exprOutTime">Minutes elapsed</div>
+            <div class="num" id="out-time">0.0</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="expression.js" defer></script>
+</body>
+</html>
