@@ -288,9 +288,17 @@
   }
 
   // ── Loop ───────────────────────────────────────────────────────────────
-  function frame() {
+  let lastTs = -1;
+  function frame(ts) {
     raf = requestAnimationFrame(frame);
-    if (running && st) {
+    // Step only while the clock advances. The steps themselves are counted,
+    // not dt-scaled — but under prefers-reduced-motion the timestamp is
+    // frozen, and a loop that ignored it kept animating behind a notice that
+    // said "paused". A repeated timestamp means a frozen clock, so it steps
+    // nothing; real frames never repeat one.
+    const moved = ts !== lastTs;
+    lastTs = ts;
+    if (running && st && moved) {
       const q = readParams();
       for (let k = 0; k < q.speed && st.nI > 0; k++) step(st);
       if (st.nI === 0) { running = false; syncStart(); }

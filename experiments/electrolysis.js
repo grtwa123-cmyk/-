@@ -145,7 +145,10 @@
     // 2 H₂O → O₂ + 4 H⁺ + 4 e⁻
     while (eAnode >= 4 * PACKET) { eAnode -= 4 * PACKET; nO2 += PACKET; release("anode"); }
 
-    const ph = performance.now() / 1000;
+    // Through the gate, so the shimmer freezes with the rest under
+    // prefers-reduced-motion — performance.now() itself cannot be frozen.
+    const ph = window.ReducedMotion ? window.ReducedMotion.clock()
+                                    : performance.now() / 1000;
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];
       b.y -= b.vy * dt;
@@ -260,7 +263,10 @@
   }
 
   function drawCell(V) {
-    const ph = performance.now() / 1000;
+    // Through the gate, so the shimmer freezes with the rest under
+    // prefers-reduced-motion — performance.now() itself cannot be frozen.
+    const ph = window.ReducedMotion ? window.ReducedMotion.clock()
+                                    : performance.now() / 1000;
     const I = current(V);
 
     const bg = ctx.createLinearGradient(0, 0, 0, H);

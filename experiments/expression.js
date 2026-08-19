@@ -351,8 +351,13 @@
   // ── Loop ───────────────────────────────────────────────────────────────
   function frame(ts) {
     raf = requestAnimationFrame(frame);
+    // Step only while the clock advances: under prefers-reduced-motion the
+    // rAF timestamp is frozen, and a loop that ignored it kept stepping at
+    // full tilt behind a notice that said "paused". Real frames never repeat
+    // a timestamp, so outside the gate this changes nothing.
+    const moved = ts !== lastTs;
     lastTs = ts;
-    if (running && s) {
+    if (running && s && moved) {
       const n = s.p.speed;
       for (let i = 0; i < n; i++) step(s);
     }
@@ -408,7 +413,11 @@
     render();
   }
   window.addEventListener("resize", resize);
-  window.addEventListener("i18n:change", () => { syncStartBtn(); updateLabels(readParams()); });
+  // "langchange" on document is what i18n.js actually fires. This listened
+  // for "i18n:change" on window at first — an event nothing has ever sent —
+  // so a language switch mid-run repainted the running page's button as
+  // "Start" and left the koff dial's "never" in the old language.
+  document.addEventListener("langchange", () => { syncStartBtn(); updateLabels(readParams()); });
 
   resize();
   reset();
@@ -421,12 +430,23 @@
     const q = measure(s);
     const bins = Math.max(8, Math.ceil(q.max * 1.15) + 1);
     const h = histogram(s, bins);
+    // Name with the extension and title/meta filled in: the first version
+    // skipped them, and the file opened "# Science Lab — undefined" with no
+    // record of the dials that produced it.
     return {
-      name: "gene-expression",
+      name: "gene-expression.csv",
+      title: "Gene Expression — noise across the field",
       columns: ["mRNA_per_cell", "cells", "fraction", "poisson_fraction"],
       rows: Array.from(h, (count, n) => [
         n, count, count / s.m.length, poissonPmf(n, q.mean),
       ]),
+      meta: {
+        cells: s.m.length, transcription_rate: s.p.k,
+        k_on: s.p.kon, k_off: s.p.koff, decay_rate: s.p.g, step_dt: DT,
+        minutes_elapsed: s.t,
+        mean_measured: q.mean, mean_theory: q.meanTheory,
+        fano_measured: q.fano, fano_theory: q.fanoTheory,
+      },
     };
   });
 

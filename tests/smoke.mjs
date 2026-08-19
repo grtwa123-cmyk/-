@@ -86,6 +86,19 @@ for (const [cat, hub] of Object.entries(hubs)) {
 check("every experiment is linked from its category hub",
   unlinked.length === 0, unlinked.join(", "));
 
+// The landing page's canvas wall is drawn from the catalogue, so it grows on
+// its own — but the screen-reader nav beside it is hand-written markup, and
+// the README promises it links every experiment. It sat at 36 links while the
+// catalogue held 38: the two newest pages existed for sighted readers only.
+{
+  const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const nav = (idx.match(/<nav class="sr-only"[\s\S]*?<\/nav>/) || [""])[0];
+  const missing = EXPERIMENTS.filter((e) => !nav.includes(`href="${e.url}"`));
+  check("the screen-reader nav links every experiment in the catalogue",
+    nav.length > 0 && missing.length === 0,
+    missing.map((e) => e.url).join(", ") || "no sr-only nav found");
+}
+
 // ── SEO assets ────────────────────────────────────────────────────────────
 // sitemap.xml is generated from the catalogue by tools/build-seo.mjs. A
 // catalogue that grows and a sitemap that does not is the usual way these

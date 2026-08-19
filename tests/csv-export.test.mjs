@@ -240,4 +240,44 @@ const near = (a, b) => Math.abs(a - b) <= Math.abs(b) * 1e-12 + 1e-12;
   await ctx2.close();
 }
 
+// ── Gene expression: a histogram, and the header conventions ─────────────
+// Added when its first export shipped opening "# Science Lab — undefined"
+// under a filename with no extension: the maker skipped the fields the other
+// exporters fill in, and nothing was reading the head of the file.
+{
+  const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+  await page.goto(url("experiments/expression.html"), { waitUntil: "networkidle" });
+  await page.waitForTimeout(400);
+  // Carry the field somewhere non-trivial before exporting.
+  await page.evaluate(() => {
+    const st = window.__expr.state();
+    for (let i = 0; i < 900; i++) window.__expr.step(st);
+  });
+  const d = await grab(page);
+
+  chk("expression: the file is named like a CSV",
+      /^gene-expression.*\.csv$/.test(d.name), d.name);
+  chk("expression: the head names the page, not undefined",
+      d.head.length >= 3 && /Gene Expression/i.test(d.head[0]) && !/undefined/.test(d.head.join("\n")),
+      d.head[0] || "(empty head)");
+  chk("expression: the settings ride along as metadata",
+      ["cells", "transcription_rate", "k_on", "k_off", "decay_rate"]
+        .every((k) => k in d.meta),
+      Object.keys(d.meta).join(","));
+
+  // The bars are the claim, so the file must be the field: every cell binned
+  // exactly once, and the mean rebuilt from the rows equal to the page's own.
+  const q = await page.evaluate(() => {
+    const m = window.__expr.measure(window.__expr.state());
+    return { cells: window.__expr.state().m.length, mean: m.mean };
+  });
+  const counted = d.rows.reduce((s, r) => s + Number(r[1]), 0);
+  const mean = d.rows.reduce((s, r) => s + Number(r[0]) * Number(r[1]), 0) / counted;
+  chk("expression: every cell is in the file exactly once",
+      counted === q.cells, `${counted} rows-worth vs ${q.cells} cells`);
+  chk("expression: the mean rebuilt from the file is the page's measurement",
+      Math.abs(mean - q.mean) < 1e-9, `${mean} vs ${q.mean}`);
+  await page.close();
+}
+
 await finish("csv export");

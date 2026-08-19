@@ -319,6 +319,32 @@ const show = (r) => `k=${r.q.k} kon=${r.q.kon} koff=${r.q.koff} γ=${r.q.g}`;
       restarted === 0, `t = ${restarted}`);
 }
 
+// ── Language changes reach the strings JS owns ───────────────────────
+{
+  /*
+   * paint() rewrites every data-i18n node, which hides a page that stopped
+   * listening: the moment it repaints a running page's Start/Pause button it
+   * writes "Start" in the new language over a button that means Pause, and
+   * only the page's own langchange handler puts it right. This page shipped
+   * listening for "i18n:change" — an event nothing has ever fired — so the
+   * button lied in Korean and the koff dial's "never" stayed English.
+   */
+  await setV('koff', 0);                       // the dial whose label is a word
+  await page.evaluate(() => window.__expr.setRunning(true));
+  await page.click('.lang-btn[data-lang="ko"]');
+  await page.waitForTimeout(500);
+  const running = await page.evaluate(() => window.__expr.isRunning());
+  const btn = await txt('start-btn');
+  const koff = await txt('koff-value');
+  await page.evaluate(() => window.__expr.setRunning(false));
+  await page.click('.lang-btn[data-lang="en"]');
+  await page.waitForTimeout(400);
+  chk('switching language mid-run keeps the button meaning Pause, in the new language',
+      running && btn === '일시정지', `running=${running}, button says "${btn}"`);
+  chk('and the "never switches off" label follows the language too',
+      koff === '안 꺼짐', `koff label says "${koff}"`);
+}
+
 // ── Chrome ───────────────────────────────────────────────────────────
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
