@@ -10,7 +10,10 @@
  * Rather than hand-listing defaults in thirteen simulations (where they would
  * immediately drift out of step with the markup), this snapshots the control
  * state once the page has finished initialising and replays it on reset.
- * Deferred scripts have all run by DOMContentLoaded, so the snapshot is
+ * Deferred scripts have all run by DOMContentLoaded — but not before it, and
+ * an earlier draft snapshotted at the script's own turn instead. On phases
+ * that made Reset restore the markup's 0.3 rather than the 0.15 the page
+ * actually opens at, so Reset moved the reader somewhere new. The snapshot is
  * exactly the state the reader first saw — including any adjustment a
  * simulation made to its own controls at start-up.
  *
@@ -66,9 +69,14 @@
     if (btn) btn.addEventListener("click", restore, true);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
+  // Deferred scripts execute at readyState "interactive", NOT "loading" —
+  // parsing is finished and DOMContentLoaded has not fired yet. So the old
+  // guard's else-branch ran init() at this script's own turn, third of five,
+  // before the page's own script had touched anything. DOMContentLoaded is
+  // what actually waits for the rest of them.
+  if (document.readyState === "complete") {
     init();
+  } else {
+    document.addEventListener("DOMContentLoaded", init);
   }
 })();
