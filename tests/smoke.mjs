@@ -229,6 +229,23 @@ if (!chromiumPath || !fs.existsSync(chromiumPath)) {
         errors.slice(0, 2).join(" | ") || `title="${title}"`);
     }
 
+    // On a phone the whole point of the page — the experiment — sat below
+    // every slider and an open Notes panel: two full screens of controls
+    // before the reader saw anything move. The stage must come first there.
+    {
+      const page = await browser.newPage({ viewport: { width: 390, height: 850 } });
+      await page.goto(`${base}/experiments/pendulum.html`, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(600);
+      const tops = await page.evaluate(() => ({
+        panel: document.querySelector(".panel").getBoundingClientRect().top,
+        stage: document.querySelector(".stage").getBoundingClientRect().top,
+      }));
+      await page.close();
+      check("on a phone the stage comes before the controls",
+        tops.stage < tops.panel,
+        `stage at ${Math.round(tops.stage)}px, panel at ${Math.round(tops.panel)}px`);
+    }
+
     await browser.close();
     browserRan = true;
   } catch (err) {

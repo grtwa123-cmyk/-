@@ -241,21 +241,35 @@
     const histW = W - histX - 8;
 
     // ── The field of cells ──
+    // A top band keeps the captions off the squares; the first cut drew them
+    // over the bottom row and pushed the histogram's legend clean off the
+    // canvas.
+    const bandY = 14, fieldTop = 22;
+    ctx.fillStyle = acc;
+    ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText(i18nText("exprFieldLabel", "one square = one cell"), 4, bandY);
+
     const n = s.m.length;
-    const cols = Math.ceil(Math.sqrt(n * (fieldW / H)));
+    const fieldH = H - fieldTop;
+    const cols = Math.ceil(Math.sqrt(n * (fieldW / fieldH)));
     const rows = Math.ceil(n / cols);
-    const cw = fieldW / cols, ch = H / rows;
+    const cw = fieldW / cols, ch = fieldH / rows;
     const size = Math.max(1.5, Math.min(cw, ch) - Math.min(2, Math.min(cw, ch) * 0.18));
     const mx = Math.max(1, s.__scale || 1);
+    // The ring marks a gene that is ON — but only when the dials let it ever
+    // be off. With switching disabled every ring is lit all the time, and a
+    // mark that cannot vary is not information, just mesh over the colours.
+    const ringShown = s.p.koff > 0 && size >= 4;
     for (let i = 0; i < n; i++) {
       const c = i % cols, r = (i / cols) | 0;
-      const x = c * cw + (cw - size) / 2, y = r * ch + (ch - size) / 2;
+      const x = c * cw + (cw - size) / 2, y = fieldTop + r * ch + (ch - size) / 2;
       const load = Math.min(1, s.m[i] / mx);
       // Brightness is the molecule count; the ring is the gene being on.
       ctx.fillStyle = `rgba(255, 107, 138, ${0.06 + 0.94 * load})`;
       ctx.fillRect(x, y, size, size);
-      if (s.on[i] && size >= 4) {
-        ctx.strokeStyle = "rgba(120, 240, 200, 0.85)";
+      if (ringShown && s.on[i]) {
+        ctx.strokeStyle = "rgba(120, 240, 200, 0.6)";
         ctx.lineWidth = 1;
         ctx.strokeRect(x - 0.5, y - 0.5, size + 1, size + 1);
       }
@@ -272,7 +286,23 @@
     ctx.fillStyle = muted;
     ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(i18nText("exprHistLabel", "mRNA per cell"), histX, 14);
+    ctx.fillText(i18nText("exprHistLabel", "mRNA per cell"), histX, bandY);
+
+    // The Poisson legend lives in the top band with a sample of its own
+    // line. It used to sit below the axis captions, which was below the
+    // canvas: the one label explaining the comparison was never visible.
+    ctx.strokeStyle = fg;
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = 1.6;
+    const legendLabel = i18nText("exprPoissonLabel", "Poisson of the same mean");
+    const legendW = ctx.measureText(legendLabel).width;
+    const legendX = Math.max(histX + 96, histX + histW - legendW - 26);
+    ctx.beginPath();
+    ctx.moveTo(legendX, bandY - 4); ctx.lineTo(legendX + 18, bandY - 4);
+    ctx.stroke();
+    ctx.fillStyle = fg;
+    ctx.fillText(legendLabel, legendX + 24, bandY);
+    ctx.globalAlpha = 1;
 
     for (let b = 0; b < bins; b++) {
       const bh = (h[b] / peak) * (base - 26);
@@ -309,13 +339,6 @@
     ctx.textAlign = "right";
     ctx.fillText(String(bins - 1), histX + histW, base + 15);
     ctx.textAlign = "left";
-    ctx.fillStyle = fg;
-    ctx.globalAlpha = 0.8;
-    ctx.fillText(i18nText("exprPoissonLabel", "Poisson of the same mean"),
-                 histX, base + 15 + 14);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = acc;
-    ctx.fillText(i18nText("exprFieldLabel", "one square = one cell"), 4, H - 8);
   }
 
   // ── Readouts ───────────────────────────────────────────────────────────
