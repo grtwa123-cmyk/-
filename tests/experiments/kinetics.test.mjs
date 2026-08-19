@@ -19,6 +19,62 @@
  * These checks hold both halves — that the tally matches the honest
  * expectation, and that the gap to the dial is real and grows with the number
  * of reactions rather than being noise.
+ *
+ * ── Why this suite goes red about once in eighty runs, and why that stays ──
+ *
+ * It has gone red in CI four times without a defect behind it. Everything
+ * below was measured while chasing that, and the answer is that there is
+ * nothing left to find: the flake is the false-alarm rate these bounds imply,
+ * and every way of lowering it costs more than it saves.
+ *
+ * Four explanations were tried and all four are dead, each killed by its own
+ * measurement rather than argued away:
+ *
+ *   machine load        six busy loops on four cores leave the collision
+ *                       counts alone (936→992, 1620→1616, 1768→1638) and the
+ *                       unfixed code passed 3/3 under them
+ *   an early transient  per-segment gaps start at +0.0094, +0.0101, −0.0102
+ *                       across three runs — no early lean
+ *   the reaction        distorting the velocity distribution it is measured
+ *                       against. The line-of-centres energy in units of the
+ *                       gas temperature is Exp(1) to within the sample even
+ *                       at 88–90% reacted: mean 1.017 / 0.986 / 1.028, and
+ *                       P(x>u)/e^(−u) scattered 0.93–1.08 both ways over
+ *                       u = 0.25…3. The criterion is exact, as claimed.
+ *   a stale gasT        it is measured once a frame, before the sub-steps.
+ *                       Recording a freshly measured one at every collision
+ *                       alongside it: 599.3 vs 599.7, 293.2 vs 293.2, 858.9
+ *                       vs 859.4, 487.9 vs 487.7. The two predictions differ
+ *                       in the fourth decimal.
+ *
+ * And the statistic behaves exactly as it was designed to. Over fourteen
+ * idle replicates: the seventy individual z values have mean 0.132 and
+ * sd 0.954, the combined figure mean 0.295 and sd 0.872. No bias, unit
+ * spread. Failures land on both sides — CI drew mean z = +1.48 and a local
+ * replicate drew −1.16.
+ *
+ * So the bounds are doing what bounds do: |z| < 3 on the worst of five and
+ * |combined| < 2.5 together fail 1.24% of the time at the measured spreads,
+ * 2.59% at nominal, and the suite runs twice per push.
+ *
+ * Widening them is not available, which is the part worth writing down.
+ * Predicting at the dial temperature instead of the gas temperature — the
+ * defect this check exists to catch — was caught 4 times in 7 at these
+ * bounds, 2 in 7 at |z| < 3.5 with |combined| < 3, and 1 in 7 at |z| < 4.
+ * Buying quiet costs the check its eyesight.
+ *
+ * Pooling two runs per setting was tried, on the theory that √2 less noise
+ * would move the defect clear of a wider bound. It does not: the defect's
+ * combined figure moved only from −2.37 to −2.73 while its spread rose from
+ * 1.16 to 1.34, because the run-to-run wander of the gas temperature is not
+ * binomial noise and does not average down. Detection stayed at 4/7. The
+ * pooling was reverted; it cost a doubled runtime for nothing.
+ *
+ * The honest position is therefore to keep the bounds and accept the rate.
+ * A red here is a coin landing badly about once in eighty runs, and the
+ * forensics attached to each failure — both halves of the run, the gas
+ * temperature, the reaction extent — are there so the next one can be told
+ * apart from a real regression in a minute rather than a session.
  */
 import { browser, chk, url, finish } from '../lib/harness.mjs';
 
