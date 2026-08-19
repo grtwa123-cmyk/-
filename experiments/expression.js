@@ -33,7 +33,11 @@
 (() => {
   "use strict";
 
-  const DT = 0.01;            // minutes of cell time per step
+  // Minutes of cell time per step. build() bakes the per-step probabilities
+  // from this, so the quality toggle rebuilds the field when it moves; the
+  // steps-per-frame scale by the same ratio, so Fine costs CPU, not pace.
+  const DT_STD = 0.01;
+  let DT = window.Quality ? window.Quality.pick(DT_STD, 0.004) : DT_STD;
 
   const stage = document.getElementById("stage");
   if (!stage) return;
@@ -381,7 +385,7 @@
     const moved = ts !== lastTs;
     lastTs = ts;
     if (running && s && moved) {
-      const n = s.p.speed;
+      const n = Math.round(s.p.speed * (DT_STD / DT));
       for (let i = 0; i < n; i++) step(s);
     }
     render();
@@ -478,8 +482,13 @@
    * state and reports it, headlessly — a check is then a whole population
    * rather than a few seconds of animation, and nothing samples the clock.
    */
+  document.addEventListener("qualitychange", () => {
+    DT = window.Quality.pick(DT_STD, 0.004);
+    running = false; syncStartBtn(); reset();
+  });
+
   window.__expr = {
-    DT,
+    get DT() { return DT; },
     params: readParams,
     build, step, measure, histogram, poissonPmf,
     state: () => s,

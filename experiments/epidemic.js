@@ -74,7 +74,12 @@
   const resetBtn = document.getElementById("reset-btn");
 
   const S = 0, I = 1, R = 2;
-  const DT = 0.05;                 // fixed step, in units of the time axis
+  // Fixed step, in units of the time axis. The recovery roll is first order —
+  // γ·DT per step — so the step IS an instrument setting: the site's quality
+  // toggle refines it, and the steps-per-frame scale up by the same ratio so
+  // Fine costs CPU rather than pace.
+  const DT_STD = 0.05;
+  let DT = window.Quality ? window.Quality.pick(DT_STD, 0.02) : DT_STD;
 
   let st = null;
   let running = false;
@@ -300,7 +305,10 @@
     lastTs = ts;
     if (running && st && moved) {
       const q = readParams();
-      for (let k = 0; k < q.speed && st.nI > 0; k++) step(st);
+      // Steps per frame scale with the quality ratio, so a day of the
+      // epidemic takes the same wall time at either step size.
+      const perFrame = Math.round(q.speed * (DT_STD / DT));
+      for (let k = 0; k < perFrame && st.nI > 0; k++) step(st);
       if (st.nI === 0) { running = false; syncStart(); }
     }
     draw();
@@ -376,8 +384,14 @@
     });
   }
 
+  document.addEventListener("qualitychange", () => {
+    DT = window.Quality.pick(DT_STD, 0.02);
+    running = false; syncStart(); reset();
+  });
+
   window.__epi = {
-    DT, params: readParams, build, step, measure, finalSize,
+    get DT() { return DT; },
+    params: readParams, build, step, measure, finalSize,
     state: () => st,
     reset,
     setRunning: (v) => { running = v; syncStart(); },
