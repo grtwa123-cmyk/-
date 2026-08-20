@@ -482,4 +482,36 @@
   });
   resizeCanvas();
   start();
+
+  /*
+   * The carriers, exposed for checking.
+   *
+   * This page is badged "Illustration": an animation of the idea, with no
+   * quantitative model behind it. So there is no closed form to hold it to,
+   * and a suite that invented one would be claiming more than the page does.
+   * What can be held is that the idea being illustrated is the right idea —
+   * that n-type is electron-rich and p-type hole-rich, that electrons and
+   * holes drift opposite ways, and that reversing the battery reverses both.
+   * Getting any of those backwards is a real defect, and "no quantitative
+   * model" is not a defence against it.
+   */
+  window.__semi = {
+    types: TYPES.map((t) => ({ ...t })),
+    setBattery(on) { batteryOn = on; batteryToggle.checked = on; updateReadouts(); },
+    setPolarity(p) { polarity = p; updateReadouts(); },
+    setVoltage(v) { voltage = v; voltageInput.value = String(v); updateReadouts(); },
+    setTemperature(t) { temperature = t; tempInput.value = String(t); },
+    /** Advance the carriers by `seconds` of the page's own time. */
+    advance(seconds, steps = 60) {
+      for (let i = 0; i < steps; i++) updateCarriers(seconds / steps);
+    },
+    state: () => rows.map((row) => ({
+      key: row.type.key,
+      electrons: row.electrons.map((c) => ({ x: c.x, y: c.y, vx: c.vx, vy: c.vy })),
+      holes: row.holes.map((c) => ({ x: c.x, y: c.y, vx: c.vx, vy: c.vy })),
+      bounds: { ...row.bounds },
+    })),
+    current: () => propCurrent.textContent.trim(),
+  };
+
 })();

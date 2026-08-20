@@ -49,6 +49,7 @@ const VERIFIED = new Set([
   "experiments/cannon.html",
   "experiments/circuit.html", "experiments/decay.html", "experiments/diffraction.html",
   "experiments/atom.html", "experiments/crystal.html", "experiments/dna.html",
+  "experiments/semiconductor.html",
   "experiments/solar.html",
   "experiments/doppler.html",
   "experiments/molecule.html",

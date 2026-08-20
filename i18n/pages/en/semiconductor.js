@@ -16,6 +16,8 @@ window.i18nRegister("en", {
   "legendSi": "Silicon atom",
   "methodIllustrated": "Illustration",
   "methodIllustratedWhy": "An animation of the idea. There is no quantitative model behind it.",
+  "methodVerified": "Verified",
+  "methodVerifiedWhy": "An automated suite holds this page's physics against its closed form on every commit.",
   "mmRateAxis": "rate v (µM/s)",
   "motionPause": "Pause",
   "motionPaused": "Animation paused — your system asks for reduced motion.",
