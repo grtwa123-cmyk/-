@@ -48,7 +48,8 @@ const METHOD_MARK = {
 const VERIFIED = new Set([
   "experiments/cannon.html",
   "experiments/circuit.html", "experiments/decay.html", "experiments/diffraction.html",
-  "experiments/crystal.html", "experiments/dna.html", "experiments/doppler.html",
+  "experiments/atom.html", "experiments/crystal.html", "experiments/dna.html",
+  "experiments/doppler.html",
   "experiments/molecule.html",
   "experiments/epidemic.html",
   "experiments/expression.html",

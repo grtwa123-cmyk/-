@@ -610,6 +610,47 @@
   }
   window.addEventListener("resize", resizeCanvas);
 
+  /*
+   * Build an atom, and read back where its parts actually went.
+   *
+   * The panel names an element, an isotope, a charge and a stability, all
+   * derived from three counts — and the electrons are laid out by a shell
+   * rule the reader is meant to be able to count off the picture. So the
+   * hook takes the counts in and hands the positions back out, and the suite
+   * works the shell structure out of the coordinates rather than asking the
+   * page what it thinks it drew.
+   */
+  window.__atom = {
+    shellCap: SHELL_CAP.slice(),
+    limits: { ...MAX },
+    /** Put exactly this many of each on the board, at their resting places. */
+    build({ p = 0, n = 0, e = 0 }) {
+      protons.length = 0; neutrons.length = 0; electrons.length = 0; drag = null;
+      for (let i = 0; i < Math.min(p, MAX.p); i++) protons.push({ x: 0, y: 0 });
+      for (let i = 0; i < Math.min(n, MAX.n); i++) neutrons.push({ x: 0, y: 0 });
+      for (let i = 0; i < Math.min(e, MAX.e); i++) electrons.push({ x: 0, y: 0 });
+      // Drop each one straight onto its home rather than easing it there, so
+      // a measurement is not a race against the animation.
+      protons.forEach((q, i) => { const h = nucleonHome(i); q.x = h.x; q.y = h.y; });
+      neutrons.forEach((q, i) => {
+        const h = nucleonHome(protons.length + i); q.x = h.x; q.y = h.y;
+      });
+      electrons.forEach((q, i) => {
+        const h = electronHome(i, electrons.length); q.x = h.x; q.y = h.y;
+      });
+      updateReadouts();
+      return this.state();
+    },
+    state: () => ({
+      p: protons.length, n: neutrons.length, e: electrons.length,
+      centre: { x: cx, y: cy },
+      shellRadii: SHELL_R.slice(),
+      electrons: electrons.map((q) => ({ x: q.x, y: q.y })),
+      nucleons: [...protons, ...neutrons].map((q) => ({ x: q.x, y: q.y })),
+    }),
+    occupancy: (total) => shellOccupancy(total),
+  };
+
   resizeCanvas();
   start();
 })();

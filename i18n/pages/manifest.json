@@ -290,6 +290,8 @@
       "formulas",
       "methodModel",
       "methodModelWhy",
+      "methodVerified",
+      "methodVerifiedWhy",
       "mmRateAxis",
       "motionPause",
       "motionPaused",
