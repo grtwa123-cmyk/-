@@ -11,6 +11,8 @@ window.i18nRegister("zh", {
   "hint3d": "拖动或方向键旋转 · 滚动缩放",
   "methodModel": "实测数据",
   "methodModelWhy": "由实测常数搭建的三维结构 —— 是几何而非模拟。",
+  "methodVerified": "已验证",
+  "methodVerifiedWhy": "自动化测试套件在每次提交时，将本页的物理与其闭式解对照检验。",
   "mmRateAxis": "速率 v (µM/s)",
   "molAmmonia": "氨",
   "molBenzene": "苯",

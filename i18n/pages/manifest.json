@@ -1325,6 +1325,8 @@
       "hint3d",
       "methodModel",
       "methodModelWhy",
+      "methodVerified",
+      "methodVerifiedWhy",
       "mmRateAxis",
       "molAmmonia",
       "molBenzene",
