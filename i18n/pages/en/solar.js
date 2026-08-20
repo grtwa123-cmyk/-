@@ -7,6 +7,8 @@ window.i18nRegister("en", {
   "formulas": "Formulas",
   "methodIntegrated": "Integrated",
   "methodIntegratedWhy": "The equations of motion are stepped forward in time. What you see is where they go.",
+  "methodVerified": "Verified",
+  "methodVerifiedWhy": "An automated suite holds this page's physics against its closed form on every commit.",
   "mmRateAxis": "rate v (µM/s)",
   "modeBlackHole": "Black hole",
   "modePlanet": "Planet",
