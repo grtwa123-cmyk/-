@@ -30,6 +30,13 @@ else {
    of [labelKey, value, valueIsAKey]: diameter, mass and surface gravity are
    pure numbers and units, so they are the same in all three languages and stay
    literal; everything else carries words and is translated. */
+/*
+ * orbitR is drawn to fit a screen and is not to scale. Neptune sits seven
+ * times further out than Mercury here; in the sky it is seventy-seven. The
+ * period, ratio and tilt columns are the measured ones and the tour's motion
+ * is read off period alone, so nothing downstream depends on orbitR being
+ * anything but legible.
+ */
 const BODIES = [
   { id:'sun', nameKey:'ssSun', en:'SUN', ui:'#ffc169', dispR:15, orbitR:0, period:1, rotDir:1, rotSpd:.012, ratio:109.2,
     descKey:'ssDescSun',
@@ -980,4 +987,45 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
   document.getElementById('loading').remove();
   animate();
 }));
+
+/*
+ * The handle tests/experiments/solarsystem.test.mjs reads the tour through.
+ * It exposes the table the tour is built from and the positions it puts the
+ * bodies at; the clock is moved by the same variable the animation moves, so
+ * what the suite measures is what a reader watching would see.
+ */
+window.__ss = {
+  bodies: () => BODIES.map((b) => ({
+    id: b.id, period: b.period, ratio: b.ratio, tilt: b.tilt,
+    rotDir: b.rotDir, orbitR: b.orbitR, dispR: b.dispR,
+  })),
+  /** Put the clock at an exact day count and lay the bodies out for it. */
+  setDays(d) {
+    simDays = d;
+    for (const b of BODIES) {
+      if (b.orbitR > 0) {
+        const a = b.phase + simDays / b.period * Math.PI * 2;
+        b.pos.set(Math.cos(a) * b.orbitR, 0, -Math.sin(a) * b.orbitR);
+      }
+      b.holder.position.copy(b.pos);
+    }
+    const ma = simDays / 27.3 * Math.PI * 2;
+    moon.position.set(EARTH.pos.x + Math.cos(ma) * 4.6, 0, EARTH.pos.z - Math.sin(ma) * 4.6);
+  },
+  days: () => simDays,
+  /** Where each body is right now, in the tour's own units. */
+  positions: () => {
+    const out = {};
+    for (const b of BODIES) out[b.id] = { x: b.pos.x, z: b.pos.z };
+    out.moon = { x: moon.position.x, z: moon.position.z };
+    return out;
+  },
+  select: (id) => focusBody(BODIES.find((b) => b.id === id) || null),
+  /** What the info card says about the body now open. */
+  card: () => ({
+    title: (document.getElementById('pName') || {}).textContent,
+    diameter: (document.getElementById('cmpCap') || {}).textContent,
+  }),
+  elapsedText: () => document.getElementById('tDays').textContent.trim(),
+};
 }   /* end of the `typeof THREE` guard opened above */

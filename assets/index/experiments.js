@@ -33,7 +33,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "orbitsTitle",      url: "experiments/orbit.html",         cat: "Physics",   tags: ["GRAVITY", "KEPLER"],    colors: ["#070914", "#d4c065"], method: "measured", motif: "orbit" },
   { titleKey: "impactTitle",      url: "experiments/impact.html",        cat: "Physics",   tags: ["FORCE", "IMPULSE"],     colors: ["#1d1908", "#e2a45a"], method: "measured", motif: "impact" },
   { titleKey: "dnaTitle",         url: "experiments/dna.html",           cat: "Biology",   tags: ["DNA", "HELIX"],         colors: ["#150828", "#e58fff"], method: "model", motif: "dna" },
-  { titleKey: "solarSystemTitle", url: "experiments/solarsystem.html",   cat: "Physics",   tags: ["3D", "TOUR"],           colors: ["#0a0e22", "#7da3d4"], method: "integrated", motif: "solarsystem" },
+  { titleKey: "solarSystemTitle", url: "experiments/solarsystem.html",   cat: "Physics",   tags: ["3D", "TOUR"],           colors: ["#0a0e22", "#7da3d4"], method: "model", motif: "solarsystem" },
   { titleKey: "bhTitle",          url: "experiments/blackhole.html",     cat: "Physics",   tags: ["RELATIVITY", "WEBGL"],  colors: ["#1a0a06", "#e08a4a"], method: "integrated", motif: "blackhole" },
   { titleKey: "semiTitle",        url: "experiments/semiconductor.html", cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#22153a", "#a06fc8"], method: "illustrated", motif: "semi" },
   { titleKey: "diodeTitle",       url: "experiments/diode.html",         cat: "Physics",   tags: ["QUANTUM", "FIELD"],     colors: ["#2c0e22", "#d65a8a"], method: "illustrated", motif: "diode" },

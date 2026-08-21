@@ -14,6 +14,9 @@
 import { createRequire } from "node:module";
 import { createServer } from "node:http";
 import fs from "node:fs";
+import os from "node:os";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 
 export const ROOT = path.resolve(import.meta.dirname, "..", "..");
@@ -113,4 +116,49 @@ export async function finish(title) {
   await browser.close();
   await new Promise((ok) => server.close(ok));
   process.exit(failed ? 1 : 0);
+}
+
+/*
+ * The two 3D pages fetch three.js from a CDN, and where that fetch works
+ * differs by machine: CI reaches it, this project's development container
+ * does not — its headless browser has no route out, though curl does. For a
+ * long time that difference was recorded backwards, as "CI cannot reach the
+ * CDN", and it cost both pages their suites.
+ *
+ * So the suites do not depend on which side of that they are running on.
+ * Every CDN request is fulfilled from a cache on disk, filled by curl the
+ * first time and reused after, which also means neither suite goes to the
+ * network at all on a second run and neither can be turned red by someone
+ * else's outage.
+ *
+ * Call it on a context before opening the page:
+ *     const ctx = await browser.newContext(...);
+ *     await serveCdn(ctx);
+ */
+const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com"];
+const CDN_CACHE = path.join(os.tmpdir(), "sciencelab-cdn-cache");
+
+export async function serveCdn(ctx) {
+  fs.mkdirSync(CDN_CACHE, { recursive: true });
+  for (const host of CDN_HOSTS) {
+    await ctx.route(`**://${host}/**`, async (route) => {
+      const href = route.request().url();
+      const file = path.join(CDN_CACHE,
+        createHash("sha1").update(href).digest("hex") + ".js");
+      try {
+        if (!fs.existsSync(file)) {
+          execFileSync("curl", ["-fsS", "--max-time", "60", href, "-o", file],
+                       { stdio: ["ignore", "ignore", "pipe"] });
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/javascript; charset=utf-8",
+          body: fs.readFileSync(file),
+        });
+      } catch {
+        fs.rmSync(file, { force: true });
+        await route.abort();
+      }
+    });
+  }
 }

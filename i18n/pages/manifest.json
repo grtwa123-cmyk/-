@@ -2018,8 +2018,10 @@
     ],
     "solarsystem": [
       "backToHub",
-      "methodIntegrated",
-      "methodIntegratedWhy",
+      "methodModel",
+      "methodModelWhy",
+      "methodVerified",
+      "methodVerifiedWhy",
       "mmRateAxis",
       "motionPause",
       "motionPaused",

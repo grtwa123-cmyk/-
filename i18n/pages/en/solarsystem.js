@@ -1,7 +1,9 @@
 window.i18nRegister("en", {
   "backToHub": "← Back",
-  "methodIntegrated": "Integrated",
-  "methodIntegratedWhy": "The equations of motion are stepped forward in time. What you see is where they go.",
+  "methodModel": "Real data",
+  "methodModelWhy": "A three-dimensional structure built from measured constants — geometry rather than simulation.",
+  "methodVerified": "Verified",
+  "methodVerifiedWhy": "An automated suite holds this page's physics against its closed form on every commit.",
   "mmRateAxis": "rate v (µM/s)",
   "motionPause": "Pause",
   "motionPaused": "Animation paused — your system asks for reduced motion.",
