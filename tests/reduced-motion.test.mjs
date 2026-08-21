@@ -81,10 +81,24 @@ for (const name of ['epidemic','expression','decay']) {
 
   // And Play still means Play: lifting the gate lets the run the reader
   // started actually go.
+  //
+  // The frame to compare against is the last gated one, not another frame
+  // taken later still. Sampling twice after Play asks a different question —
+  // whether the run is *ongoing* a second afterwards — and these three end on
+  // their own: epidemic stops the moment its last infection recovers, and a
+  // stochastic outbreak can burn out inside the window. Two frames of a
+  // finished run are identical, so the check read "still frozen after Play"
+  // about a page that had released perfectly well and then completed. It went
+  // red on one CI runner and green on its twin.
+  //
+  // Against the last gated frame there is no such race: the run cannot have
+  // finished while the clock was stopped, so any movement at all is Play
+  // doing its job, and a run that ends immediately afterwards still moved.
   await page.locator('.motion-notice-btn').click();
   await page.waitForTimeout(300);
-  const c = await shot(); await page.waitForTimeout(900); const d = await shot();
-  chk(`${name}: Play then releases the run they asked for`, c !== d, 'still frozen after Play');
+  const c = await shot();
+  chk(`${name}: Play then releases the run they asked for`, b !== c,
+      'the frame after Play is identical to the last one before it');
   await ctx.close();
 }
 
