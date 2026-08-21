@@ -56,7 +56,7 @@
 
   // ── The control ─────────────────────────────────────────────────────────
   function mount() {
-    const stage = document.querySelector(".stage") || document.body;
+    const stage = document.querySelector(".stage");
     const bar = document.createElement("div");
     bar.className = "motion-notice";
     bar.setAttribute("role", "status");
@@ -88,7 +88,35 @@
     label();
     document.addEventListener("langchange", label);
     bar.append(text, btn);
-    stage.prepend(bar);
+
+    if (stage) {
+      stage.prepend(bar);
+    } else {
+      /*
+       * The two full-bleed 3D pages have no .stage, and body is not a column
+       * that can absorb an extra row: their canvas is sized in script to
+       * exactly window.innerHeight, and html and body are overflow:hidden.
+       * Prepending the bar to body therefore pushed the whole scene down by
+       * the bar's height and put its bottom edge off a screen that will not
+       * scroll — twenty-one pixels of black hole that no reader could ever
+       * reach. It also hung the catalogue sweep, whose screenshot waited out
+       * its timeout trying to scroll a canvas into view on a page that
+       * cannot scroll.
+       *
+       * So on those pages it floats instead of displacing. It is deliberately
+       * over the scene rather than beside it: both pages have their own
+       * controls along the top and the bottom, and there is no free corner
+       * on both. A bar sitting over the picture can be read and dismissed;
+       * a picture with its bottom cut off cannot be fixed by the reader.
+       */
+      bar.style.position = "fixed";
+      bar.style.zIndex = "300";
+      bar.style.left = "50%";
+      bar.style.bottom = "calc(50% + 120px)";
+      bar.style.transform = "translateX(-50%)";
+      bar.style.margin = "0";
+      document.body.prepend(bar);
+    }
   }
 
   if (document.readyState === "loading") {

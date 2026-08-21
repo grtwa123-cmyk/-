@@ -179,8 +179,43 @@ function urlProbe(name) {
     try {
       const stage = page.locator('#stage, canvas').first();
       if (await stage.count() === 0) continue;
+      /*
+       * A viewport screenshot clipped to the stage, rather than an element
+       * screenshot of it. The element path additionally waits for the element
+       * to be stable and to be scrollable into view, and on blackhole that
+       * wait never ended: the bar this gate injects was pushing a canvas the
+       * exact height of the viewport down a page with overflow:hidden, so it
+       * could never be brought fully into view. That is fixed in
+       * reduced-motion.js; the clipped capture skips the wait regardless.
+       *
+       * The deadline is twenty-five seconds because blackhole needs it. Its
+       * shader integrates a photon geodesic per pixel, and under the software
+       * GL that both CI and this container use, one frame — and so one
+       * screenshot — takes eight to ten seconds. Measured four in a row:
+       * 9872, 8288, 8524, 8705 ms. Five seconds is not a strict deadline for
+       * that page, it is a guaranteed failure.
+       *
+       * The clip takes in whatever the page floats above the stage, which
+       * under this preference is all static.
+       */
+      // Bring it into view before measuring — on orbit the stage sits below
+      // the fold, and a clip taken from where it was is empty. The two
+      // full-bleed pages cannot scroll at all and do not need to; the catch
+      // lets them past.
+      await stage.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      const box = await stage.boundingBox();
+      const vp = page.viewportSize();
+      if (!box) continue;
+      const x = Math.max(0, Math.min(box.x, vp.width));
+      const y = Math.max(0, Math.min(box.y, vp.height));
+      const clip = {
+        x, y,
+        width: Math.min(box.width, vp.width - x),
+        height: Math.min(box.height, vp.height - y),
+      };
+      if (clip.width < 1 || clip.height < 1) continue;
       const shot = async () =>
-        (await stage.screenshot({ timeout: 5000 })).toString('base64');
+        (await page.screenshot({ clip, timeout: 25000 })).toString('base64');
 
       if (await page.locator('.motion-notice').count() !== 1) noNotice.push(name);
 
