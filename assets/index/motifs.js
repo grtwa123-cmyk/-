@@ -386,6 +386,26 @@ const RENDERERS = {
     p.dot(x0 + w * 0.82, y0 + h * 0.66, 2.0);
   },
 
+  chemotaxis(p, s, ctx) {
+    // One bacterium's path: three straight runs with a sharp tumble between
+    // each, drifting up-and-right towards the food it cannot see.
+    const pts = [
+      [-s * 1.5, s * 0.75], [-s * 0.85, s * 0.05], [-s * 1.05, -s * 0.55],
+      [-s * 0.1, -s * 0.2], [s * 0.25, s * 0.45], [s * 1.0, -s * 0.35],
+    ];
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    // The tumbles, marked where the path breaks.
+    for (const [x, y] of pts.slice(1, -1)) p.circ(x, y, 2.2);
+    // The attractant it is climbing towards, and the ramp it sits on.
+    p.dot(s * 1.35, -s * 0.6, 4);
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    for (let i = 0; i < 3; i++) p.line(s * (0.5 + i * 0.35), -s, s * (0.5 + i * 0.35), s);
+    ctx.restore();
+  },
+
   electrolysis(p, s, ctx) {
     // Beaker with two electrodes and rising bubbles (H₂ side busier).
     const w = s * 1.8, h = s * 1.4;
