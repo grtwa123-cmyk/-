@@ -123,16 +123,29 @@ async function flux(cfg, secs, reps) {
 // ── the gap closes, and closes exponentially ─────────────────────────────
 {
   /*
-   * Averaged over four runs. One run's ΔN carries a noise of order √N, which
-   * near the end of the decay is a good fraction of what is left of the
-   * signal: a single run fits the log to r² = 0.96 and four fit it to better
-   * than 0.99. The averaging is not there to make the bar easier — it is
-   * there because one run does not have the evidence in it.
+   * Averaged over eighteen runs of eight hundred. One run's ΔN carries a
+   * noise of order √N, which near the end of the decay is a good fraction of
+   * what is left of the signal, and the averaging is not there to make the
+   * bar easier — it is there because one run does not have the evidence in
+   * it. How much averaging is not a matter of taste either; it can be worked
+   * out. The residual in ln ΔN at a point where the gap is ΔN is √(n/R)/ΔN,
+   * the sum over the fitted points is dominated by the last few and comes to
+   * about (n/R)·10/c² with a cut at c, and against a total sum of squares of
+   * N·(ln(n/c))²/12 that gives
+   *
+   *     four runs of six hundred    1 − r² ≈ 0.019
+   *     eighteen runs of eight      1 − r² ≈ 0.003
+   *
+   * The first of those is a bound of 0.985 sitting on top of its own noise:
+   * it failed two runs in six here, on a page nothing had touched. Raising
+   * the cut does not help — the fitted range shrinks with it and the ratio
+   * barely moves — and neither does sampling more often, for the same
+   * reason. Only walkers and replicates move it, and they move it as 1/nR.
    */
   const series = await page.evaluate(() => {
     const runs = [];
-    for (let r = 0; r < 4; r++) {
-      window.__diffusion.set({ n: 600, share: 100, poreH: 60, pores: 1, step: 9 });
+    for (let r = 0; r < 18; r++) {
+      window.__diffusion.set({ n: 800, share: 100, poreH: 60, pores: 1, step: 9 });
       const one = [];
       for (let i = 0; i < 40; i++) {
         const q = window.__diffusion.advance(2);
@@ -150,8 +163,7 @@ async function flux(cfg, secs, reps) {
       + ` over ${series[series.length - 1][0].toFixed(0)} s`);
 
   // ln ΔN against t, over the range where the gap is still bigger than its
-  // own noise. Averaged over one run only, so the bar is a fit quality that a
-  // straight line would clear and a power law would not.
+  // own noise.
   const xs = [], ys = [];
   for (const [t, d] of series) { if (d < 80) break; xs.push(t); ys.push(Math.log(d)); }
   const n = xs.length;
@@ -161,7 +173,7 @@ async function flux(cfg, secs, reps) {
   const r = (n * sxy - sx * sy) / Math.sqrt((n * sxx - sx * sx) * (n * syy - sy * sy));
   const tau = -1 / ((n * sxy - sx * sy) / (n * sxx - sx * sx));
   chk('and it closes exponentially — the log of the gap falls in a straight line',
-      n >= 8 && r * r > 0.985, `r² = ${(r * r).toFixed(4)} over ${n} points, τ = ${tau.toFixed(1)} s`);
+      n >= 8 && r * r > 0.995, `r² = ${(r * r).toFixed(4)} over ${n} points, τ = ${tau.toFixed(1)} s`);
 }
 
 // ── a sealed wall passes nothing ─────────────────────────────────────────
