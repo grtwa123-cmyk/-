@@ -52,9 +52,18 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
  * is the natural unit of evidence and gas.js now counts them. Six windows to
  * settle and eighteen to average are what seven idle seconds used to buy; a
  * loaded machine now takes longer and gets the same number of them.
+ *
+ * Eighteen was still not enough, and it took a CI runner to say so: the
+ * pressure-against-N fit came back P ∝ N^1.158 against a bound of 0.15, and
+ * the same commit passed on its twin. Ten repeats of that fit at eighteen
+ * windows put the exponent at 0.995 ± 0.052 — unbiased, so there is nothing
+ * wrong with the claim, and 0.15 is 2.9σ, which fails about one run in
+ * two hundred and fifty. Ten more at forty windows give 1.006 ± 0.039, where
+ * the same bound is 3.8σ. The bound is not widened; the measurement is made
+ * better, which is the only one of the two that is honest here.
  */
 const SETTLE_WINDOWS = 6;
-const AVG_WINDOWS = 18;
+const AVG_WINDOWS = 40;
 
 async function sample(cfg, windows = AVG_WINDOWS) {
   for (const [k, v] of Object.entries(cfg)) await setV(k, v);

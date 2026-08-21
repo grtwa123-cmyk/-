@@ -154,7 +154,7 @@ function urlProbe(name) {
     reducedMotion: 'reduce', viewport: { width: 1100, height: 900 },
   });
   const page = await ctx.newPage();
-  const atRest = [], afterStart = [], noNotice = [];
+  const atRest = [], afterStart = [], noNotice = [], broke = [];
   let started = 0;
 
   for (const name of PAGES) {
@@ -164,27 +164,44 @@ function urlProbe(name) {
       await page.waitForTimeout(700);
     } catch { continue; }
 
-    const stage = page.locator('#stage, canvas').first();
-    if (await stage.count() === 0) continue;
-    const shot = async () => (await stage.screenshot()).toString('base64');
+    /*
+     * Everything from here is inside a catch that records the page, because
+     * a sweep of thirty-eight pages that dies on one of them and names none
+     * is no use. It happened: a screenshot hung on "waiting for element to
+     * be stable" until Playwright's timeout, and the stack pointed at this
+     * function, which every page goes through. The run reported no failing
+     * check and exit 1.
+     *
+     * The screenshot also gets its own short deadline. The default is
+     * thirty seconds of a single page refusing to settle, which is long
+     * enough to threaten the job's own ceiling.
+     */
+    try {
+      const stage = page.locator('#stage, canvas').first();
+      if (await stage.count() === 0) continue;
+      const shot = async () =>
+        (await stage.screenshot({ timeout: 5000 })).toString('base64');
 
-    if (await page.locator('.motion-notice').count() !== 1) noNotice.push(name);
+      if (await page.locator('.motion-notice').count() !== 1) noNotice.push(name);
 
-    const a = await shot();
-    await page.waitForTimeout(900);
-    if (a !== (await shot())) atRest.push(name);
-
-    // And after the reader presses the page's own Start: the gate freezes the
-    // rAF timestamp, which does nothing for a loop that steps a fixed count
-    // per callback and never reads the clock.
-    const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
-    if (await start.count() === 1 && await start.isEnabled()) {
-      started++;
-      await start.click();
-      await page.waitForTimeout(400);
-      const c = await shot();
+      const a = await shot();
       await page.waitForTimeout(900);
-      if (c !== (await shot())) afterStart.push(name);
+      if (a !== (await shot())) atRest.push(name);
+
+      // And after the reader presses the page's own Start: the gate freezes
+      // the rAF timestamp, which does nothing for a loop that steps a fixed
+      // count per callback and never reads the clock.
+      const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
+      if (await start.count() === 1 && await start.isEnabled()) {
+        started++;
+        await start.click();
+        await page.waitForTimeout(400);
+        const c = await shot();
+        await page.waitForTimeout(900);
+        if (c !== (await shot())) afterStart.push(name);
+      }
+    } catch (e) {
+      broke.push(`${name}: ${String(e.message || e).split('\n')[0]}`);
     }
   }
 
@@ -194,6 +211,8 @@ function urlProbe(name) {
       afterStart.length === 0, afterStart.slice(0, 5).join(', '));
   chk('and every one of them says so, with the notice that offers Play',
       noNotice.length === 0, noNotice.slice(0, 5).join(', '));
+  chk('and every page could be photographed at all',
+      broke.length === 0, broke.slice(0, 3).join(' | '));
   await ctx.close();
 }
 
