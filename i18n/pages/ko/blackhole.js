@@ -20,6 +20,8 @@ window.i18nRegister("ko", {
   "bhUltra": "최고",
   "methodIntegrated": "적분됨",
   "methodIntegratedWhy": "운동 방정식을 시간에 따라 한 걸음씩 전진시킵니다. 보이는 것은 방정식이 데려간 곳입니다.",
+  "methodVerified": "검증됨",
+  "methodVerifiedWhy": "자동화된 스위트가 커밋마다 이 페이지의 물리를 닫힌 해에 대고 확인합니다.",
   "mmRateAxis": "속도 v (µM/s)",
   "motionPause": "일시정지",
   "motionPaused": "애니메이션 일시정지 — 시스템이 동작 줄임을 요청했습니다.",

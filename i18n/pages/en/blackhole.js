@@ -20,6 +20,8 @@ window.i18nRegister("en", {
   "bhUltra": "Ultra",
   "methodIntegrated": "Integrated",
   "methodIntegratedWhy": "The equations of motion are stepped forward in time. What you see is where they go.",
+  "methodVerified": "Verified",
+  "methodVerifiedWhy": "An automated suite holds this page's physics against its closed form on every commit.",
   "mmRateAxis": "rate v (µM/s)",
   "motionPause": "Pause",
   "motionPaused": "Animation paused — your system asks for reduced motion.",
