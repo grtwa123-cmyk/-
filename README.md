@@ -85,7 +85,7 @@ page that cannot be interrogated cannot support the claim.
 | **Standing Waves & Harmonics** | 720 points obeying ∂²y/∂t² = c²∂²y/∂x², with nothing added but two fixed ends. No harmonic is written down: a Fourier transform of the shape finds the frequencies at exact whole-number multiples of c/2L, because those are the only wavelengths that fit. Where you pluck decides which harmonics exist at all — at the midpoint every even one vanishes to one part in 10¹⁶, at a third every third goes, and the surviving amplitudes follow sin(nπp)/n² to 0.01%. Four times the tension is exactly one octave, and additive synthesis from the measured spectrum lets you hear the pluck position change the timbre. |
 | **Ohm's Law — Series & Parallel** | Three resistors wired end to end or side by side, solved from the closed forms. Carriers move at the real current in each wire, so a parallel rail visibly slows as every branch taps its share; bodies warm with dissipated power, and both Kirchhoff residuals stay printed at zero. |
 
-### Chemistry (11)
+### Chemistry (12)
 
 | Experiment | Description |
 | --- | --- |
@@ -101,7 +101,7 @@ page that cannot be interrogated cannot support the claim.
 | **Hydrogen Spectrum** | The levels are the model, Eₙ = −E₁/n², and everything else follows: a jump releases the difference, one photon carries it, λ = hc/ΔE. Written that way round the Rydberg formula is a *consequence*, which is what makes it worth measuring — **Measure R** fits 1/λ against (1/n₁² − 1/n₂²) over the lines this atom actually emitted and recovers R_H. Which lines exist at all is decided by the cascade: from n = 2 there is only one, from n = 5 there are ten, and the first hop is uniform over the rungs below. Fixing this turned up a real inconsistency — the ladder was drawn from R_∞ (13.605693 eV) while the wavelengths came from R_H, so the page drew one hydrogen and emitted from another, 0.055% apart. |
 | **States of Matter** | One Lennard-Jones potential and Newton's second law, integrated with velocity Verlet. Nowhere does the code know what a solid is: cool it and the particles hold a triangular lattice with ψ₆ ≈ 0.9 and no diffusion, warm it past T\* ≈ 0.4 and ψ₆ collapses while D jumps by more than 50×. g(r) shows sharp shells, then one broad peak, then nothing. Speeds start as a single spike — every particle at the same speed — and collisions alone carry them onto Maxwell–Boltzmann. Thin the gas and cool it and it pulls itself into a droplet with a surface nobody drew. Thermostat off, the total energy holds to a tenth of a percent. |
 
-### Biology (5)
+### Biology (7)
 
 | Experiment | Description |
 | --- | --- |
