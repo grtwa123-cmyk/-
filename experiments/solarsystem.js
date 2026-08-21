@@ -853,6 +853,23 @@ labelBtn.addEventListener('click', () => {
 });
 
 /* ===================== 메인 루프 ===================== */
+/*
+ * assets/reduced-motion.js gates animation by freezing the timestamp handed
+ * to requestAnimationFrame, which stops every loop that derives dt from it.
+ * This one does not: THREE.Clock reads performance.now() internally, and the
+ * sun's pulse read it directly, so the whole scene kept turning at full tilt
+ * for a reader who had asked the system to stop moving things — while the
+ * notice at the top of the stage said "paused". The gate publishes a clock of
+ * its own for exactly this case, and both time sources below now ask it.
+ *
+ * It went unseen locally because three.js comes from a CDN this development
+ * container cannot reach, so the scene never built here; CI reaches it fine
+ * and the whole-catalogue sweep caught it there.
+ */
+const rmGated = () => !!(window.ReducedMotion && window.ReducedMotion.active);
+const rmSeconds = () => (window.ReducedMotion
+  ? window.ReducedMotion.clock() : performance.now() / 1000);
+
 const clock = new THREE.Clock();
 let simDays = 0, tAnim = 0;
 const DAYS_PER_SEC = 12;
@@ -861,7 +878,11 @@ const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 let rafId = 0;
 function animate(){
   rafId = requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), .05);
+  // getDelta() is called either way, and its value dropped while gated: the
+  // clock measures from its own last call, so skipping it would bank the
+  // whole paused stretch and hand it over in one step when Play is pressed.
+  const elapsed = Math.min(clock.getDelta(), .05);
+  const dt = rmGated() ? 0 : elapsed;
   if(!paused){ simDays += dt * DAYS_PER_SEC * mult; tAnim += dt; }
   sunMat.uniforms.uTime.value = tAnim;
 
@@ -885,7 +906,11 @@ function animate(){
   /* 카메라 */
   const desired = selected ? selected.pos : SUN.pos;
   if(trans){
-    trans.t = Math.min(1, trans.t + dt / .9);
+    // The camera flight is the one piece of motion that must not simply
+    // freeze: with dt held at zero the reader who picks a planet would sit
+    // where they were and nothing would happen. Reduced motion means arrive
+    // without the journey, so the transition completes in a single frame.
+    trans.t = Math.min(1, trans.t + (rmGated() ? 1 : dt / .9));
     const e = easeIO(trans.t);
     camTarget.lerpVectors(trans.from, desired, e);
     radius = trans.fromR + (trans.toR - trans.fromR) * e;
@@ -902,7 +927,7 @@ function animate(){
 
   if(selected){
     selRing.position.copy(selected.pos);
-    const pulse = 1 + Math.sin(performance.now() * .004) * .05;
+    const pulse = 1 + Math.sin(rmSeconds() * 4) * .05;
     const rs = selected.dispR * 3.2 * pulse;
     selRing.scale.set(rs, rs, 1);
   }
