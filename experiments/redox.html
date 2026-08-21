@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Build a galvanic cell from two metals and watch the Nernst equation appear — the voltage is not calculated from it, it is where Butler-Volmer kinetics settle when the two directions of the reaction run at the same rate." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Galvanic Cell · Chemistry" />
+  <meta property="og:description" content="Build a galvanic cell from two metals and watch the Nernst equation appear — the voltage is not calculated from it, it is where Butler-Volmer kinetics settle when the two directions of the reaction run at the same rate." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/redox.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M10 28 v22 h16 V28' fill='none' stroke='%236effc6' stroke-width='3'/&gt;&lt;path d='M38 28 v22 h16 V28' fill='none' stroke='%23e08a5a' stroke-width='3'/&gt;&lt;path d='M18 24 V14 h28 v10' fill='none' stroke='%236ea8ff' stroke-width='3'/&gt;&lt;circle cx='32' cy='14' r='4' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="rxPageTitle">Galvanic Cell · Chemistry</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="chemistry">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../chemistry.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount32">Chemistry · Galvanic cell</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="rxTitle">Galvanic Cell</h1>
+      <p data-i18n="rxIntro">Two metals, each in a solution of its own ions, joined by a wire and a salt bridge. The one that gives up electrons more readily dissolves; the other plates out. Nothing here computes the voltage from the Nernst equation — each electrode is given the rate of its forward and reverse reaction, and the voltmeter reads whatever potential makes the two run at the same speed. That turns out to be Nernst's.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="anode" data-i18n="rxAnodeLabel">Anode metal (−)</label>
+          <select id="anode">
+            <option value="Mg">Mg</option>
+            <option value="Zn" selected>Zn</option>
+            <option value="Fe">Fe</option>
+            <option value="Ni">Ni</option>
+            <option value="Sn">Sn</option>
+            <option value="Pb">Pb</option>
+            <option value="Cu">Cu</option>
+            <option value="Ag">Ag</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="cathode" data-i18n="rxCathodeLabel">Cathode metal (+)</label>
+          <select id="cathode">
+            <option value="Mg">Mg</option>
+            <option value="Zn">Zn</option>
+            <option value="Fe">Fe</option>
+            <option value="Ni">Ni</option>
+            <option value="Sn">Sn</option>
+            <option value="Pb">Pb</option>
+            <option value="Cu" selected>Cu</option>
+            <option value="Ag">Ag</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="c-anode" data-i18n="rxCAnodeLabel">Anode ion concentration</label>
+          <span class="value"><span id="c-anode-value">1.00</span> M</span>
+          <input type="range" id="c-anode" min="-4" max="0.3" step="0.05" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="c-cathode" data-i18n="rxCCathodeLabel">Cathode ion concentration</label>
+          <span class="value"><span id="c-cathode-value">1.00</span> M</span>
+          <input type="range" id="c-cathode" min="-4" max="0.3" step="0.05" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="temperature" data-i18n="temperatureLabel">Temperature</label>
+          <span class="value"><span id="temperature-value">25</span> °C</span>
+          <input type="range" id="temperature" min="0" max="95" step="1" value="25" />
+        </div>
+
+        <div class="control">
+          <label for="load" data-i18n="rxLoadLabel">External load</label>
+          <span class="value" id="load-value">open</span>
+          <input type="range" id="load" min="-1" max="4" step="0.1" value="4" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="rxSpeedLabel">Simulation speed</label>
+          <span class="value" id="speed-value">×5</span>
+          <input type="range" id="speed" min="1" max="60" step="1" value="5" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="rxFormulaCell">Cell</span>: <code>A(s) + Bᶻ⁺ → Aᶻ⁺ + B(s)</code></li>
+            <li><span data-i18n="rxFormulaKinetics">Electrode kinetics</span>: <code>i/i₀ = e^(u/2) − c·e^(−u/2), u = zF(E−E°)/RT</code></li>
+            <li><span data-i18n="rxFormulaNernst">At i = 0</span>: <code>E = E° + (RT/zF)·ln c</code></li>
+            <li><span data-i18n="rxFormulaCellNernst">Whole cell</span>: <code>E = E°cell − (RT/nF)·ln Q</code></li>
+            <li><span data-i18n="rxFormulaFaraday">Faraday</span>: <code>n = Q/(zF)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="rxNotes">Notes</summary>
+          <ul>
+            <li data-i18n="rxNote1">The 59.2 mV is not a constant of nature and it is not typed in anywhere. It is 2.303RT/F at 25 °C, and it comes out of the electrode kinetics — move the temperature slider and watch the slope move with it.</li>
+            <li data-i18n="rxNote2">Pick the same metal on both sides and the standard potentials cancel exactly. The cell still has a voltage, made only of the difference in concentration, and it runs until the two beakers agree.</li>
+            <li data-i18n="rxNote3">A heavier load pulls the voltage down. Part of that is the solution's resistance and part is the electrodes themselves needing an overpotential to run fast — the same expression that gives Nernst at rest gives Tafel's slope here.</li>
+            <li data-i18n="rxNote4">Wire it backwards — the noble metal as the anode — and nothing happens. The reaction is uphill, and a cell cannot be persuaded by wiring. That is what the electrolysis page is for.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="510" aria-label="A galvanic cell: two beakers with metal electrodes, joined by a salt bridge and by a wire carrying electrons through a voltmeter"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="rxOutVoltage">Cell voltage</div>
+            <div class="num"><span id="out-voltage">0.0000</span> V</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutCurrent">Current</div>
+            <div class="num"><span id="out-current">0.0</span> <span id="out-current-unit">µA</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutE0">Standard E°cell</div>
+            <div class="num"><span id="out-e0">0.0000</span> V</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutQ">Reaction quotient Q</div>
+            <div class="num" id="out-q">1.0000</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutN">Electrons n</div>
+            <div class="num" id="out-n">4</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutCharge">Charge passed</div>
+            <div class="num"><span id="out-charge">0.000</span> C</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutAnodeMass">Anode dissolved</div>
+            <div class="num"><span id="out-anode-mass">0.000</span> mg</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutCathodeMass">Cathode plated</div>
+            <div class="num"><span id="out-cathode-mass">0.000</span> mg</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="rxOutState">State</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="redox.js" defer></script>
+</body>
+</html>

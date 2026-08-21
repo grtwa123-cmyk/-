@@ -332,6 +332,39 @@ const RENDERERS = {
     ctx.restore();
   },
 
+  redox(p, s, ctx) {
+    // Two beakers of different heights of solution, a salt bridge arching
+    // between them and a wire over the top with an electron on it.
+    const bw = s * 0.78, bh = s * 0.95, gap = s * 0.34;
+    const y0 = -s * 0.1;
+    for (const sign of [-1, 1]) {
+      const x0 = sign < 0 ? -gap / 2 - bw : gap / 2;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0 - s * 0.1);
+      ctx.lineTo(x0, y0 + bh);
+      ctx.lineTo(x0 + bw, y0 + bh);
+      ctx.lineTo(x0 + bw, y0 - s * 0.1);
+      ctx.stroke();
+      // The electrode standing in it, reaching up out of the beaker.
+      ctx.lineWidth = 3.2;
+      p.line(x0 + bw / 2, y0 - s * 0.72, x0 + bw / 2, y0 + bh - s * 0.16);
+      ctx.lineWidth = 1.8;
+    }
+    // Salt bridge across the top of the two solutions.
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(-gap / 2 - bw * 0.22, y0 + s * 0.22);
+    ctx.lineTo(-gap / 2 - bw * 0.22, y0 + s * 0.02);
+    ctx.lineTo(gap / 2 + bw * 0.22, y0 + s * 0.02);
+    ctx.lineTo(gap / 2 + bw * 0.22, y0 + s * 0.22);
+    ctx.stroke();
+    ctx.restore();
+    // Wire over the top, with one electron on its way across.
+    p.line(-gap / 2 - bw / 2, y0 - s * 0.72, gap / 2 + bw / 2, y0 - s * 0.72);
+    p.dot(0, y0 - s * 0.72, 2.6);
+  },
+
   electrolysis(p, s, ctx) {
     // Beaker with two electrodes and rising bubbles (H₂ side busier).
     const w = s * 1.8, h = s * 1.4;
