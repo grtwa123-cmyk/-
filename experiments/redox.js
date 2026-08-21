@@ -222,8 +222,8 @@
    * light one the labels came out dark ink on a dark beaker and the whole
    * voltmeter went invisible.
    */
-  const INK = 'rgba(236, 240, 251, 0.92)';
-  const DIM = 'rgba(236, 240, 251, 0.55)';
+  const INK = '#ecf0fb';
+  const DIM = '#97a0bf';
   const LINE = 'rgba(236, 240, 251, 0.22)';
 
   /*

@@ -413,7 +413,25 @@
     const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.033));
     lastTs = ts;
     const p = readParams();
-    if (running) step(dt, p);
+    /*
+     * A step of no duration must do nothing. It sounds like a tautology and
+     * it was not one: step() counts every A-B encounter it finds into the
+     * Boltzmann tally, and at dt = 0 nobody has moved, so the pair that was
+     * already overlapping gets counted again on a frame where no time passed.
+     *
+     * That happens for real. Under prefers-reduced-motion the gate freezes
+     * the rAF timestamp, so dt is exactly zero on every frame — measured, 80
+     * frames of 80 — and the page went on counting collisions anyway. The
+     * particles held still, as they should, but the Arrhenius bars are drawn
+     * from nEnergetic/nCollisions and moved when the tally did. The catalogue
+     * sweep caught it as "kinetics animates after its own Start is pressed",
+     * about one run in thirty; the changed pixels were the bars, over on the
+     * right of the canvas, not the gas.
+     *
+     * Guarding here rather than inside step() so that the reading a reader
+     * takes away is of time that actually elapsed.
+     */
+    if (running && dt > 0) step(dt, p);
     render(p);
     updateReadouts(p);
   }

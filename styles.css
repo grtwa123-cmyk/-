@@ -579,6 +579,20 @@ header.site-header p {
 /* Landing page hero — kept dramatic */
 body:not([data-theme]) header.site-header { margin: 1.5rem 0 3rem; position: relative; }
 
+/* The glow below is 460px across, and on a 320px phone that is 90px wider
+   than the header it sits behind — enough to make the whole page scroll
+   sideways by 70px. It is decorative, pointer-events:none and behind
+   everything, so it has no business affecting layout: overflow-x:clip trims
+   it at the header's sides while leaving the top free, which is the direction
+   it is actually meant to bleed in. `clip` rather than `hidden` on purpose —
+   hidden on one axis forces the other to auto, and would have cut the glow
+   off above the heading too.
+   Only 404 and offline were affected: the selector excludes anything with a
+   data-theme, which is every experiment and every hub. */
+body:not([data-theme]) header.site-header {
+  overflow-x: clip;
+}
+
 body:not([data-theme]) header.site-header::before {
   content: "";
   position: absolute;
@@ -668,6 +682,14 @@ body:not([data-theme]) header.site-header p {
   display: inline-flex;
   gap: 0.2rem;
   padding: 0.32rem;
+  /* Three tabs and their padding come to 302px, which does not fit a 320px
+     phone: the strip is centred in its row, so it hung 11px off each side and
+     the hub scrolled sideways by 2px. An inline-flex will not shrink to fit,
+     so let it scroll within itself instead — the same answer .stage and
+     .chip-rail already use for content with a minimum width of its own. */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
   background: var(--glass-tint);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -676,7 +698,10 @@ body:not([data-theme]) header.site-header p {
   box-shadow: var(--glass-spec), var(--glass-shadow-soft);
 }
 
+.hub-tabs::-webkit-scrollbar { display: none; }
+
 .hub-tab {
+  flex: 0 0 auto;
   padding: 0.5rem 1.15rem;
   color: var(--muted);
   text-decoration: none;
