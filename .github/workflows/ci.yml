@@ -1,8 +1,16 @@
 name: CI
 
+# Every push to a branch with a pull request open was starting two identical
+# runs — one for the push, one for the pull request — which is eight jobs
+# where four will do. It doubled the compute and, worse, doubled the exposure
+# to any check that fails a small fraction of the time: this branch has spent
+# the morning reading one runner red and its twin green at the same commit and
+# wondering which to believe. Branches are now covered by their pull request,
+# and main by its pushes. A branch with no pull request open gets no run,
+# which is the trade: work here lands through pull requests.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -14,8 +22,17 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # The browser suites drive 11 processes and take a few minutes; this is a
-    # ceiling against a hang, not a target.
+    # Four runners, a quarter of the suites each. Sequentially the whole thing
+    # is about 29 minutes of wall time and climbing, which walked straight
+    # into the ceiling below: from the atom commit onward every run was killed
+    # at 25 minutes and reported as "cancelled" — the same word that appears
+    # when a newer push supersedes a run — so four commits landed without
+    # anyone reading it as a failure. A shard is about eight minutes, which
+    # puts the ceiling back to being a ceiling.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -46,4 +63,4 @@ jobs:
           echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> "$GITHUB_ENV"
 
       - name: Test
-        run: npm test
+        run: npm test -- --shard ${{ matrix.shard }}/4

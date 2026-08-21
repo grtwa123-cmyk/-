@@ -91,11 +91,60 @@ const runs = await sweep(CASES);
       worst < 0.03,
       runs.map((r) => `R₀=${r.r0.toFixed(2)}: ${r.fin.toFixed(4)} vs ${r.finT.toFixed(4)}`).join(', '));
 
-  // Monotone in R₀, and never everybody: the equation has no root at 1.
+  /*
+   * Monotone in R₀ — but only where the theory says two settings are far
+   * enough apart to be told apart.
+   *
+   * The first version sorted all five by measured R₀ and demanded a strict
+   * order. Two of the five are built to share an R₀ with different dials, so
+   * it was demanding an order between two things the theory says are
+   * identical: predicted gap 0.00 percentage points. Over twenty sweeps it
+   * inverted five times. It was a coin, and it had been landing right.
+   *
+   * So a pair is evidence only when the final sizes predicted for the two
+   * measured R₀s differ by more than four points. That admits two pairs of
+   * the four, and leaves them enormous: over twenty sweeps the smallest
+   * surviving margin averaged 7.80 ± 0.66 points and never fell below 6.57,
+   * which is twelve sigma from an inversion. Nothing was loosened — the
+   * comparisons that were carrying the claim still carry it, and the two
+   * that were carrying noise are now checked below for what they can
+   * actually say.
+   */
   const byR0 = [...runs].sort((a, b) => a.r0 - b.r0);
+  const judged = [];
+  for (let i = 1; i < byR0.length; i++) {
+    if (byR0[i].finT - byR0[i - 1].finT > 0.04) judged.push([byR0[i - 1], byR0[i]]);
+  }
   chk('and a more contagious disease reaches more of the population, but never all of it',
-      byR0.every((r, i) => (i === 0 || r.fin > byR0[i - 1].fin) && r.fin < 1),
-      byR0.map((r) => `${r.r0.toFixed(2)}→${(r.fin * 100).toFixed(1)}%`).join(' '));
+      judged.length >= 2 && judged.every(([lo, hi]) => hi.fin > lo.fin)
+      && runs.every((r) => r.fin < 1),
+      `${judged.length} pairs far enough apart to judge: `
+      + judged.map(([lo, hi]) => `${lo.r0.toFixed(2)}→${(lo.fin * 100).toFixed(1)}% `
+        + `vs ${hi.r0.toFixed(2)}→${(hi.fin * 100).toFixed(1)}%`).join(', ')
+      + ` — all five: ${byR0.map((r) => `${r.r0.toFixed(2)}→${(r.fin * 100).toFixed(1)}%`).join(' ')}`);
+
+  /*
+   * And the near-ties say the thing worth saying. Two of the settings reach
+   * the same R₀ by different routes — four contacts a day at p = 0.5 with
+   * γ = 1, against six at p = 0.4 with γ = 1.2 — and if R₀ is really what
+   * governs an outbreak they must end in the same place, even though every
+   * dial differs. Over twenty sweeps they landed 0.73 points apart on
+   * average and never more than 2.79, against final sizes that range from
+   * 59% to 90% across the sweep. The bound is 4 points, a little over four
+   * sigma of the difference.
+   */
+  const twins = [];
+  for (let a = 0; a < runs.length; a++) {
+    for (let b = a + 1; b < runs.length; b++) {
+      if (Math.abs(runs[a].set - runs[b].set) < 1e-9) twins.push([runs[a], runs[b]]);
+    }
+  }
+  chk('two outbreaks with the same R₀ but no dial in common end in the same place',
+      twins.length >= 1 && twins.every(([x, y]) => Math.abs(x.fin - y.fin) < 0.04),
+      twins.map(([x, y]) => `R₀ ${x.set.toFixed(2)}: `
+        + `${(x.fin * 100).toFixed(1)}% vs ${(y.fin * 100).toFixed(1)}% `
+        + `(measured ${x.r0.toFixed(2)}, ${y.r0.toFixed(2)})`).join('; ')
+      || 'no pair of settings shares an R₀');
 }
 
 // ── The peak, and the threshold ──────────────────────────────────────

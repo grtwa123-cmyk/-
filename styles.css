@@ -1046,6 +1046,12 @@ body:not([data-theme]) header.site-header p {
 
 @media (max-width: 800px) {
   .experiment { grid-template-columns: 1fr; }
+  /* The experiment first, the dials second. In source order the panel wins,
+     which on a phone put the canvas two screens down — below every slider
+     and an open Notes block. Nobody adjusts a control they cannot see the
+     effect of. */
+  .experiment .panel { order: 2; }
+  .experiment .stage { order: 1; }
 }
 
 .panel {

@@ -49,28 +49,48 @@ fs.writeFileSync(path.join(ROOT, "robots.txt"),
   `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
 console.log("robots.txt");
 
-// ── the count in index.html's social text ─────────────────────────────────
-// Three meta tags open by saying how many experiments there are. That number
-// was written by hand and went stale the first time the catalogue grew: the
-// epidemic page made it 37 while all three still said 36. Nothing noticed,
-// because nothing was looking. So it is generated here, from the same array
-// the sitemap comes from, and tests/smoke.mjs fails if the file drifts.
+// ── every place that states how many experiments there are ────────────────
+// Six sentences across three files open by counting the catalogue. All six
+// were written by hand and all six went stale the moment it grew: the
+// epidemic page made it 37 while the meta tags said 36, the README said 36
+// twice, package.json said 36 and the social card — a number baked into a
+// JPEG, where no check can read it — said 32. Nothing noticed, because
+// nothing was looking.
+//
+// So the count is generated, from the same array the sitemap comes from.
+// Each site is a pattern with the digits as the only variable part, and the
+// expected number of hits is declared so that a reworded sentence stops the
+// build rather than quietly going unwritten. tests/smoke.mjs fails if any
+// file on disk disagrees with the catalogue.
+const COUNTED = [
+  ["index.html",
+   /(<meta (?:name|property)="(?:[a-z:]*)description" content=")\d+( hands-on)/g, 3],
+  ["package.json",
+   /("description": "Browser-based science sandbox: )\d+( hands-on)/g, 1],
+  ["README.md", /(\*\*)\d+( hands-on physics)/g, 1],
+  ["README.md", /(anchor links to all )\d+( experiments)/g, 1],
+];
+
 {
-  const idx = path.join(ROOT, "index.html");
-  const before = fs.readFileSync(idx, "utf8");
-  const after = before.replace(
-    /(<meta (?:name|property)="(?:[a-z:]*)description" content=")\d+( hands-on)/g,
-    `$1${EXPERIMENTS.length}$2`);
-  const tags = (before.match(
-    /<meta (?:name|property)="(?:[a-z:]*)description" content="\d+ hands-on/g) || []).length;
-  if (tags !== 3) {
-    console.error(`index.html: expected 3 counted description tags, found ${tags} — `
-      + "the pattern in tools/build-seo.mjs no longer matches the page");
-    process.exit(1);
+  const touched = new Map();
+  for (const [file, re, want] of COUNTED) {
+    const abs = path.join(ROOT, file);
+    const before = touched.get(file) ?? fs.readFileSync(abs, "utf8");
+    const hits = (before.match(re) || []).length;
+    if (hits !== want) {
+      console.error(`${file}: expected ${want} counted phrase(s) for ${re}, found ${hits}`
+        + " — the pattern in tools/build-seo.mjs no longer matches the file");
+      process.exit(1);
+    }
+    touched.set(file, before.replace(re, `$1${EXPERIMENTS.length}$2`));
   }
-  if (after !== before) fs.writeFileSync(idx, after);
-  console.log(`index.html — ${tags} description tags say ${EXPERIMENTS.length}`
-    + `${after === before ? "" : " (updated)"}`);
+  const changed = [];
+  for (const [file, text] of touched) {
+    const abs = path.join(ROOT, file);
+    if (text !== fs.readFileSync(abs, "utf8")) { fs.writeFileSync(abs, text); changed.push(file); }
+  }
+  console.log(`the count says ${EXPERIMENTS.length} in ${touched.size} files`
+    + `${changed.length ? ` (updated ${changed.join(", ")})` : ""}`);
 }
 
 // ── The social card ───────────────────────────────────────────────────────
@@ -102,7 +122,7 @@ const html = `<!doctype html><meta charset="utf-8">
 <canvas id="bg" width="1200" height="630"></canvas>
 <div class="wrap">
   <h1>Science Lab</h1>
-  <p>32 hands-on physics, chemistry and biology simulations. Real 3D models,
+  <p>${EXPERIMENTS.length} hands-on physics, chemistry and biology simulations. Real 3D models,
      procedural sound, no build step.</p>
   <div class="tags"><span class="tag">Physics</span><span class="tag">Chemistry</span>
     <span class="tag">Biology</span><span class="tag">EN · KO · ZH</span></div>

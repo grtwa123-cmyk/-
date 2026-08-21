@@ -10,6 +10,8 @@ window.i18nRegister("en", {
   "dnaTitle": "DNA Double Helix",
   "epidemicDesc": "Individuals meet, transmit and recover; R₀ is counted out of the run, and the final size then lands on r = 1 − e^(−R₀r), an equation with no closed form.",
   "epidemicTitle": "Epidemic — R₀ Counted",
+  "expressionDesc": "Identical cells transcribing one gene end up holding different amounts. Leave the gene on and the variance equals the mean exactly; let it switch off and the extra width measures the bursts.",
+  "expressionTitle": "Gene Expression Noise",
   "hhDesc": "Four coupled equations and two kinds of ion gate. Nothing checks for a threshold, yet one appears — and it is sharp enough that a thousandth more current turns silence into a full spike.",
   "hhTitle": "Nerve Impulse — Hodgkin–Huxley",
   "lotkaDesc": "Foxes and rabbits, integrated and then measured. The time average of each population over one whole cycle turns out to be exactly the fixed point it never sits at — Volterra's theorem, holding to a part in 10⁴ on swings five times its size — while the cycle itself runs up to 28% slower than the textbook 2π/√(αγ).",

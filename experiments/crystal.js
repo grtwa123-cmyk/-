@@ -367,6 +367,33 @@
     pitch: 0.42,
   });
 
+  /*
+   * The lattices as coordinates, handed over for measuring.
+   *
+   * The table above states atoms per cell, coordination number and packing
+   * fraction as strings, next to a list of sites. Those two halves can drift
+   * apart silently — a mistyped "0.680" or a site at the wrong corner looks
+   * exactly as convincing as the right one. So the sites go out raw and the
+   * suite derives all three from them, which is the claim a "Real data" badge
+   * makes: the structure on screen is the structure those numbers describe.
+   */
+  window.__crystal = {
+    order: LATTICE_ORDER.slice(),
+    /** Every lattice: its sites, and the properties the panel prints. */
+    lattice: (key) => {
+      const l = LATTICES[key];
+      if (!l) return null;
+      return {
+        key: l.key,
+        atoms: l.atoms.map((a) => ({ el: a.el, x: a.x, y: a.y, z: a.z })),
+        declared: { atomsPerCell: l.atomsPerCell, coord: l.coord, apf: l.apf,
+                    examples: l.examples },
+      };
+    },
+    current: () => currentKey,
+    select: (key) => selectLattice(key),
+  };
+
   if (!view) {
     showFallback();
   } else {

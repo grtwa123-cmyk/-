@@ -99,7 +99,10 @@
     // Sub-step so that a single step never decays too large a fraction —
     // keeps the stochastic result matching the continuous exponential even
     // at high playback rates.
-    const maxStep = halfLife * 0.05;
+    // The sub-step cap is an instrument setting: 5% of a half-life keeps a
+    // phone smooth, and the site-wide quality toggle tightens it to 2% —
+    // read live, so flipping it mid-run refines the roll from the next step.
+    const maxStep = halfLife * (window.Quality ? window.Quality.pick(0.05, 0.02) : 0.05);
     const sub = Math.max(1, Math.ceil(simDt / maxStep));
     const h = simDt / sub;
     let decayedThisFrame = 0;

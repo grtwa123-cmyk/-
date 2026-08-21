@@ -28,6 +28,8 @@ window.i18nRegister("en", {
   "epidemicTitle": "Epidemic — R₀ Counted",
   "eqDesc": "A + B ⇌ C, one molecule at a time. The equilibrium constant is never entered — it is measured from the counts and comes out as k₀/k₋. Disturb the mixture and the shift is a result, not a rule.",
   "eqTitle": "Chemical Equilibrium & Le Chatelier",
+  "expressionDesc": "Identical cells transcribing one gene end up holding different amounts. Leave the gene on and the variance equals the mean exactly; let it switch off and the extra width measures the bursts.",
+  "expressionTitle": "Gene Expression Noise",
   "gasDesc": "Bounce particles in a piston chamber: pressure measured from real wall impacts tracks PV = NkT, and compressing the piston rides the isotherm.",
   "gasTitle": "Ideal Gas & Kinetic Theory",
   "generatorDesc": "Integrate the flux through a coil cell by cell, differentiate it in time, and let the AC sine wave and its scalings be what comes out.",

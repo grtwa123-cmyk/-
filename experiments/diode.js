@@ -58,7 +58,19 @@
   let CH = 720;
 
   const BASE_DEPLETION_WIDTH = 0.18; // as fraction of device width
-  const BUILT_IN_FIELD = 220; // strength of built-in field acceleration
+  const BUILT_IN_FIELD = 220; // depletion field at zero bias
+  // How far a carrier driven across the junction gets before it recombines,
+  // as a fraction of the device. A diffusion length, in other words.
+  const RECOMB_LEN = 0.12;
+  // Depth of the accumulation layer that builds at a contact when the bias
+  // drives majority carriers into it, as a fraction of the device.
+  const ACCUM_LAYER = 0.10;
+  // Seconds the ammeter averages over. The current is a crossing rate and
+  // crossings are discrete events, so a short window reads them as a flicker
+  // between nothing and everything.
+  const CURRENT_TAU = 1.0;
+  // Crossings per carrier per second at which the ammeter reads 100%.
+  const CURRENT_FULL = 0.45;
 
   function computeLayout() {
     const margin = 18;
@@ -82,16 +94,35 @@
   function deviceWidth() { return layout.right - layout.left; }
   function deviceHeight() { return layout.bottom - layout.top; }
 
+  /** The height of the junction's potential barrier, in units of the
+   *  built-in one. Forward bias subtracts from it, reverse bias adds to it.
+   *  This single number is the whole diode: everything below reads it. */
+  function junctionPotential() {
+    if (!batteryOn) return 1;
+    return polarity === 1 ? Math.max(0.05, 1 - 0.55 * voltage) : 1 + 0.9 * voltage;
+  }
+
   function currentDepletionHalfWidth() {
-    let base = BASE_DEPLETION_WIDTH * deviceWidth() / 2;
-    if (!batteryOn) return base;
-    if (polarity === 1) {
-      // forward bias shrinks depletion region
-      return Math.max(8, base * (1 - 0.55 * voltage));
-    } else {
-      // reverse bias widens it
-      return base * (1 + 0.9 * voltage);
-    }
+    const base = BASE_DEPLETION_WIDTH * deviceWidth() / 2;
+    // W ∝ √V_j — the abrupt-junction result. The peak field goes as √V_j
+    // too, so their product, which is the barrier a carrier actually has to
+    // get over, comes out proportional to the potential, as it must.
+    return Math.max(8, base * Math.sqrt(junctionPotential()));
+  }
+
+  /** The field inside the depletion region. It has to move with the bias:
+   *  held at a constant while only the width moved, the barrier got wider
+   *  under reverse bias and no stronger, and the drift walked straight
+   *  through it. The junction was not a diode at all. */
+  function depletionField() {
+    return BUILT_IN_FIELD * Math.sqrt(junctionPotential());
+  }
+
+  /** What the ammeter shows, 0 to 1. The sign of smoothedCurrent is the
+   *  direction the conventional current runs; the needle only has the one
+   *  direction to move in. */
+  function currentFraction() {
+    return Math.min(1, Math.abs(smoothedCurrent) / CURRENT_FULL);
   }
 
   function buildLattice() {
@@ -216,8 +247,8 @@
       drawCurrentArrow(wireBottom, bx + bW - 38, layout.right, rightward);
       drawCurrentArrow(wireBottom, layout.left, bx + 38, rightward);
 
-      if (smoothedCurrent > 0.02) {
-        const phase = (performance.now() / 1000 * (0.8 + smoothedCurrent * 2)) % 1;
+      if (currentFraction() > 0.02) {
+        const phase = (performance.now() / 1000 * (0.8 + currentFraction() * 2)) % 1;
         const rStart = rightward ? bx + bW - 38 : layout.right;
         const rEnd   = rightward ? layout.right : bx + bW - 38;
         const lStart = rightward ? layout.left  : bx + 38;
@@ -453,10 +484,12 @@
     const thermalA = temperature * 50;
     const damping = 1.5;
     const dHalf = currentDepletionHalfWidth();
+    const depE = depletionField();
+    const recombLen = RECOMB_LEN * deviceWidth();
     const { left, right, top, bottom, junctionX } = layout;
 
-    let crossingsR = 0; // electrons crossing N→P + holes crossing P→N (forward)
-    let crossingsL = 0; // reverse direction
+    let crossingsR = 0; // conventional current toward +x
+    let crossingsL = 0; // conventional current toward -x
     let totalCarriers = electrons.length + holes.length;
 
     const stepCarrier = (c, charge) => {
@@ -473,7 +506,7 @@
       if (Math.abs(dx) < dHalf) {
         // Built-in points from N (-x) to P (+x) inside depletion.
         // Force on electron: -E → -x. Force on hole: +E → +x.
-        const bi = BUILT_IN_FIELD * (charge < 0 ? -1 : 1);
+        const bi = depE * (charge < 0 ? -1 : 1);
         c.vx += bi * dt;
       }
 
@@ -481,13 +514,49 @@
       c.x += c.vx * dt;
       c.y += c.vy * dt;
 
-      // Track junction crossings
-      if (prevX < junctionX && c.x >= junctionX) crossingsR++;
-      else if (prevX > junctionX && c.x <= junctionX) crossingsL++;
+      // Track junction crossings, as conventional current rather than as
+      // bodies. An electron moving +x and a hole moving +x are opposite
+      // currents; counting both as "one crossing to the right" made forward
+      // bias — where the two species move apart — cancel to nothing.
+      const q = charge < 0 ? -1 : 1; // the sign is what turns a body into a current
+      if (prevX < junctionX && c.x >= junctionX) { if (q > 0) crossingsR++; else crossingsL++; }
+      else if (prevX > junctionX && c.x <= junctionX) { if (q > 0) crossingsL++; else crossingsR++; }
 
-      // Horizontal wrap = circuit continuity
-      if (c.x < left) c.x = right - (left - c.x);
-      else if (c.x > right) c.x = left + (c.x - right);
+      // Recombination and re-injection, which is what circuit continuity
+      // actually looks like inside the silicon. A carrier driven across the
+      // junction is in hostile country — an electron in P is surrounded by
+      // holes — and it annihilates within a diffusion length. The charge is
+      // not lost to the circuit: the battery pushes another one in at that
+      // carrier's own contact. Wrapping it round to the far edge instead,
+      // which is what this did, left the P side permanently stocked with
+      // electrons. Reverse bias then had all the carriers it needed and
+      // conducted as happily as forward.
+      const away = charge < 0 ? 1 : -1; // from the junction into foreign ground
+      if ((c.x - junctionX) * away > recombLen) {
+        // Gone. A fresh one turns up somewhere in its own neutral region,
+        // which is a sea of majority carriers the contact keeps topped up —
+        // not a queue starting at the terminal. Re-injecting them all at the
+        // contact edge instead kept the population marching in step, and the
+        // ammeter read the resulting bursts as a current that switched
+        // itself on and off.
+        const homeL = charge < 0 ? left + 4 : junctionX + dHalf;
+        const homeR = charge < 0 ? junctionX - dHalf : right - 4;
+        c.x = homeR > homeL ? rand(homeL, homeR) : (charge < 0 ? left + 4 : right - 4);
+        c.y = rand(top + 8, bottom - 8);
+        c.vx = 0;
+        c.vy = 0;
+      } else if (c.x < left + 2 || c.x > right - 2) {
+        // Its own contact, which is where reverse bias drives the majority
+        // carriers: away from the junction and up against the terminal.
+        // The contact absorbs them and hands them straight back to the
+        // neutral region as an accumulation layer, so what builds is a band
+        // a finite depth into the silicon. Pinning them to the boundary
+        // instead drew a painted line of dots down the edge of the device.
+        const inward = c.x < junctionX ? 1 : -1;
+        const edge = c.x < junctionX ? left + 2 : right - 2;
+        c.x = edge + inward * rand(0, ACCUM_LAYER * deviceWidth());
+        c.vx = 0;
+      }
 
       // Vertical reflect
       if (c.y < top + 2) { c.y = top + 2; c.vy = Math.abs(c.vy); }
@@ -497,10 +566,18 @@
     for (const e of electrons) stepCarrier(e, -1);
     for (const h of holes) stepCarrier(h, +1);
 
-    // Estimate instantaneous current strength from net crossings.
+    // Current is a rate — crossings per carrier per second — and not a
+    // per-frame tally, so that the reading is the same whether the browser
+    // is painting at 60 frames a second or at 30. What gets averaged is the
+    // signed rate rather than its size, so that traffic going both ways
+    // would cancel instead of adding up into a current that is not there.
+    // As it happens this junction never has any: counting the crossings
+    // finds none at all below the knee or in reverse, and all one way above
+    // it. The averaging is right either way, but on this page the choice
+    // makes no visible difference and no check can tell it was made.
     const net = crossingsR - crossingsL;
-    const instCurrent = Math.max(0, Math.abs(net) / Math.max(1, totalCarriers) * 8);
-    smoothedCurrent += (instCurrent - smoothedCurrent) * Math.min(1, dt * 3);
+    const rate = net / Math.max(1, totalCarriers) / Math.max(dt, 1e-4);
+    smoothedCurrent += (rate - smoothedCurrent) * Math.min(1, dt / CURRENT_TAU);
   }
 
   function biasLabel() {
@@ -512,14 +589,11 @@
 
   function currentLabel() {
     if (!batteryOn) return '—';
-    if (voltage === 0) return '0%';
-    if (polarity === 1) {
-      const pct = Math.round(Math.min(100, smoothedCurrent * 220));
-      return `${pct}%`;
-    }
-    // reverse bias: tiny leakage
-    const pct = Math.round(Math.min(8, smoothedCurrent * 80));
-    return `${pct}%`;
+    // One branch. Which way the battery points is not consulted here: the
+    // reverse reading is small because the carriers do not cross, and if
+    // this typed in the asymmetry the page would be claiming the very thing
+    // it is meant to be showing.
+    return `${Math.round(currentFraction() * 100)}%`;
   }
 
   function updateReadouts() {
@@ -547,7 +621,7 @@
     updateCarriers(dt);
     updateReadouts();
     render();
-    if (buzz) buzz.setGain(batteryOn ? Math.min(0.045, smoothedCurrent * 0.12) : 0);
+    if (buzz) buzz.setGain(batteryOn ? currentFraction() * 0.045 : 0);
     animId = requestAnimationFrame(step);
   }
 
@@ -631,4 +705,38 @@
   resizeCanvas();
   updateReadouts();
   start();
+
+  /*
+   * The handle tests/experiments/diode.test.mjs drives the junction by. It
+   * sets the same variables the controls set and steps the same physics the
+   * animation steps — nothing here computes an answer of its own.
+   */
+  window.__diode = {
+    setBattery(on) { batteryOn = on; batteryToggle.checked = on; updateReadouts(); },
+    setPolarity(p) { polarity = p; updateReadouts(); },
+    setVoltage(v) { voltageInput.value = String(v); voltage = parseFloat(voltageInput.value);
+      voltageValue.textContent = voltage.toFixed(2); updateReadouts(); },
+    setTemperature(t) { tempInput.value = String(t); temperature = parseFloat(tempInput.value);
+      tempValue.textContent = temperature.toFixed(2); },
+    /** Advance the carriers by `seconds` of the page's own time. This has to
+     *  do what step() does, not just the physics half of it: the current
+     *  readout is a piece of DOM text, and updateCarriers only moves the
+     *  number behind it. Stepping without repainting the readout left the
+     *  panel showing whatever it said before the run. */
+    advance(seconds, steps = 120) {
+      for (let i = 0; i < steps; i++) { updateCarriers(seconds / steps); updateReadouts(); }
+    },
+    state: () => ({
+      polarity, voltage, batteryOn,
+      depletionHalfWidth: currentDepletionHalfWidth(),
+      junctionX: layout.junctionX,
+      deviceWidth: deviceWidth(),
+      electrons: electrons.map((c) => ({ x: c.x, y: c.y, vx: c.vx })),
+      holes: holes.map((c) => ({ x: c.x, y: c.y, vx: c.vx })),
+      currentRate: smoothedCurrent, // signed crossings per carrier per second
+      bias: propBias.textContent.trim(),
+      current: propCurrent.textContent.trim(),
+    }),
+  };
+
 })();

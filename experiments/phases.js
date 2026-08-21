@@ -613,11 +613,19 @@
   // ── Loop ───────────────────────────────────────────────────────────────
   let raf = 0;
   let frameCount = 0;
-  function frame() {
+  let lastTs = -1;
+  function frame(ts) {
     raf = requestAnimationFrame(frame);
     const p = params();
 
-    if (running) {
+    // Step only while the clock advances. This page runs from the moment it
+    // loads, and its loop used to ignore the timestamp entirely — so under
+    // prefers-reduced-motion, where the gate freezes the timestamp it hands
+    // out, the crystal kept dancing behind a notice that said "paused". A
+    // repeated timestamp means a frozen clock; real frames never repeat one.
+    const moved = ts !== lastTs;
+    lastTs = ts;
+    if (running && moved) {
       for (let k = 0; k < p.steps; k++) {
         step();
         // A velocity rescale is a crude thermostat, so it is applied sparingly

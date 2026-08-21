@@ -420,6 +420,32 @@
     pitch: 0.28,
   });
 
+  /*
+   * The molecules as coordinates, handed over for measuring.
+   *
+   * MOLECULES states each shape's bond angle as a string — "104.5°" — beside
+   * a list of atom positions, and nothing joins the two. That gap has bitten
+   * once already: the ammonia coordinates in an earlier draft drew 98.6° under
+   * a label reading 107°, and it was caught by hand rather than by anything
+   * automatic. So the positions go out raw and the suite works the angles and
+   * bond lengths out of them.
+   */
+  window.__molecule = {
+    order: Object.keys(MOLECULES),
+    molecule: (key) => {
+      const m = MOLECULES[key];
+      if (!m) return null;
+      return {
+        key: m.key, formula: m.formula,
+        atoms: m.atoms.map((a) => ({ el: a.el, x: a.x, y: a.y, z: a.z })),
+        bonds: m.bonds.map((b) => b.slice()),
+        declared: { angle: m.angle, hybrid: m.hybrid, geometryKey: m.geometryKey },
+      };
+    },
+    current: () => currentKey,
+    select: (key) => selectMolecule(key),
+  };
+
   if (!view) {
     showFallback();
   } else {

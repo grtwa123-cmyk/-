@@ -808,4 +808,47 @@
   });
 
   animId = requestAnimationFrame(tick);
+
+  /*
+   * The integrator, exposed so it can be checked rather than watched.
+   *
+   * This page is badged "Integrated": the equations of motion are stepped
+   * forward and what you see is where they go. That claim is about the
+   * stepping, so the hook hands over the state and lets the suite drive
+   * step() itself — with the clock out of it, so a check is a number of days
+   * of simulated time rather than a number of seconds of animation.
+   */
+  window.__solar = {
+    templates: PLANET_TEMPLATES.map((t) => ({ key: t.key, a: t.a, radiusKm: t.radiusKm })),
+    scale: () => ({ distance: DISTANCE_SCALE, earthPx: EARTH_PX,
+                    earthRadiusKm: EARTH_RADIUS_KM, earthPeriod: EARTH_VIS_PERIOD }),
+    reset: () => resetAll(),
+    /** Advance the simulation by `days` of its own time, in one call. */
+    advance(days) {
+      const before = timeScale;
+      timeScale = 1;
+      step(days);
+      timeScale = before;
+    },
+    circularVelocityAround: (x, y) => circularVelocityAround(sun, x, y),
+    setPlanets(list) {
+      planets = list.map((q, i) => ({
+        key: `probe${i}`, nameKey: null, color: '#6ea8ff', radiusKm: EARTH_RADIUS_KM,
+        x: q.x, y: q.y, vx: q.vx, vy: q.vy, alive: true, trail: [],
+      }));
+      updateCounts();
+    },
+    state: () => ({
+      sun: { x: sun.x, y: sun.y, mass: sun.mass, alive: sun.alive, r: sunR() },
+      mu: MU_SUN,
+      // `r` is the drawn radius in px and `guideR` the orbit's radius; a
+      // planet carries no radiusKm of its own, which an earlier draft of this
+      // hook assumed and got NaN for every one of them.
+      planets: planets.map((p) => ({
+        key: p.key, x: p.x, y: p.y, vx: p.vx, vy: p.vy, alive: p.alive,
+        drawnPx: p.r, guideR: p.guideR,
+      })),
+    }),
+  };
+
 })();

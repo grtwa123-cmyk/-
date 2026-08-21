@@ -23,6 +23,8 @@ window.i18nRegister("en", {
   "latticeSC": "Simple cubic",
   "methodModel": "Real data",
   "methodModelWhy": "A three-dimensional structure built from measured constants — geometry rather than simulation.",
+  "methodVerified": "Verified",
+  "methodVerifiedWhy": "An automated suite holds this page's physics against its closed form on every commit.",
   "mmRateAxis": "rate v (µM/s)",
   "motionPause": "Pause",
   "motionPaused": "Animation paused — your system asks for reduced motion.",

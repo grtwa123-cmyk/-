@@ -150,6 +150,12 @@
   }
   @media (prefers-reduced-motion:reduce){
     .panel{transition:none}
+    /* This page does not link styles.css, so the site-wide rule there that
+       flattens every CSS animation never reached it, and the loading spinner
+       turned right through the preference — measured at 0.1 rad in one frame
+       and 2.1 the next. It is the only thing on screen for as long as
+       three.js takes to arrive, and forever if it never does. */
+    .spin{animation:none}
   }
 
   /* ── 사이트 헤더 통합 (Back + 버전) ──────── */

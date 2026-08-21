@@ -613,6 +613,25 @@ const RENDERERS = {
     p.dot(X(0), I(0), 3.4);                              // the peak
   },
 
+  // Gene expression noise: a histogram of copy number across cells, with a
+  // long right tail, and the smooth curve of the Poisson it is not.
+  expression(p, s) {
+    const bars = [0.14, 0.42, 0.78, 1.0, 0.86, 0.58, 0.34, 0.18, 0.08];
+    const w = (s * 2.1) / bars.length;
+    const base = s * 0.86;
+    bars.forEach((h, i) => {
+      const x = -s * 1.05 + i * w;
+      p.line(x, base, x, base - h * s * 1.5);
+    });
+    // The Poisson of the same mean, narrower and peaked left of the tail.
+    const Y = (t) => base - s * 1.42 * Math.exp(-Math.pow((t + 0.18) / 0.42, 2));
+    for (let i = 0; i < 20; i++) {
+      const a = -1.05 + (2.1 * i) / 20, b = -1.05 + (2.1 * (i + 1)) / 20;
+      p.line(s * a, Y(a), s * b, Y(b));
+    }
+    p.line(-s * 1.05, base, s * 1.05, base);            // count axis
+  },
+
   // Natural selection: a logistic sweep from rare to fixed, with a finite
   // population drifting either side of the deterministic curve.
   selection(p, s) {

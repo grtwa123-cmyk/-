@@ -366,6 +366,31 @@
     pitch: 0.12,
   });
 
+  /*
+   * What the page drew, handed over for measuring.
+   *
+   * Deliberately raw: the scene's spheres and cylinders with their
+   * coordinates, not a summary. A hook that reported "rise = 3.4" would be
+   * handing back the constant it was given, and a suite built on that would
+   * pass however the helix was actually laid out. The suite measures the
+   * spacing between the beads instead, and compares it to the declared
+   * constants below — that is the claim a "Real data" badge makes: the
+   * geometry on screen is the geometry the numbers describe.
+   */
+  window.__dna = {
+    /** The B-form constants the geometry is built from, for comparison. */
+    constants: { RISE, RADIUS, TWIST: OMEGA, MINOR_OFFSET, BP_PER_TURN: (2 * Math.PI) / OMEGA },
+    scene: () => buildScene(),
+    sequence: () => seq,
+    complementOf: (b) => COMPLEMENT[b],
+    transcribe: () => mRNAOf(seq),
+    meltingTm: () => meltingTm(seq),
+    setSequence(next) {
+      inputs.seq.value = next;
+      inputs.seq.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+  };
+
   if (!view) {
     showFallback();
     syncLabels();

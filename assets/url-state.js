@@ -116,9 +116,12 @@
     const list = controls();
     if (!list.length) return;
 
-    // The defaults, taken before anything from the URL touches them. Deferred
-    // scripts have all run by now, so this includes any adjustment a page made
-    // to its own controls at start-up.
+    // The defaults, taken before anything from the URL touches them. This runs
+    // on DOMContentLoaded, by which point every deferred script has executed,
+    // so it includes any adjustment a page made to its own controls at
+    // start-up — phases picks a preset, and its temperature is 0.15 here, not
+    // the 0.3 in the markup. Running any earlier read the markup instead and
+    // then lost the URL's value to the preset a moment later.
     const defaults = new Map(list.map((el) => [el.id, read(el)]));
 
     const write = () => {
@@ -168,9 +171,14 @@
     window.__urlState = { controls: () => list, defaults, write, read, apply };
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
+  // Deferred scripts execute at readyState "interactive", NOT "loading" —
+  // parsing is finished and DOMContentLoaded has not fired yet. So the old
+  // guard's else-branch ran init() at this script's own turn, third of five,
+  // before the page's own script had touched anything. DOMContentLoaded is
+  // what actually waits for the rest of them.
+  if (document.readyState === "complete") {
     init();
+  } else {
+    document.addEventListener("DOMContentLoaded", init);
   }
 })();
