@@ -156,7 +156,7 @@
 
   <div class="overlay top-left">
     <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-    <span class="version-tag">v1.3.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span>
+    <span class="version-tag">v1.4.0</span><span class="method-tag" data-method="integrated" data-i18n="methodIntegrated" data-i18n-title="methodIntegratedWhy" title="">Integrated</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span>
     <span class="lang-switch" role="group" aria-label="Language">
       <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
       <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
@@ -414,7 +414,23 @@
 
         p = pn; v = vn;
       }
-      // 스텝 소진 시(광자구 근처 감김 궤도) 탈출 처리 없이 어둡게 남긴다.
+      // Steps exhausted. Near the photon sphere that means an orbit winding
+      // many times before it falls, and leaving it dark is right. Far out it
+      // means nothing of the sort: from a distant camera most rays simply
+      // run out of budget while still travelling almost straight, and
+      // painting those black grew the shadow instead of the sky. Measured at
+      // 120 M with the Low preset, the shadow came out at b = 7.86 M against
+      // the 3√3 = 5.196 M it should be — half again too wide — and at 150 M
+      // there was no measurable edge left at all.
+      //
+      // A photon outside the photon sphere and moving outward escapes; there
+      // are no bound photon orbits but the unstable circular one at 3M. So
+      // r > 8M and heading out is a safe test, and it leaves the winding
+      // orbits — which sit near 3M — dark as before.
+      if (!escaped && length(p) > 8.0 * uM && dot(p, v) > 0.0) {
+        escaped = true;
+        escDir  = normalize(v);
+      }
 
       if (escaped) col += T * sky(escDir);
 
@@ -664,6 +680,46 @@
     }
     window.addEventListener("resize", onResize);
     applyPreset("medium");
+
+    /*
+     * The handle tests/experiments/blackhole.test.mjs reads the render
+     * through. It sets the same uniforms the controls set and hands back
+     * pixels; every number the suite reports it works out for itself from
+     * those pixels, so nothing here can tell it the answer.
+     */
+    window.__bh = {
+      setM(m) { uniforms.uM.value = m; updateCamera(); },
+      setDist(d) { cam.dist = d; updateCamera(); return cam.dist; },
+      setPitch(p) { cam.pitch = p; updateCamera(); },
+      setDisk(g) { uniforms.uDiskGain.value = g; },
+      preset(name) { applyPreset(name); },
+      state: () => ({
+        M: uniforms.uM.value,
+        dist: cam.dist,
+        tanHalfFov: uniforms.uTanHalfFov.value,
+      }),
+      /**
+       * Render one frame and return the row of luminance across the middle
+       * of it, left to right, along with the size of the buffer it came
+       * from. Read straight after the draw and in the same task, so the
+       * drawing buffer is still there to be copied.
+       */
+      scanRow() {
+        composer.render();
+        const src = renderer.domElement;
+        const w = src.width, h = src.height, y = Math.floor(h / 2);
+        const c = document.createElement("canvas");
+        c.width = w; c.height = 1;
+        const g = c.getContext("2d", { willReadFrequently: true });
+        g.drawImage(src, 0, y, w, 1, 0, 0, w, 1);
+        const d = g.getImageData(0, 0, w, 1).data;
+        const lum = new Array(w);
+        for (let i = 0; i < w; i++) {
+          lum[i] = (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
+        }
+        return { width: w, height: h, lum };
+      },
+    };
 
     // ════════ 메인 루프 ════════
     let prev = performance.now();
