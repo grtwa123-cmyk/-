@@ -143,6 +143,15 @@ past it and four commits landed while every run was being killed and
 reported as **"cancelled"**, the same word GitHub uses for a superseded run.
 If a run says cancelled, check the duration before believing it.
 
+**A new page can put a character outside the font subset.** The site self-hosts
+a Pretendard subset built from the text it actually contains, so writing `ℓ`
+or `∮` for the first time makes `fonts.test.mjs` fail with the character
+named. The fix is `python3 tools/build-font.py` (needs `fonttools` and
+`brotli`, and network access to jsdelivr) — it is a manual step `npm test`
+never runs. Korean is usually safe: the Hangul half carries all 2 350 KS X
+1001 syllables. It is the mathematics that catches you out. Run the `fonts`
+suite before shipping any page with new prose in it.
+
 **Size every bound against measured scatter, not against a round number.** A
 stochastic check has a standard error, and the bound has to be several of
 them clear of it or the suite is a coin toss. Measure the scatter — repeat

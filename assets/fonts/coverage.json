@@ -26,8 +26,8 @@
     "latin": {
       "file": "PretendardVariable.latin.woff2",
       "unicodeRange": "U+0-10FF, U+1200-312F, U+3190-A95F, U+A980-ABFF, U+D800-10FFFF",
-      "codepoints": 288,
-      "kb": 58.8
+      "codepoints": 292,
+      "kb": 59.5
     },
     "hangul": {
       "file": "PretendardVariable.hangul.woff2",
