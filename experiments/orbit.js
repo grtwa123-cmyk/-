@@ -657,9 +657,19 @@
     const fit = keplerFit(pts);
     pctx.clearRect(0, 0, PW, PH);
 
-    const css = getComputedStyle(document.documentElement);
-    const ink = css.getPropertyValue('--text').trim() || '#e8ecf7';
-    const muted = css.getPropertyValue('--muted').trim() || '#8a93ad';
+    /*
+     * Fixed ink, not the document's, and opaque. This plot paints on a ground
+     * that stays dark in both themes, so a colour taken from --text or
+     * --muted — which do flip — came out dark on dark for a light-theme
+     * reader: measured at 1.16:1 against its own background, where 4.5:1 is
+     * the floor for text. The values below are the dark theme's own, so the
+     * plot keeps exactly the appearance it always had and only the light
+     * theme changes. Opaque rather than translucent because the check further
+     * down counts pixels at alpha 200 or more, and 55% ink is 140 — a chart
+     * full of axis labels then reads as an empty one.
+     */
+    const ink = '#ecf0fb';
+    const muted = '#97a0bf';
 
     pctx.save();
     pctx.strokeStyle = muted;

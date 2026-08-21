@@ -137,6 +137,42 @@ for (const file of text) {
   }
 }
 
+// ── 3. no theme colours on a canvas ───────────────────────────────────────
+/*
+ * The experiment stages paint on a ground that stays dark in both themes, so
+ * ink taken from the document's palette is only right in one of them. Four of
+ * these variables flip: --text goes #ecf0fb → #141829, --muted #97a0bf →
+ * #566080, and --border and --accent likewise. A canvas drawing with them
+ * gives a light-theme reader dark ink on a dark ground.
+ *
+ * This is not hypothetical and it is not once. The galvanic cell shipped with
+ * it and was caught by eye; a hunt afterwards found the same fault on three
+ * more pages, the worst of them the Kepler plot on the orbit page at 1.16:1
+ * where 4.5:1 is the floor for text. Nothing else notices — the theme suite
+ * checks that a page repaints when the theme changes, which it does, in the
+ * wrong colour.
+ *
+ * So the pattern is refused outright. A page that wants the reader's palette
+ * on a canvas has to paint a matching ground first, and then this rule is the
+ * wrong rule and should be changed deliberately rather than worked around.
+ */
+{
+  const FLIPPING = ["--text", "--muted", "--border", "--accent"];
+  const pages = fs.readdirSync(path.join(root, "experiments"))
+    .filter((f) => f.endsWith(".js") || f.endsWith(".html"));
+  for (const file of pages) {
+    const src = fs.readFileSync(path.join(root, "experiments", file), "utf8");
+    if (!/getContext\s*\(/.test(src)) continue;
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    for (const v of FLIPPING) {
+      if (code.includes(`"${v}"`) || code.includes(`'${v}'`)) {
+        failures.push(`experiments/${file}: reads ${v} for a canvas that stays dark in both `
+          + "themes — use a fixed colour (see the note in tests/lint.mjs)");
+      }
+    }
+  }
+}
+
 // ── Report ────────────────────────────────────────────────────────────────
 if (failures.length) {
   for (const f of failures.slice(0, 40)) console.error(`FAIL  ${f}`);

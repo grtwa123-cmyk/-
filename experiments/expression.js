@@ -31,6 +31,17 @@
  * and an earlier draft running DT = 0.05 did lean 2.5% low.
  */
 (() => {
+  /*
+   * Fixed ink, not the document's. This canvas paints on a ground that stays
+   * dark in both themes, so a colour taken from --text or --muted — which do
+   * flip with the theme — comes out dark on dark for a light-theme reader.
+   * These are the dark theme's own values, so the picture is unchanged there
+   * and only the light theme is fixed. tests/lint.mjs now refuses the pattern.
+   */
+  const INK = "#ecf0fb";
+  const INK_MUTED = "#97a0bf";
+  const ACCENT = "#ff6b8a";
+
   "use strict";
 
   // Minutes of cell time per step. build() bakes the per-step probabilities
@@ -227,16 +238,10 @@
   // ── Drawing ────────────────────────────────────────────────────────────
   let W = stage.width, H = stage.height;
 
-  function css(name, fallback) {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v || fallback;
-  }
 
   function render() {
     if (!s) return;
-    const acc = css("--accent", "#ff6b8a");
-    const muted = css("--muted", "#97a0bf");
-    const fg = css("--fg", "#e6ecff");
+    const acc = ACCENT, muted = INK_MUTED, fg = INK;
     ctx.clearRect(0, 0, W, H);
 
     const gap = 16;

@@ -246,6 +246,40 @@ if (!chromiumPath || !fs.existsSync(chromiumPath)) {
         `stage at ${Math.round(tops.stage)}px, panel at ${Math.round(tops.panel)}px`);
     }
 
+    /*
+     * Nothing must scroll sideways on a phone, in any of the three languages.
+     *
+     * The experiment pages each check this for themselves, in English. The
+     * landing page, the three hubs, 404 and offline have no suite at all, and
+     * 404 and offline were scrolling 70px sideways at 320px in every
+     * language: the decorative glow behind their heading is 460px across,
+     * 90px wider than the header on a phone, and the rule that draws it is
+     * scoped to bodies with no data-theme — which is exactly those two pages
+     * and nothing else. It had sat there unseen because no check ever opened
+     * them at that width. The hubs were 2px over as well, from a tab strip
+     * that would not shrink.
+     */
+    {
+      const wide = [];
+      for (const rel of ["index.html", "physics.html", "chemistry.html", "biology.html",
+                         "404.html", "offline.html"]) {
+        for (const lang of ["en", "ko", "zh"]) {
+          const page = await browser.newPage({ viewport: { width: 320, height: 800 } });
+          await page.addInitScript((l) => {
+            try { localStorage.setItem("lang", l); } catch (e) { /* private mode */ }
+          }, lang);
+          await page.goto(`${base}/${rel}`, { waitUntil: "domcontentloaded" });
+          await page.waitForTimeout(700);
+          const over = await page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          await page.close();
+          if (over > 1) wide.push(`${rel} [${lang}] +${over}px`);
+        }
+      }
+      check("no page outside experiments/ scrolls sideways at 320px, in any language",
+        wide.length === 0, wide.slice(0, 5).join(", "));
+    }
+
     await browser.close();
     browserRan = true;
   } catch (err) {

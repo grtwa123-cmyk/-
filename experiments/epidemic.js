@@ -36,6 +36,15 @@
  * formulas would be dishonest. The page says so, and so does this comment.
  */
 (() => {
+  /*
+   * Fixed ink, not the document's. This canvas paints on a ground that stays
+   * dark in both themes, so a colour taken from --text or --muted — which do
+   * flip with the theme — comes out dark on dark for a light-theme reader.
+   * These are the dark theme's own values, so the picture is unchanged there
+   * and only the light theme is fixed. tests/lint.mjs now refuses the pattern.
+   */
+  const INK_MUTED = "#97a0bf";
+
   const i18nText = (key, fallback) =>
     (window.i18n && window.i18n.t(key)) || fallback;
 
@@ -238,7 +247,7 @@
     }
     ctx.restore();
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = css.getPropertyValue("--border") || "rgba(255,255,255,.1)";
+    ctx.strokeStyle = "rgba(236, 240, 251, 0.14)";   // a hairline, deliberately faint
     ctx.strokeRect(8, 8, boxW - 16, h - 16);
 
     // ── S, I and R against time ──
@@ -255,7 +264,7 @@
       ctx.stroke();
     }
     ctx.lineWidth = 1;
-    ctx.fillStyle = css.getPropertyValue("--muted") || "#97a0bf";
+    ctx.fillStyle = INK_MUTED;
     ctx.font = "11px ui-monospace, monospace";
     ctx.fillText(`t = ${st.t.toFixed(1)}`, gx + 6, gy + gh + 16);
   }
