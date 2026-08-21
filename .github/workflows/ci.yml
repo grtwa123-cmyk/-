@@ -1,8 +1,16 @@
 name: CI
 
+# Every push to a branch with a pull request open was starting two identical
+# runs — one for the push, one for the pull request — which is eight jobs
+# where four will do. It doubled the compute and, worse, doubled the exposure
+# to any check that fails a small fraction of the time: this branch has spent
+# the morning reading one runner red and its twin green at the same commit and
+# wondering which to believe. Branches are now covered by their pull request,
+# and main by its pushes. A branch with no pull request open gets no run,
+# which is the trade: work here lands through pull requests.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
