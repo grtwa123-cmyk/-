@@ -14,8 +14,17 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # The browser suites drive 11 processes and take a few minutes; this is a
-    # ceiling against a hang, not a target.
+    # Four runners, a quarter of the suites each. Sequentially the whole thing
+    # is about 29 minutes of wall time and climbing, which walked straight
+    # into the ceiling below: from the atom commit onward every run was killed
+    # at 25 minutes and reported as "cancelled" — the same word that appears
+    # when a newer push supersedes a run — so four commits landed without
+    # anyone reading it as a failure. A shard is about eight minutes, which
+    # puts the ceiling back to being a ceiling.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -46,4 +55,4 @@ jobs:
           echo "CHROMIUM_PATH=$CHROMIUM_PATH" >> "$GITHUB_ENV"
 
       - name: Test
-        run: npm test
+        run: npm test -- --shard ${{ matrix.shard }}/4
