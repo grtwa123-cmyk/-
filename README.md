@@ -1,6 +1,6 @@
 # Science Lab
 
-> A browser-based science sandbox — **39 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
+> A browser-based science sandbox — **40 hands-on physics, chemistry, and biology simulations** rendered with **vanilla HTML, CSS, Canvas, and WebGL**. Molecules, crystals, and DNA are real 3D models you can orbit; every simulation has procedural Web Audio sound tied to its own physics. No build step, no runtime dependencies. The UI ships in English, 한국어, and 中文.
 
 <p>
   <a href="https://grtwa123-cmyk.github.io/-/">
@@ -101,7 +101,7 @@ page that cannot be interrogated cannot support the claim.
 | **Hydrogen Spectrum** | The levels are the model, Eₙ = −E₁/n², and everything else follows: a jump releases the difference, one photon carries it, λ = hc/ΔE. Written that way round the Rydberg formula is a *consequence*, which is what makes it worth measuring — **Measure R** fits 1/λ against (1/n₁² − 1/n₂²) over the lines this atom actually emitted and recovers R_H. Which lines exist at all is decided by the cascade: from n = 2 there is only one, from n = 5 there are ten, and the first hop is uniform over the rungs below. Fixing this turned up a real inconsistency — the ladder was drawn from R_∞ (13.605693 eV) while the wavelengths came from R_H, so the page drew one hydrogen and emitted from another, 0.055% apart. |
 | **States of Matter** | One Lennard-Jones potential and Newton's second law, integrated with velocity Verlet. Nowhere does the code know what a solid is: cool it and the particles hold a triangular lattice with ψ₆ ≈ 0.9 and no diffusion, warm it past T\* ≈ 0.4 and ψ₆ collapses while D jumps by more than 50×. g(r) shows sharp shells, then one broad peak, then nothing. Speeds start as a single spike — every particle at the same speed — and collisions alone carry them onto Maxwell–Boltzmann. Thin the gas and cool it and it pulls itself into a droplet with a surface nobody drew. Thermostat off, the total energy holds to a tenth of a percent. |
 
-### Biology (7)
+### Biology (8)
 
 | Experiment | Description |
 | --- | --- |
@@ -280,7 +280,7 @@ The site requires WebGL 1.0 for the landing page and the WebGL experiments. Touc
 
 ## Accessibility & i18n
 
-- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 39 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
+- **Keyboard reachable everywhere.** Every interactive element is a real `<a>`, `<button>`, or `<input>`. The landing-page canvas ships a visually hidden `<nav class="sr-only">` with anchor links to all 40 experiments, so screen readers and search engines can discover the catalogue. The 3D models take focus and are fully operable from the keyboard: **arrow keys** orbit (hold <kbd>Shift</kbd> for bigger steps), <kbd>+</kbd> / <kbd>−</kbd> zoom, and <kbd>0</kbd> restores the starting view.
 - **`prefers-reduced-motion`** is honoured across the whole site: the landing wall skips its intro stagger and disables idle drift, CSS animations are short-circuited via a media query in `styles.css`, and the 3D viewers start held still — a JS animation loop can't be reached by the media query, so `gl3d.js` checks the preference itself and the on-screen control reflects it, leaving the reader free to start the rotation.
 - **Focus rings** use `:focus-visible` so mouse users don't see them on click but keyboard users always do.
 - **Three languages.** Switching `EN / 한 / 中` re-walks the DOM and repaints the canvas cards on the index. The chosen language is persisted to `localStorage`.

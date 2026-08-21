@@ -365,6 +365,27 @@ const RENDERERS = {
     p.dot(0, y0 - s * 0.72, 2.6);
   },
 
+  diffusion(p, s, ctx) {
+    // A box with a wall down the middle, a gap in it, and dots on both sides
+    // — more on the left, a few having made it through.
+    const w = s * 1.9, h = s * 1.25;
+    const x0 = -w / 2, y0 = -h / 2;
+    ctx.strokeRect(x0, y0, w, h);
+    // The membrane, drawn as two stubs with a hole between them.
+    p.line(0, y0, 0, y0 + h * 0.32);
+    p.line(0, y0 + h * 0.68, 0, y0 + h);
+    // Crowded on the left.
+    p.dot(x0 + w * 0.16, y0 + h * 0.22, 2.2);
+    p.dot(x0 + w * 0.30, y0 + h * 0.48, 2.2);
+    p.dot(x0 + w * 0.14, y0 + h * 0.74, 2.2);
+    p.dot(x0 + w * 0.34, y0 + h * 0.84, 2.0);
+    p.dot(x0 + w * 0.38, y0 + h * 0.14, 2.0);
+    // One in the gap, two through.
+    p.dot(0, y0 + h * 0.5, 2.2);
+    p.dot(x0 + w * 0.70, y0 + h * 0.36, 2.2);
+    p.dot(x0 + w * 0.82, y0 + h * 0.66, 2.0);
+  },
+
   electrolysis(p, s, ctx) {
     // Beaker with two electrodes and rising bubbles (H₂ side busier).
     const w = s * 1.8, h = s * 1.4;

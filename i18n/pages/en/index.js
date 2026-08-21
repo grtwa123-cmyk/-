@@ -14,6 +14,8 @@ window.i18nRegister("en", {
   "crystalTitle": "Crystal Lattice",
   "decayDesc": "Watch a population of nuclei decay one by one — pure chance per nucleus builds the exact exponential half-life curve.",
   "decayTitle": "Radioactive Decay",
+  "dfDesc": "A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting — the traffic is heavy both ways, and the flow is only the difference.",
+  "dfTitle": "Diffusion Across a Membrane",
   "diffDesc": "Every point of every slit is added up as a phasor; the fringes are then located as peaks in that sum, and the grating equation is read off the peaks the search returned.",
   "diffTitle": "Double-Slit Interference & Diffraction",
   "diodeDesc": "Watch the depletion region grow and shrink as you switch between forward and reverse bias.",

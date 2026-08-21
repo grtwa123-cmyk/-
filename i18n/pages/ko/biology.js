@@ -6,6 +6,8 @@ window.i18nRegister("ko", {
   "categoryBiology": "생물",
   "categoryChemistry": "화학",
   "categoryPhysics": "물리",
+  "dfDesc": "농도를 전혀 모르는 수백 개의 보행자와 구멍 뚫린 벽 하나. 픽의 법칙은 셈에서 나옵니다 — 양방향 통행량은 많고, 흐름은 그 차이일 뿐입니다.",
+  "dfTitle": "막을 통한 확산",
   "dnaDesc": "5'→3' DNA 서열을 입력하면 상보 가닥과 수소 결합, B-form 회전 나선이 그 자리에서 맞물려 돌아갑니다. GC 함량, 녹는 온도, mRNA 전사물이 실시간으로 갱신됩니다.",
   "dnaTitle": "DNA 이중 나선",
   "epidemicDesc": "개체가 만나고, 옮기고, 회복합니다. R₀는 실행에서 세어내고, 최종 규모는 닫힌 형태가 없는 방정식 r = 1 − e^(−R₀r) 위에 내려앉습니다.",

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting: the traffic is heavy both ways and the flow is the small difference between them." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Diffusion Across a Membrane · Biology" />
+  <meta property="og:description" content="A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting: the traffic is heavy both ways and the flow is the small difference between them." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/diffusion.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M32 10 v14 M32 40 v14' stroke='%23ecf0fb' stroke-width='3'/&gt;&lt;circle cx='16' cy='22' r='3' fill='%236ea8ff'/&gt;&lt;circle cx='20' cy='42' r='3' fill='%236ea8ff'/&gt;&lt;circle cx='13' cy='34' r='3' fill='%236ea8ff'/&gt;&lt;circle cx='48' cy='30' r='3' fill='%23ff9f6e'/&gt;&lt;circle cx='42' cy='46' r='3' fill='%236ea8ff'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="dfPageTitle">Diffusion Across a Membrane · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount33">Biology · Membrane diffusion</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="dfTitle">Diffusion Across a Membrane</h1>
+      <p data-i18n="dfIntro">A box with a wall down the middle and a few holes in it. Each walker moves one fixed step in a uniformly random direction, over and over. That is the whole rule: none of them can tell which side is crowded, and none of them is pushed anywhere. Watch the two sides even out anyway — and watch the traffic, which is heavy in both directions at once. The flow is only the difference between them.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="count" data-i18n="dfCountLabel">Walkers</label>
+          <span class="value" id="count-value">400</span>
+          <input type="range" id="count" min="100" max="800" step="50" value="400" />
+        </div>
+
+        <div class="control">
+          <label for="share" data-i18n="dfShareLabel">Starting share on the left</label>
+          <span class="value"><span id="share-value">100</span> %</span>
+          <input type="range" id="share" min="50" max="100" step="5" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="pore-height" data-i18n="dfPoreLabel">Hole size</label>
+          <span class="value" id="pore-height-value">60</span>
+          <input type="range" id="pore-height" min="0" max="160" step="10" value="60" />
+        </div>
+
+        <div class="control">
+          <label for="pores" data-i18n="dfPoresLabel">How many holes</label>
+          <span class="value" id="pores-value">1</span>
+          <input type="range" id="pores" min="1" max="4" step="1" value="1" />
+        </div>
+
+        <div class="control">
+          <label for="step" data-i18n="dfStepLabel">Jump length</label>
+          <span class="value" id="step-value">9</span>
+          <input type="range" id="step" min="3" max="15" step="1" value="9" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="dfSpeedLabel">Simulation speed</label>
+          <span class="value" id="speed-value">×4</span>
+          <input type="range" id="speed" min="1" max="8" step="1" value="4" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="dfFormulaWalk">The rule</span>: <code>one step of length L, random direction, every h seconds</code></li>
+            <li><span data-i18n="dfFormulaMsd">Spreading</span>: <code>⟨r²⟩ = 4Dt, with D = L²/4h</code></li>
+            <li><span data-i18n="dfFormulaFick">Fick's first law</span>: <code>J = P·ΔN</code></li>
+            <li><span data-i18n="dfFormulaDecay">Evening out</span>: <code>ΔN(t) = ΔN₀·e^(−t/τ)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="dfNotes">Notes</summary>
+          <ul>
+            <li data-i18n="dfNote1">Nothing here knows where the crowd is. Each walker picks a direction at random with no reference to anything, and the two sides even out because there are simply more walkers on the busy side to wander across. There is no force. There is only counting.</li>
+            <li data-i18n="dfNote2">Watch the two crossing rates, not just the net. At full imbalance about a quarter more walkers go out than come back — the rest of the traffic cancels. When the sides finally match, both rates stay high and the net falls to nothing. Equilibrium is not stillness.</li>
+            <li data-i18n="dfNote3">A bigger hole passes more, but not in proportion: eight times the opening gives about three times the flow. In two dimensions a walker that misses the hole slides along the wall and tries again, so what limits the traffic is finding the hole rather than fitting through it.</li>
+            <li data-i18n="dfNote4">The colours say where each walker started, not which side it is on now. Start them all on the left and the right-hand box fills with left-coloured dots — that is the mixing, and it never sorts itself back out.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="430" aria-label="A box divided by a membrane with holes, with walkers diffusing across it and a graph of how many are on each side"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="dfOutLeft">On the left</div>
+            <div class="num" id="out-left">400</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutRight">On the right</div>
+            <div class="num" id="out-right">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutDelta">Difference ΔN</div>
+            <div class="num" id="out-delta">400</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutOut">Crossing right, per second</div>
+            <div class="num" id="out-out">0.0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutBack">Crossing left, per second</div>
+            <div class="num" id="out-back">0.0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutNet">Net flow, per second</div>
+            <div class="num" id="out-net">0.00</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutD">Measured D, ⟨r²⟩/4t</div>
+            <div class="num" id="out-d">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutDExpected">L²/4h says</div>
+            <div class="num" id="out-d-expected">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutTime">Elapsed</div>
+            <div class="num"><span id="out-time">0.0</span> s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="dfOutState">State</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="diffusion.js" defer></script>
+</body>
+</html>

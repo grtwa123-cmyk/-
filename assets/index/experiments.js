@@ -58,6 +58,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "lotkaTitle",       url: "experiments/lotka.html",         cat: "Biology",   tags: ["ECOLOGY", "VOLTERRA"],  colors: ["#101f14", "#7be0d0"], method: "measured", motif: "lotka" },
   { titleKey: "epidemicTitle",  url: "experiments/epidemic.html",      cat: "Biology",   tags: ["EPIDEMIC", "SIR"],      colors: ["#1d0f14", "#ff6b8a"], method: "measured", motif: "epidemic" },
   { titleKey: "expressionTitle", url: "experiments/expression.html",   cat: "Biology",   tags: ["EXPRESSION", "NOISE"],  colors: ["#150f1d", "#ff6b8a"], method: "measured", motif: "expression" },
+  { titleKey: "dfTitle",          url: "experiments/diffusion.html",     cat: "Biology",   tags: ["DIFFUSION", "FICK"],    colors: ["#0a1420", "#6ea8ff"], method: "measured", motif: "diffusion" },
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], method: "measured", motif: "selection" },
   { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], method: "measured", motif: "enzyme" },
   { titleKey: "hhTitle",         url: "experiments/neuron.html",        cat: "Biology",   tags: ["NEURON", "SPIKE"],      colors: ["#1b1206", "#ffd166"], method: "measured", motif: "neuron" },
