@@ -44,7 +44,7 @@ theory is a statement about the average of those trees. That needs many runs
 to see, which is exactly what a simulation is for and a textbook figure is
 not.
 
-### 1b. Diffusion across a membrane — Fick, from a random walk
+### 1b. Diffusion across a membrane — Fick, from a random walk ✅ **done**
 
 Particles on both sides of a semipermeable barrier, each taking an unbiased
 step. Two closed forms, from one mechanism:
@@ -63,6 +63,22 @@ Contrast with `gas`, which is about pressure and speed distributions, and
 with the galvanic cell's concentration cell, which is the same asymmetry
 expressed as a voltage.
 
+**Built, and one claim withdrawn on the way.** The page carries four
+measured results — ⟨r²⟩ = 4Dt with D = L²/4h, Fick's straight line through
+the origin, the heavy two-way traffic whose difference is the flow, and an
+exponential close to r² > 0.99. A fifth was planned here and is not in the
+page: this section originally said nothing about how the flow should depend
+on the size of the hole, but the first draft of the suite assumed
+proportionality. Measured, **eight times the opening gives 3.2 times the
+flow** — in two dimensions a walker that misses the hole slides along the
+wall and tries again, so what limits the traffic is finding the hole rather
+than fitting through it. The sub-linearity is what the page teaches instead.
+
+Two of my own measurements were wrong and were fixed rather than
+accommodated: ⟨r²⟩ = 4Dt came back 22% low at the longest step because the
+cloud reached the walls inside the window, and the exponential fit was
+judged on a single run whose ΔN carries a noise of order √N.
+
 ### 1c. Chemotaxis — run and tumble
 
 A bacterium swims straight, then tumbles to a new random direction. Runs are
@@ -80,8 +96,14 @@ direction — it cannot; it is too small to tell its head from its tail. It
 only compares now with a moment ago. That is a real and slightly startling
 piece of biology and it emerges from one `if`.
 
-**Order:** 1b first (simplest mechanism, two clean laws), then 1c (reuses the
-walker machinery), then 1a (most work, most novel).
+**Order:** 1b first (simplest mechanism, two clean laws) — **done**; then 1c
+(reuses the walker machinery), then 1a (most work, most novel).
+
+The walker machinery 1c was meant to reuse now exists in
+`experiments/diffusion.js`: a fixed sub-step decoupled from the frame rate, a
+box with reflecting walls, and a hook that advances simulated seconds
+directly. Chemotaxis needs one thing added to it — a direction that persists
+between tumbles instead of being redrawn every step.
 
 ---
 
