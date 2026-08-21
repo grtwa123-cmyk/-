@@ -25,6 +25,8 @@ window.i18nRegister("en", {
   "mmRateAxis": "rate v (µM/s)",
   "moleculeDesc": "Browse common molecules — atoms, bonds, geometry, and the patterns they reveal across matter.",
   "moleculeTitle": "Molecule Viewer",
+  "rxDesc": "Two metals and a salt bridge. The Nernst equation is not used to compute the voltage — it is where the electrode kinetics settle, and the 59.2 mV moves with the temperature.",
+  "rxTitle": "Galvanic Cell",
   "spectraDesc": "Lift the electron and let it fall: every jump between shells throws out one photon, and the Balmer lines land exactly where a spectroscope sees them.",
   "spectraTitle": "Hydrogen Spectrum",
   "tagOpen": "Open",

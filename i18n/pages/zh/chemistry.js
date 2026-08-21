@@ -25,6 +25,8 @@ window.i18nRegister("zh", {
   "mmRateAxis": "速率 v (µM/s)",
   "moleculeDesc": "选择一个分子并旋转它。注意杂化方式相同的分子共享同一几何模板。",
   "moleculeTitle": "分子查看器",
+  "rxDesc": "两种金属和一座盐桥。电压不是用能斯特方程算出来的——它是电极动力学稳定下来的地方，而那 59.2 mV 会随温度移动。",
+  "rxTitle": "原电池",
   "spectraDesc": "把电子提上去再放开：每跨越一层壳层就放出一个光子，巴尔末谱线正好落在分光镜看到的位置。",
   "spectraTitle": "氢原子光谱",
   "tagOpen": "打开",

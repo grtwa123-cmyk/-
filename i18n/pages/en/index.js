@@ -83,6 +83,8 @@ window.i18nRegister("en", {
   "refractionTitle": "Refraction & Total Internal Reflection",
   "resDesc": "Drive a damped oscillator and sweep the frequency. The mass is integrated from its equation of motion, and the amplitude it settles at is measured back out of the motion and checked against the closed form.",
   "resTitle": "Driven Oscillation & Resonance",
+  "rxDesc": "Two metals and a salt bridge. The Nernst equation is not used to compute the voltage — it is where the electrode kinetics settle, and the 59.2 mV moves with the temperature.",
+  "rxTitle": "Galvanic Cell",
   "semiDesc": "Compare intrinsic, n-type, and p-type semiconductors under the same battery and flip the polarity.",
   "semiTitle": "Semiconductors & Battery",
   "solarDesc": "Watch the eight planets orbit the Sun, then tap to summon a black hole and see how the planets respond.",
