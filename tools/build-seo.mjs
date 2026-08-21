@@ -93,6 +93,33 @@ const COUNTED = [
     + `${changed.length ? ` (updated ${changed.join(", ")})` : ""}`);
 }
 
+// ── and how many are in each category ─────────────────────────────────────
+// The same lesson one level down. README.md heads each category section with
+// its own count, three more numbers nobody was going to remember: it said
+// Chemistry (11) with twelve in the catalogue and Biology (5) with seven.
+// They come from the same array now, and a renamed heading stops the build
+// rather than going quietly stale.
+{
+  const file = "README.md";
+  const abs = path.join(ROOT, file);
+  let text = fs.readFileSync(abs, "utf8");
+  const cats = {};
+  for (const e of EXPERIMENTS) cats[e.cat] = (cats[e.cat] || 0) + 1;
+  const shown = [];
+  for (const [cat, n] of Object.entries(cats)) {
+    const re = new RegExp(`(^### ${cat} \\()\\d+(\\))`, "m");
+    if (!re.test(text)) {
+      console.error(`${file}: no "### ${cat} (n)" heading to count into`
+        + " — the pattern in tools/build-seo.mjs no longer matches the file");
+      process.exit(1);
+    }
+    text = text.replace(re, `$1${n}$2`);
+    shown.push(`${cat} ${n}`);
+  }
+  if (text !== fs.readFileSync(abs, "utf8")) fs.writeFileSync(abs, text);
+  console.log(`per category: ${shown.join(", ")}`);
+}
+
 // ── The social card ───────────────────────────────────────────────────────
 const chromiumPath = process.env.CHROMIUM_PATH;
 if (!chromiumPath || !fs.existsSync(chromiumPath)) {
