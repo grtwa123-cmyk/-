@@ -6,6 +6,8 @@ window.i18nRegister("zh", {
   "categoryBiology": "生物",
   "categoryChemistry": "化学",
   "categoryPhysics": "物理",
+  "dfDesc": "几百个对浓度一无所知的行走者，和一堵开了洞的墙。菲克定律来自计数——两个方向的往来都很密集，流动只是其中的差额。",
+  "dfTitle": "跨膜扩散",
   "dnaDesc": "输入 5'→3' 的 DNA 序列，反向互补链、氢键与 B 型旋转双螺旋即时落位。GC 含量、熔解温度与 mRNA 转录本实时更新。",
   "dnaTitle": "DNA 双螺旋",
   "epidemicDesc": "个体相遇、传播、康复；R₀ 从运行中数出，最终规模随后落在没有闭式解的方程 r = 1 − e^(−R₀r) 上。",

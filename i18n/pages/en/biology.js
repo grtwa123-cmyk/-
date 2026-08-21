@@ -6,6 +6,8 @@ window.i18nRegister("en", {
   "categoryBiology": "Biology",
   "categoryChemistry": "Chemistry",
   "categoryPhysics": "Physics",
+  "dfDesc": "A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting — the traffic is heavy both ways, and the flow is only the difference.",
+  "dfTitle": "Diffusion Across a Membrane",
   "dnaDesc": "Type a 5'→3' DNA sequence and the antiparallel complement, hydrogen bonds, and a rotating B-form helix snap into place. GC content, melting temperature, and an mRNA transcript update live.",
   "dnaTitle": "DNA Double Helix",
   "epidemicDesc": "Individuals meet, transmit and recover; R₀ is counted out of the run, and the final size then lands on r = 1 − e^(−R₀r), an equation with no closed form.",
