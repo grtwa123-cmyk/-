@@ -143,6 +143,27 @@ past it and four commits landed while every run was being killed and
 reported as **"cancelled"**, the same word GitHub uses for a superseded run.
 If a run says cancelled, check the duration before believing it.
 
+**Size every bound against measured scatter, not against a round number.** A
+stochastic check has a standard error, and the bound has to be several of
+them clear of it or the suite is a coin toss. Measure the scatter — repeat
+the same measurement five or six times and take the spread — before writing
+the number down. On `chemotaxis` a flatness bound of |W/ℓ| < 0.15 turned out
+to be *one* sigma: a histogram is worth n·T/(W²/D) independent looks, not
+n·T/Δt, because a cell tells you nothing new about where it is until it has
+had time to cross the dish. Three passes went green and then it flagged a
+defect that only changed a readout's text.
+
+**That is the cheap way to find a flaky check: plant a defect that cannot
+possibly matter.** Rewire one panel readout to display the wrong quantity and
+run the suite. Exactly one check should fail. Anything else that fails is
+flaking, and it flakes at whatever rate it just demonstrated.
+
+**When the scatter is too wide, buy more data — do not widen the bound.** The
+fix is nearly always more replicates, a longer window, or a parameter choice
+that decorrelates the samples faster. On `chemotaxis` the tumble-rate fit
+scattered 1.4% against a 4% bound at 24 replicates; at 48 it scatters 0.76%,
+and the bound was **tightened** to 3%.
+
 **Known flake, do not chase:** `kinetics` fails about 1.24% of runs by
 construction. Four hypotheses were tested and all four killed by
 measurement; the bounds cannot be widened without losing the defect they

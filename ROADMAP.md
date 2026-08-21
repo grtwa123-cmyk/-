@@ -1,8 +1,9 @@
 # What's next
 
-The catalogue is 39 experiments, every one of them `verified`: 20 physics,
-12 chemistry, 7 biology. 53 test suites, 1500-odd checks. The obvious
-remaining asymmetry is biology, and that is what this plan is about.
+The catalogue is 41 experiments, every one of them `verified`: 20 physics,
+12 chemistry, 9 biology. 55 test suites, 1550-odd checks. The obvious
+remaining asymmetry was biology, and that is what this plan is about. Two of
+its three items are built; one is left.
 
 Numbers below were checked in node before being written down (see §4).
 
@@ -79,7 +80,7 @@ accommodated: ⟨r²⟩ = 4Dt came back 22% low at the longest step because the
 cloud reached the walls inside the window, and the exponential fit was
 judged on a single run whose ΔN carries a noise of order √N.
 
-### 1c. Chemotaxis — run and tumble
+### 1c. Chemotaxis — run and tumble ✅ **done**
 
 A bacterium swims straight, then tumbles to a new random direction. Runs are
 exponentially distributed. With no gradient it goes nowhere on average but
@@ -96,14 +97,56 @@ direction — it cannot; it is too small to tell its head from its tail. It
 only compares now with a moment ago. That is a real and slightly startling
 piece of biology and it emerges from one `if`.
 
-**Order:** 1b first (simplest mechanism, two clean laws) — **done**; then 1c
-(reuses the walker machinery), then 1a (most work, most novel).
+**Built, and the caveat above turned out to be the whole design.** Waiting for
+the diffusive limit was never going to work: at a tenth of a run the
+asymptote 4Dt is *twenty times* the truth, and the dish is far too small to
+run to where it stops mattering. The page fits the crossover instead,
 
-The walker machinery 1c was meant to reuse now exists in
-`experiments/diffusion.js`: a fixed sub-step decoupled from the frame rate, a
-box with reflecting walls, and a hook that advances simulated seconds
-directly. Chemotaxis needs one thing added to it — a direction that persists
-between tumbles instead of being redrawn every step.
+```
+⟨r²⟩ = 2v²τ²(t/τ − 1 + e^(−t/τ))
+```
+
+which is right at every t, and shows both of its limits as the dashed lines
+they are. Measured, it tracks that to 5% over 2400× in t.
+
+Two further results came out of building it that were not in this plan:
+
+- **ℓ = D/v_d = τW/β contains no swimming speed.** A cell that swims three
+  times faster drifts nine times faster — it perceives the ramp three times
+  more steeply as well — and it spreads nine times faster. The ratio does not
+  move: 214, 217, 216 px at v = 40, 80, 120. Nothing about the design
+  anticipated that; it fell out of the algebra once k = βv/W was written down,
+  and it is now a check.
+- **The measurement, not the model, was the hard part.** The dish is
+  716 × 244 and a cell crosses it in seconds, so ⟨r²⟩ measured between the
+  walls saturates and reads 72% low by t = 100τ. Every cell therefore carries
+  an unfolded position: a reflection is a mirror, so a sign flipped at each
+  wall keeps the unfolded path running as though the wall were not there.
+  That is exact while the tumble rate is blind to direction, which is why the
+  spreading law is only claimed with the memory off — and it is why the graph
+  does not move when the memory is turned up, since unfolding mirrors the
+  attractant ramp along with the dish.
+
+Four checks were re-cut during the build rather than accommodated. The
+ballistic check spanned t/τ = 0.33, where the ballistic limit is genuinely
+10% high — restricted to t/τ ≤ 0.1 and *tightened* to 4%. The flatness check
+|W/ℓ| < 0.15 was a one-sigma bound that passed three runs and then flagged a
+display-only defect: the histogram is worth n·T/(W²/D) independent looks, so
+the swimmers now run at the top of the slider where a look costs 87 s instead
+of 475, two dishes are pooled, and it is five sigma. The k fit at 24
+replicates scattered 1.4% against a 4% bound, so it was paid up to 48
+replicates and the bound *tightened* to 3%. The saturation ceiling was
+checked on 1200 walks where (x₁−x₀)² has a coefficient of variation of 1.06;
+it is now 9600.
+
+Seventeen deliberate defects were planted and all seventeen were caught. The
+one that matters most is a cell given a 2% preference for swimming right,
+with no memory involved at all — the page's whole claim is that no such
+preference exists anywhere in it, and the check that catches it is the tumble
+rate being flat in cos θ to |k| < 0.01.
+
+**Order:** 1b first (simplest mechanism, two clean laws) — **done**; then 1c
+(reuses the walker machinery) — **done**; then 1a (most work, most novel).
 
 ---
 
@@ -152,3 +195,16 @@ figure is 5% low because at *t*/τ = 40 the walk has not fully left the
 ballistic regime, where ⟨r²⟩ grows as *t*² rather than *t*. The page will
 have to run long enough, or the check will have to fit the crossover instead
 of assuming the limit. It is not noise and it must not be treated as noise.
+
+**It was the crossover, and the deficit is worse than 5% far longer than
+this line suggests.** Measured against `2v²τ²(t/τ − 1 + e^(−t/τ))`:
+
+```
+t/τ =   0.1   4Dt is 20.7× the truth
+t/τ =   1     4Dt is  2.7×
+t/τ =  10     4Dt is  1.11×
+t/τ = 100     4Dt is  1.01×
+```
+
+Running long enough would have meant a hundred runs, in a dish a cell crosses
+in eight. Fitting the crossover costs nothing and is right everywhere.

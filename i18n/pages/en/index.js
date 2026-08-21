@@ -12,6 +12,8 @@ window.i18nRegister("en", {
   "circuitTitle": "Ohm’s Law — Series & Parallel",
   "crystalDesc": "Browse common crystal structures — simple cubic, BCC, FCC, NaCl, CsCl, diamond — and compare their atoms, coordination, and packing.",
   "crystalTitle": "Crystal Lattice",
+  "ctDesc": "A bacterium is too small to tell which way the food is. It swims, tumbles, and only remembers what things were like a moment ago — and that one comparison is enough to climb the gradient.",
+  "ctTitle": "Chemotaxis &mdash; Run and Tumble",
   "decayDesc": "Watch a population of nuclei decay one by one — pure chance per nucleus builds the exact exponential half-life curve.",
   "decayTitle": "Radioactive Decay",
   "dfDesc": "A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting — the traffic is heavy both ways, and the flow is only the difference.",

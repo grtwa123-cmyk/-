@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="A bacterium cannot tell which way the food is — it is far too small. It swims, it tumbles, and it remembers what things were like a moment ago. One comparison is enough to climb a gradient." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Chemotaxis &mdash; Run and Tumble &middot; Biology" />
+  <meta property="og:description" content="A bacterium cannot tell which way the food is — it is far too small. It swims, it tumbles, and it remembers what things were like a moment ago. One comparison is enough to climb a gradient." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/chemotaxis.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M10 46 L24 32 L20 20 L36 30 L52 18' stroke='%237be0d0' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/&gt;&lt;circle cx='52' cy='18' r='4' fill='%23ffd166'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="ctPageTitle">Chemotaxis — Run and Tumble · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount34">Biology · Chemotaxis</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="ctTitle">Chemotaxis &mdash; Run and Tumble</h1>
+      <p data-i18n="ctIntro">A bacterium is a few thousandths of a millimetre long. At that size it is shaken so hard by the water around it that it cannot hold a heading, and it certainly cannot tell whether its front end is in more food than its back end. It has no compass. All it can do is swim in a straight line for a while, stop, pick a new direction at random, and go again &mdash; and remember what the concentration was a moment ago. When things are getting better it waits a little longer before tumbling. That is the whole of it, and it is enough to climb a hill.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="count" data-i18n="ctCountLabel">Bacteria</label>
+          <span class="value" id="count-value">300</span>
+          <input type="range" id="count" min="60" max="600" step="20" value="300" />
+        </div>
+
+        <div class="control">
+          <label for="swim" data-i18n="ctSwimLabel">Swimming speed</label>
+          <span class="value"><span id="swim-value">60</span> px/s</span>
+          <input type="range" id="swim" min="20" max="140" step="10" value="60" />
+        </div>
+
+        <div class="control">
+          <label for="runtime" data-i18n="ctRunLabel">Mean run time</label>
+          <span class="value"><span id="runtime-value">0.6</span> s</span>
+          <input type="range" id="runtime" min="0.2" max="2" step="0.1" value="0.6" />
+        </div>
+
+        <div class="control">
+          <label for="beta" data-i18n="ctBetaLabel">How far back it remembers</label>
+          <span class="value"><span id="beta-value">2.0</span> s</span>
+          <input type="range" id="beta" min="0" max="4" step="0.5" value="2" />
+        </div>
+
+        <div class="control">
+          <label for="sim-speed" data-i18n="ctSimLabel">Simulation speed</label>
+          <span class="value" id="sim-speed-value">×4</span>
+          <input type="range" id="sim-speed" min="1" max="16" step="1" value="4" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="ctFormulaRule">The rule</span>: <code>rate = (1/τ)·max(0, 1 − β·dc/dt)</code></li>
+            <li><span data-i18n="ctFormulaTumble">Tumble rate by heading</span>: <code>λ(θ) = λ₀(1 − k cos θ), k = βv/W</code></li>
+            <li><span data-i18n="ctFormulaMsd">Spreading</span>: <code>⟨r²⟩ = 2v²τ²(t/τ − 1 + e^(−t/τ))</code></li>
+            <li><span data-i18n="ctFormulaLimits">Its two limits</span>: <code>v²t² early, 4Dt late, D = v²τ/2</code></li>
+            <li><span data-i18n="ctFormulaDrift">Drift</span>: <code>v_d = (v/k)(1 − √(1−k²)) ≈ vk/2</code></li>
+            <li><span data-i18n="ctFormulaProfile">Pile-up</span>: <code>ρ(x) ∝ e^(x/ℓ), ℓ = D/v_d = τW/β</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="ctNotes">Notes</summary>
+          <ul>
+            <li data-i18n="ctNote1">Nothing in the code asks which way the attractant lies. Each cell subtracts the concentration it felt one sub-step ago from the one it feels now, and lets that number lengthen or shorten its run. Sort the sub-steps afterwards by the angle between heading and gradient and a clean straight line appears — a direction the cell never measured, recovered from a cell that only compared two numbers in time.</li>
+            <li data-i18n="ctNote2">Turn the memory off and watch the lower graph. On the left the population spreads along the steep line: over less than one run the cells are simply moving, and the distance grows with the time, so its square grows with the square of the time. On the right that bends into the shallower line of a random walk. The single curve through both is the only honest description, and the diffusive limit alone is twenty times wrong at a tenth of a run.</li>
+            <li data-i18n="ctNote3">The pile-up stops growing. Drift carries cells up the gradient, spreading carries them back down, and where the two balance the population is an exponential with a length of ℓ = D/v_d. That is not a wall the cells are pressed against — the traffic through every line in the dish is heavy, and only the difference has gone to zero.</li>
+            <li data-i18n="ctNote4">Push the swimming speed from 40 to 120 and the cluster does not tighten. A cell that swims three times as fast drifts nine times as fast, because it also perceives the gradient three times as steeply — and it spreads nine times as fast too. ℓ = τW/β has no v in it at all.</li>
+            <li data-i18n="ctNote5">The dish has walls, and a walk that keeps bouncing off them stops getting further away, which would make the spreading measurement read low by four fifths. A reflection is a mirror, so each cell also carries the path it would have taken had the wall not been there. That unfolded path is what the graph plots — exact, as long as the tumble rate is blind to direction, which is why the curve is only claimed with the memory set to zero.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="500" aria-label="A dish with an attractant gradient rising to the right, bacteria running and tumbling in it, a histogram of where they are, and a log–log graph of how far they get against how long"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="ctOutK">Bias k = βv/W</div>
+            <div class="num"><span id="out-k">0.0</span> %</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutKFit">k recovered from the headings</div>
+            <div class="num"><span id="out-kfit">—</span> %</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutRun">Mean run measured</div>
+            <div class="num"><span id="out-run">—</span> s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutLambda">λ₀ from the fit, per second</div>
+            <div class="num" id="out-lambda">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutD">D = v²τ/2</div>
+            <div class="num" id="out-d">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutDrift">Drift v_d, px/s</div>
+            <div class="num" id="out-drift">0.00</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutL">D/v_d says ℓ =</div>
+            <div class="num" id="out-l">∞</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutLFit">ℓ measured off the bars</div>
+            <div class="num" id="out-lfit">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutR2">Fit r²</div>
+            <div class="num" id="out-r2">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutTime">Elapsed</div>
+            <div class="num"><span id="out-time">0.0</span> s</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="ctOutState">State</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="chemotaxis.js" defer></script>
+</body>
+</html>
