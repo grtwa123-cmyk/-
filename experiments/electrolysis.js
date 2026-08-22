@@ -66,6 +66,15 @@
   let charge = 0;               // coulombs passed
   let paused = false;
   let lastTs = performance.now();
+  /*
+   * The animation clock, advanced by the frame's own dt and only while the
+   * cell is running. It used to be performance.now() through the
+   * reduced-motion gate, which froze under prefers-reduced-motion but not
+   * under Pause: the water went on rippling behind a button that said the
+   * experiment had stopped. A dt that is already zero when the clock is
+   * frozen does both jobs with one number.
+   */
+  let phase = 0;
   let raf = 0;
 
   const current = (V) => (V > E_DECOMP ? CONDUCTANCE * (V - E_DECOMP) : 0);
@@ -145,10 +154,7 @@
     // 2 H₂O → O₂ + 4 H⁺ + 4 e⁻
     while (eAnode >= 4 * PACKET) { eAnode -= 4 * PACKET; nO2 += PACKET; release("anode"); }
 
-    // Through the gate, so the shimmer freezes with the rest under
-    // prefers-reduced-motion — performance.now() itself cannot be frozen.
-    const ph = window.ReducedMotion ? window.ReducedMotion.clock()
-                                    : performance.now() / 1000;
+    const ph = phase;
     for (let i = bubbles.length - 1; i >= 0; i--) {
       const b = bubbles[i];
       b.y -= b.vy * dt;
@@ -263,10 +269,7 @@
   }
 
   function drawCell(V) {
-    // Through the gate, so the shimmer freezes with the rest under
-    // prefers-reduced-motion — performance.now() itself cannot be frozen.
-    const ph = window.ReducedMotion ? window.ReducedMotion.clock()
-                                    : performance.now() / 1000;
+    const ph = phase;
     const I = current(V);
 
     const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -497,7 +500,7 @@
     const dt = Math.max(0, Math.min((ts - lastTs) / 1000, 0.05));
     lastTs = ts;
     const V = parseFloat(inputs.voltage.value);
-    if (!paused) step(dt, V);
+    if (!paused) { step(dt, V); phase += dt; }
     drawCell(V);
     updateReadouts(V);
   }

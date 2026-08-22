@@ -26,6 +26,18 @@
  *
  * k₁ is fixed and k₋₁ derived from the Kₘ you ask for, since Kₘ is the thing
  * an experimentalist actually measures and k₋₁ is not.
+ *
+ * ONE IDEALISATION, AND IT IS THE ONE THE LAW NEEDS
+ * -------------------------------------------------
+ * [S] is read off the slider every time a molecule needs it and is never
+ * decremented. That is deliberate and it is the initial-rate assay: the
+ * substrate is an endless pool, so the enzymes are independent of each other
+ * and the steady-state occupancy is exactly [S]/(Kₘ+[S]). Michaelis–Menten
+ * is therefore exact here rather than approximate — there is no small
+ * parameter to violate, because the thing that would spoil it, depletion,
+ * has been removed rather than assumed small. The page says so in its notes,
+ * and the suite measures it: run long enough and the turnovers counted pass
+ * the whole pool several times over.
  */
 
 (() => {

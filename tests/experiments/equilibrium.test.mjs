@@ -337,6 +337,15 @@ const MK = `const E = window.__eq;
   chk('every data-i18n key resolves', bad.length===0, bad.join(','));
 }
 {
+  /*
+   * Start it first. The block above leaves the page frozen, and this check
+   * used to pass anyway because the dots drifted outside the running gate —
+   * so it was asserting that a stopped page still moves, which was true and
+   * was the bug. With the gate closed it fails unless the clock is running,
+   * which is what it was always meant to say.
+   */
+  await page.evaluate(() => window.__eq.setRunning(true));
+  await page.waitForTimeout(200);
   const shot = async () => (await page.locator('#stage').screenshot()).toString('base64');
   const a = await shot(); await page.waitForTimeout(700); const b = await shot();
   chk('canvas animates', a!==b && a.length>3000, `len ${a.length}`);
