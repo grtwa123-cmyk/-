@@ -104,6 +104,22 @@ for (const event of ["uncaughtException", "unhandledRejection"]) {
   });
 }
 
+/**
+ * Switch language and wait for it to have landed.
+ *
+ * i18n.js fetches the page's chunk and only then paints, and painting is what
+ * sets <html lang>. So the attribute is the completion signal, and a fixed
+ * sleep after the click is a race: 111 sites across 38 suites were waiting
+ * 300–600 ms, which is plenty on an idle machine and not always enough on a
+ * loaded CI runner. Reproduced by running one suite four-up on four cores —
+ * "title translates en/ko/zh and returns" then reported the Korean title
+ * under zh, because the zh chunk had not arrived yet.
+ */
+export async function lang(page, code, timeout = 10000) {
+  await page.click(`.lang-btn[data-lang="${code}"]`);
+  await page.waitForFunction((c) => document.documentElement.lang === c, code, { timeout });
+}
+
 /** Print the results, tear everything down, exit non-zero on any failure. */
 export async function finish(title) {
   let failed = 0;

@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { browser, chk, url, finish } from "./lib/harness.mjs";
+import { browser, chk, url, finish, lang } from "./lib/harness.mjs";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const WAVE = url("experiments/wave.html");
@@ -247,8 +247,7 @@ const query = (p) => new URL(p.url()).search;
   // The language switcher and the theme toggle are not controls and must not
   // start appearing in shared links.
   const { ctx, p } = await open(WAVE);
-  await p.click('.lang-btn[data-lang="ko"]');
-  await p.waitForTimeout(500);
+  await lang(p, 'ko');
   await p.click(".theme-btn");
   await p.waitForTimeout(400);
   await flush(p);

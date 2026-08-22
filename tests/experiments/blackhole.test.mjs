@@ -1,4 +1,4 @@
-import { browser, chk, rows, BASE, serveCdn, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, BASE, serveCdn, finish, lang } from '../lib/harness.mjs';
 
 /*
  * The black hole, measured off its own pixels.
@@ -187,11 +187,11 @@ async function shadow(M, D) {
   // This page has no h1 — it is full-bleed, and its name lives in <title>.
   const title = () => page.evaluate(() => document.title.trim());
   const en = await title();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await title();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await title();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns',
       en !== ko && ko !== zh && (await title()) === en, `${en} / ${ko} / ${zh}`);
 

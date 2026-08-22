@@ -19,7 +19,7 @@
  * far-field direction — and failed the page for being 13% off. The page was
  * right: at L = 303 px a screen 303 px away is not far away.
  */
-import { browser, chk, url, finish } from '../lib/harness.mjs';
+import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/wave.html');
 const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -430,11 +430,11 @@ const E = `
   await page.evaluate(() => window.__wave.setRunning(true));
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 

@@ -1,4 +1,4 @@
-import { browser, chk, rows, BASE, url, finish } from './lib/harness.mjs';
+import { browser, chk, rows, BASE, url, finish, lang } from './lib/harness.mjs';
 import { installCdnCache } from './lib/cdn-cache.mjs';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -129,13 +129,13 @@ const B = url('index.html');
   await p.waitForTimeout(700);
   const en = await p.evaluate(()=>document.querySelector('.tv-link').textContent.trim());
   const enCol = await p.evaluate(()=>document.querySelector('.tv-table th:nth-child(2)').textContent.trim());
-  await p.click('.lang-btn[data-lang="ko"]'); await p.waitForTimeout(500);
+  await lang(p, 'ko');
   const ko = await p.evaluate(()=>document.querySelector('.tv-link').textContent.trim());
   const koCol = await p.evaluate(()=>document.querySelector('.tv-table th:nth-child(2)').textContent.trim());
   const koBtn = await p.evaluate(()=>document.querySelector('#uiSwitch [data-ui="table"]').textContent.trim());
   chk('table re-renders in Korean (titles, headers and the switcher)',
       ko!==en && koCol!==enCol && /[가-힣]/.test(ko+koCol+koBtn), `${en}/${ko} · ${enCol}/${koCol} · ${koBtn}`);
-  await p.click('.lang-btn[data-lang="en"]'); await p.waitForTimeout(400);
+  await lang(p, 'en');
   // keyboard: the first row link must be reachable and be a real anchor
   const focusable = await p.evaluate(()=>{
     const a = document.querySelector('.tv-link'); a.focus();
@@ -233,7 +233,7 @@ for (const w of [320, 390, 768]) {
 
   // Korean too — the legend is built in JS, which is where translations get
   // forgotten, and the counts must survive the rebuild.
-  await page.click('.lang-btn[data-lang="ko"]');
+  await lang(page, 'ko');
   await page.waitForFunction(() => {
     const dd = document.querySelector('.tv-legend dd');
     return dd && /[가-힣]/.test(dd.textContent);

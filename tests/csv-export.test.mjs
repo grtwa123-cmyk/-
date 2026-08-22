@@ -13,7 +13,7 @@
  * worse than no export at all: it looks like evidence.
  */
 import fs from "node:fs";
-import { browser, chk, url, finish } from "./lib/harness.mjs";
+import { browser, chk, url, finish, lang } from "./lib/harness.mjs";
 
 /** The file a click on #csv-btn produces, parsed into its two halves. */
 async function grab(page) {
@@ -209,7 +209,7 @@ const near = (a, b) => Math.abs(a - b) <= Math.abs(b) * 1e-12 + 1e-12;
   await page.goto(url("experiments/spectra.html"), { waitUntil: "networkidle" });
   const label = async () => page.$eval("#csv-btn", (el) => el.textContent.trim());
   const en = await label();
-  await page.click('.lang-btn[data-lang="ko"]');
+  await lang(page, 'ko');
   await page.waitForFunction(() => /[가-힣]/.test(document.getElementById("csv-btn").textContent),
                              null, { timeout: 20000 }).catch(() => {});
   const ko = await label();

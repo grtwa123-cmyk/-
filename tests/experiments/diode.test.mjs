@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { browser, chk, rows, BASE, ROOT, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, BASE, ROOT, finish, lang } from '../lib/harness.mjs';
 
 /*
  * The PN junction, held to being a diode.
@@ -238,11 +238,11 @@ const settle = (q) => page.evaluate((s) => {
 {
   const title = async () => (await page.locator('h1').textContent()).trim();
   const en = await title();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await title();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await title();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns',
       en !== ko && ko !== zh && (await title()) === en, `${en} / ${ko} / ${zh}`);
 

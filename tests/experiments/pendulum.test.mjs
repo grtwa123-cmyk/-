@@ -1,4 +1,4 @@
-import { browser, chk, rows, url, BASE as BASE_URL, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, url, BASE as BASE_URL, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/pendulum.html');
 
@@ -159,12 +159,12 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
 {
   const h1 = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(300);
+  await lang(page, 'ko');
   const ko = await h1();
   const koLabel = await txt('lab-period');
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(300);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(300);
+  await lang(page, 'en');
   chk('title translates en/ko/zh', ko!==en && zh!==en && zh!==ko, `${en}|${ko}|${zh}`);
   chk('readout labels translate too', /[가-힣]/.test(koLabel), koLabel);
   const bad = await page.evaluate(()=>{ const b=[];

@@ -23,7 +23,13 @@ const open = async (file, { cdn = true, w = 1280 } = {}) => {
   await p.goto(`${BASE}/experiments/${file}`, { waitUntil: 'networkidle', timeout: 60000 });
   return { p, errs };
 };
-const lang = async (p, l) => { await p.click(`.lang-btn[data-lang="${l}"]`); await p.waitForTimeout(450); };
+// Waits for the switch to have landed rather than for a clock: i18n.js
+// sets <html lang> only after the page's chunk is in, and a fixed sleep
+// is a race a loaded runner loses.
+const lang = async (p, l) => {
+  await p.click(`.lang-btn[data-lang="${l}"]`);
+  await p.waitForFunction((c) => document.documentElement.lang === c, l, { timeout: 10000 });
+};
 const text = (p, sel) => p.$eval(sel, e => e.textContent.trim()).catch(() => '<none>');
 
 // ── Solar System, three.js available ─────────────────────────────────

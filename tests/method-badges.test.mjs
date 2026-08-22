@@ -10,7 +10,7 @@
  * measurement out of — because that is what the word means here.
  */
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { browser, chk, url, finish } from './lib/harness.mjs';
+import { browser, chk, url, finish, lang } from './lib/harness.mjs';
 import { installCdnCache } from './lib/cdn-cache.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
@@ -118,8 +118,7 @@ const verifiedCount = entries.filter((e) => suites.has(e.name)).length;
       seen.method === 'measured' && seen.text.length > 0 && seen.title.length > 20,
       `${seen.text} — "${(seen.title || '').slice(0, 40)}…"`);
 
-  await page.click('.lang-btn[data-lang="ko"]');
-  await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await page.$eval('.method-tag', (el) => ({
     text: el.textContent.trim(), title: el.getAttribute('title'),
   }));
