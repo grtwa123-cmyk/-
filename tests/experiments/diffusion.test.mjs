@@ -100,9 +100,19 @@ async function flux(cfg, secs, reps) {
 
 // ── Fick: the net flow is proportional to the difference ─────────────────
 {
+  /*
+   * Two hundred and fifty short replicates per point, not twenty-four. The
+   * net is the difference of two large Poisson tallies, so its noise is
+   * √(2·gross/T): at ΔN = 0 the traffic is about 27 a second each way and
+   * twenty-four replicates of 1.2 s leave a standard error near 0.9/s
+   * against a bound of 1.1/s. That is a one-sigma bound and it failed four
+   * of thirty local runs. Ten times the replicates put the error at 0.28/s
+   * and the same bound at four sigma — the window stays short, because the
+   * quantity being varied is the imbalance and a long window lets it move.
+   */
   const pts = [];
   for (const share of [100, 85, 70, 55, 50]) {
-    const f = await flux({ n: 400, share, poreH: 60, pores: 1, step: 9 }, 1.2, 24);
+    const f = await flux({ n: 400, share, poreH: 60, pores: 1, step: 9 }, 1.2, 250);
     const dN = Math.round(400 * (share / 100) - 400 * (1 - share / 100));
     pts.push({ dN, ...f });
   }
