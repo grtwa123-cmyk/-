@@ -26,7 +26,7 @@
  * ångström — O–H 0.958, C=O 1.163, C–H 1.087, N–H 1.012, C–C 1.535,
  * C=C 1.339, benzene C–C 1.397 — and the page sits within 0.005 of every one.
  */
-import { browser, chk, url, finish } from '../lib/harness.mjs';
+import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/molecule.html');
 const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -224,11 +224,11 @@ function angles(m) {
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 

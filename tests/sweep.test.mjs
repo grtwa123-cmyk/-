@@ -68,7 +68,22 @@ function urlProbe(name) {
   const page = await ctx.newPage();
 
   const noRestore = [], audio = [], fonts = [], flat = [], drifted = [], errs = [];
-  let probed = 0, resettable = 0;
+  const kept = [];
+  let probed = 0, resettable = 0, watched = 0;
+
+  /*
+   * Every readout that is currently empty. Restricting the Reset check to
+   * these is what makes it decisive: a readout showing a live noisy quantity
+   * reads differently every time it is looked at and can say nothing, but one
+   * that opened at zero, filled up, and did not go back to zero is a tally
+   * that survived a Reset. The existing check compares controls only, so a
+   * chart of recorded points or a running tally could sail through it.
+   */
+  const EMPTY = new Set(['0', '0.0', '0.00', '0.000', '—', '-', '', '0 %', '0%']);
+  const readouts = () => page.evaluate(() => Object.fromEntries(
+    [...document.querySelectorAll('.readout')].map((r) => [
+      (r.querySelector('.label')?.textContent || '').trim().slice(0, 40),
+      (r.querySelector('.num')?.textContent || '').trim()])));
 
   /** Every addressable control's value, as the page currently has it. */
   const controlState = () => page.evaluate(() => Object.fromEntries(
@@ -86,9 +101,15 @@ function urlProbe(name) {
                       { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.waitForTimeout(450);
       const opened = await controlState();
+      const blank = await readouts();
       const btn = page.locator('#reset-btn, #reset').first();
       if (await btn.count() === 1 && await btn.isEnabled()) {
         resettable++;
+        // Let it accumulate something first, so Reset has work to do.
+        const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
+        if (await start.count() === 1 && await start.isEnabled()) await start.click();
+        await page.waitForTimeout(2200);
+        const filled = await readouts();
         await btn.click();
         await page.waitForTimeout(300);
         const after = await controlState();
@@ -96,6 +117,15 @@ function urlProbe(name) {
         if (moved.length) {
           drifted.push(`${name} ${moved.slice(0, 2)
             .map((k) => `#${k} ${opened[k]}→${after[k]}`).join(', ')}`);
+        }
+        const back = await readouts();
+        const fills = Object.keys(blank).filter((k) =>
+          EMPTY.has(blank[k]) && !EMPTY.has(filled[k]));
+        if (fills.length) watched++;
+        const stuck = fills.filter((k) => !EMPTY.has(back[k]));
+        if (stuck.length) {
+          kept.push(`${name} ${stuck.slice(0, 2)
+            .map((k) => `"${k}" 0→${filled[k]}→${back[k]}`).join(', ')}`);
         }
       }
     } catch (e) { errs.push(`${name}: ${e.message.slice(0, 50)}`); continue; }
@@ -143,6 +173,14 @@ function urlProbe(name) {
       fonts.length === 0, fonts.slice(0, 4).join(', '));
   chk('every page repaints when the theme changes',
       flat.length === 0, flat.slice(0, 4).join(', '));
+  /*
+   * Only the readouts that open empty and fill are watched — a live noisy
+   * quantity reads differently every time and can say nothing. That gives
+   * this teeth on the pages that count something up in the first two
+   * seconds, and the count is printed so it cannot quietly fall to zero.
+   */
+  chk(`and empties what the page had counted up — ${watched} pages show a tally that fills`,
+      kept.length === 0 && watched >= 6, kept.slice(0, 4).join(' | ') || `only ${watched} watched`);
   chk(`Reset returns a page to the state it opened in — ${resettable} pages with the button`,
       drifted.length === 0, drifted.slice(0, 4).join(' | '));
   await ctx.close();
@@ -247,6 +285,69 @@ function urlProbe(name) {
   chk('and every one of them says so, with the notice that offers Play',
       noNotice.length === 0, noNotice.slice(0, 5).join(', '));
   chk('and every page could be photographed at all',
+      broke.length === 0, broke.slice(0, 3).join(' | '));
+  await ctx.close();
+}
+
+/*
+ * Pause has to stop the picture, not just the model.
+ *
+ * Two pages were gating their arithmetic on the pause flag and letting the
+ * drawing run on regardless. On equilibrium the dots kept drifting round the
+ * box — six per cent of the canvas changing while paused against six and a
+ * half while running, so the button looked broken. On electrolysis the water
+ * went on rippling off performance.now(), which the reduced-motion gate can
+ * freeze but Pause cannot. Neither had a check: the pages' own suites asked
+ * whether the simulation *clock* stopped, and it did.
+ *
+ * Worse, equilibrium's "canvas animates" check was passing because of it —
+ * the block before it left the page frozen, and the ungated dots supplied the
+ * motion. A bug was holding a check up.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const page = await ctx.newPage();
+  const moving = [], broke = [];
+  let checked = 0;
+  for (const name of PAGES) {
+    try {
+      await page.goto(url(`experiments/${name}.html`), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(700);
+      const btn = page.locator('#pause-btn');
+      if (await btn.count() !== 1) continue;
+      // Some pages sit idle until their own Start.
+      const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
+      if (await start.count() === 1 && await start.isEnabled()) {
+        await start.click();
+        await page.waitForTimeout(500);
+      }
+      const stage = page.locator('#stage, canvas').first();
+      if (await stage.count() === 0) continue;
+      await stage.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+      const box = await stage.boundingBox();
+      const vp = page.viewportSize();
+      if (!box) continue;
+      const x = Math.max(0, Math.min(box.x, vp.width));
+      const y = Math.max(0, Math.min(box.y, vp.height));
+      const clip = { x, y, width: Math.min(box.width, vp.width - x),
+                     height: Math.min(box.height, vp.height - y) };
+      if (clip.width < 1 || clip.height < 1) continue;
+      const shot = async () =>
+        (await page.screenshot({ clip, timeout: 25000 })).toString('base64');
+
+      await btn.click();
+      await page.waitForTimeout(500);
+      checked++;
+      const a = await shot();
+      await page.waitForTimeout(1000);
+      if (a !== (await shot())) moving.push(name);
+    } catch (e) {
+      broke.push(`${name}: ${String(e.message || e).split('\n')[0]}`);
+    }
+  }
+  chk(`Pause stops the picture, not only the clock — ${checked} pages with the button`,
+      moving.length === 0, moving.slice(0, 5).join(', '));
+  chk('and every one of them could be photographed paused',
       broke.length === 0, broke.slice(0, 3).join(' | '));
   await ctx.close();
 }

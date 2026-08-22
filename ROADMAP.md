@@ -224,13 +224,30 @@ Non-negotiable, per `CLAUDE.md`:
   now the oldest item on the list.
 - **Physics is 20 of 42.** Not a problem to fix by adding, and with biology
   caught up there is no case for adding to it soon.
-- **A theme worth pulling on across the catalogue.** Three pages in a row now
-  have turned on the same thing: a textbook law is a limit, and the page is
-  running somewhere the limit does not hold. Diffusion had the hole size,
-  chemotaxis had the ballistic crossover, the coalescent has k²/N. It is
-  worth going back through the older measured pages and asking, of each
-  closed form, *what is the small parameter, and is it small here* — the gas
-  page and the enzyme page are the first two to look at.
+- **A theme worth pulling on across the catalogue.** Three pages in a row
+  turned on the same thing: a textbook law is a limit, and the page is running
+  somewhere the limit does not hold. Diffusion had the hole size, chemotaxis
+  the ballistic crossover, the coalescent k²/N. So the older measured pages
+  are being asked, of each closed form, *what is the small parameter, and is
+  it small here*. Three answered so far, all of them clean, and each for a
+  different reason worth keeping:
+
+  - **gas** — there is no small parameter. The particles do not collide with
+    each other at all, only with the walls, so the gas is exactly ideal rather
+    than approximately; and the excluded area at the walls is already
+    subtracted from the area the prediction divides by.
+  - **lens** — the only optics is θ′ = θ − y/f applied to every ray in the
+    fan. The image is wherever the rays cross, the thin-lens equation is the
+    comparison rather than the mechanism, and the 1e-14 convergence residual
+    is floating point, not a fudge. The paraxial transfer is itself a
+    small-angle limit, and the page names it as one.
+  - **enzyme** — the small parameter had been *removed* rather than assumed
+    small: [S] is an endless pool, never decremented, so the enzymes are
+    independent and Michaelis–Menten is exact. That is the initial-rate assay
+    and it is a fine choice, but nothing said so. It is now in the notes, the
+    source header, and two checks that measure it.
+
+  Still to ask: `phases`, `neuron`, `resonance`, `wave`, `spectra`.
 - **Repo metadata.** The GitHub description still reads `SE`, and Website and
   Topics are empty. The API path is blocked from this environment, so this
   one needs a human.

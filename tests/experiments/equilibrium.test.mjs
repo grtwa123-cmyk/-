@@ -1,4 +1,4 @@
-import { browser, chk, rows, url, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/equilibrium.html');
 const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
@@ -324,11 +324,11 @@ const MK = `const E = window.__eq;
 {
   const h1 = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', ko!==en && zh!==en && zh!==ko && (await h1())===en,
       `${en} | ${ko} | ${zh}`);
   const bad = await page.evaluate(()=>{ const b=[];
@@ -337,6 +337,15 @@ const MK = `const E = window.__eq;
   chk('every data-i18n key resolves', bad.length===0, bad.join(','));
 }
 {
+  /*
+   * Start it first. The block above leaves the page frozen, and this check
+   * used to pass anyway because the dots drifted outside the running gate —
+   * so it was asserting that a stopped page still moves, which was true and
+   * was the bug. With the gate closed it fails unless the clock is running,
+   * which is what it was always meant to say.
+   */
+  await page.evaluate(() => window.__eq.setRunning(true));
+  await page.waitForTimeout(200);
   const shot = async () => (await page.locator('#stage').screenshot()).toString('base64');
   const a = await shot(); await page.waitForTimeout(700); const b = await shot();
   chk('canvas animates', a!==b && a.length>3000, `len ${a.length}`);

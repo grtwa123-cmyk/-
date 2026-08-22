@@ -171,6 +171,22 @@ value is within 1.7% of the truth and nothing was allowed to be tighter than
 mean of the very samples the page kept, and do two runs of the same size
 disagree? Measurements differ from each other; formulas do not.
 
+**A flake that will not reproduce locally is usually a race, and load is how
+you make it show.** CI runners are slow two-core machines; this container is
+not. Run the suite four-up on four cores —
+`for r in 1 2 3 4 5 6; do for j in 1 2 3 4; do (node tests/run.mjs <suite> | grep ^FAIL) & done; wait; done | sort | uniq -c`
+— and timing races surface immediately. Twenty-two idle runs of `expression`
+were clean; the first twenty-four under contention produced two failures, one
+of them a pattern repeated in 111 places across 38 suites.
+
+**Never wait a fixed number of milliseconds for something the page signals.**
+The 111 sites above were sleeping 300–600 ms after clicking a language button.
+`i18n.js` fetches the page's chunk and only then paints, and painting is what
+sets `<html lang>` — so the attribute is the completion signal and the sleep
+was a guess. `tests/lib/harness.mjs` now exports `lang(page, code)`, which
+waits for it. Look for the same shape wherever a test sleeps after an action:
+if the page changes something observable when it is done, wait for that.
+
 **Hunt flakes locally in bulk, not one CI round-trip at a time.** A suite
 that fails CI on a page nothing touched has a flaky check in it, and the way
 to find it is `for i in $(seq 1 30); do node tests/run.mjs <suite> | grep

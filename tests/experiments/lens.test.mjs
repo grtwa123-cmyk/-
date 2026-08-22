@@ -1,4 +1,4 @@
-import { browser, chk, rows, url, BASE as BASE_URL, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, url, BASE as BASE_URL, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/lens.html');
 
@@ -175,11 +175,11 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
 {
   const h1 = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(350);
+  await lang(page, 'ko');
   const ko = await h1(); const koType = await txt('out-type');
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(350);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(350);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', ko!==en && zh!==en && zh!==ko && (await h1())===en,
       `${en} | ${ko} | ${zh}`);
   chk('the image-type readout translates too', /[가-힣]/.test(koType), koType);

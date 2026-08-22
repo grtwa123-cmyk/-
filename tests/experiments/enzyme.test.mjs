@@ -1,4 +1,4 @@
-import { browser, chk, rows, url, BASE as BASE_URL, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, url, BASE as BASE_URL, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/enzyme.html');
 
@@ -401,11 +401,11 @@ await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(500);
 {
   const h1 = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(350);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(350);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(350);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', ko!==en && zh!==en && zh!==ko && (await h1())===en,
       `${en} | ${ko} | ${zh}`);
   const bad = await page.evaluate(()=>{ const b=[];
@@ -418,6 +418,42 @@ await page.goto(B, { waitUntil:'networkidle' }); await page.waitForTimeout(500);
   const a = await shot(); await page.waitForTimeout(700); const b = await shot();
   chk('canvas animates', a!==b && a.length>3000, `len ${a.length}`);
 }
+/*
+ * The one idealisation on this page, measured rather than asserted.
+ *
+ * [S] is an endless pool: it is read off the slider whenever a molecule needs
+ * it and never decremented. That is the initial-rate assay, and it is the
+ * reason Michaelis–Menten is exact here instead of approximate — the law
+ * assumes a substrate the enzymes cannot deplete, and this one cannot be.
+ * Nothing on the page said so until a bug hunt went looking for the small
+ * parameter each closed form is standing on and found that this one had had
+ * its removed. Now the notes say it and this says it in numbers: run the
+ * assay long enough and the products counted pass the whole pool several
+ * times over, with [S] sitting exactly where it started.
+ */
+{
+  const d = await page.evaluate(async () => {
+    const set = (id, v) => { const s = document.getElementById(id);
+      s.value = String(v); s.dispatchEvent(new Event('input', { bubbles: true })); };
+    set('substrate', 2); set('enzymes', 24); set('kcat', 40); set('km', 10);
+    const p = window.__mm.params();
+    window.__mm.rebuild(p);
+    const before = window.__mm.stats();
+    // step() takes the time to run *to*, not a step length.
+    const T = 200;
+    for (let i = 1; i <= 2000; i++) window.__mm.step(i * (T / 2000), p);
+    const after = window.__mm.stats();
+    return { S: p.S, before: before.turnovers, after: after.turnovers, t: T,
+             stillS: window.__mm.params().S };
+  });
+  const made = d.after - d.before;
+  chk('the substrate never falls: it is the concentration on the slider, start to finish',
+      d.stillS === d.S, `${d.S} → ${d.stillS}`);
+  chk('and the pool is endless — the turnovers counted pass it many times over',
+      made > 20 * d.S,
+      `${made} products from a pool of ${d.S} over ${d.t.toFixed(0)} s — ${(made / d.S).toFixed(0)}×`);
+}
+
 chk('no console errors after the whole run', errs.length===0, errs.slice(0,3).join(' | '));
 await page.close();
 

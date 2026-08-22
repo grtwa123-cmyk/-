@@ -1,4 +1,4 @@
-import { browser, chk, rows, url, BASE as BASE_URL, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, url, BASE as BASE_URL, finish, lang } from '../lib/harness.mjs';
 
 const BASE = BASE_URL + '/';
 
@@ -335,11 +335,11 @@ const txt = id => page.evaluate(i=>document.getElementById(i).textContent.trim()
 {
   const readTitle = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await readTitle();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(300);
+  await lang(page, 'ko');
   const ko = await readTitle();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(300);
+  await lang(page, 'zh');
   const zh = await readTitle();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(300);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', ko!==en && zh!==en && zh!==ko && (await readTitle())===en,
       `${en} | ${ko} | ${zh}`);
   const bad = await page.evaluate(()=>{ const b=[];

@@ -18,7 +18,7 @@
  * Everything below runs headlessly through __epi.run, so a check is a whole
  * epidemic rather than a few seconds of animation — no wall-clock anywhere.
  */
-import { browser, chk, url, finish } from '../lib/harness.mjs';
+import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/epidemic.html');
 const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -295,11 +295,11 @@ const runs = await sweep(CASES);
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]');
+  await lang(page, 'ko');
   await page.waitForFunction((prev) => document.querySelector('h1').textContent.trim() !== prev,
                              en, { timeout: 20000 });
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="en"]');
+  await lang(page, 'en');
   await page.waitForFunction((prev) => document.querySelector('h1').textContent.trim() === prev,
                              en, { timeout: 20000 });
   chk('title translates en/ko and returns', ko !== en && (await h1()) === en, `${en} | ${ko}`);

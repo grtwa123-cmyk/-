@@ -1,4 +1,4 @@
-import { browser, chk, rows, BASE, url, finish } from './lib/harness.mjs';
+import { browser, chk, rows, BASE, url, finish, lang } from './lib/harness.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -40,18 +40,18 @@ for (const [locale, want] of [['en-US','en'],['ko-KR','ko'],['zh-CN','zh']]) {
   await page.goto(`${B}/physics.html`,{waitUntil:'networkidle'});
   const h1 = () => page.evaluate(()=>document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(600);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(600);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   const back = await h1();
   chk('switching en/ko/zh changes the heading and returns',
     ko!==en && zh!==en && zh!==ko && back===en, `${en} | ${ko} | ${zh}`);
   chk('each dictionary fetched exactly once, in order',
     JSON.stringify(hits)===JSON.stringify(['en','ko','zh']), `[${hits.join(',')}]`);
   // re-switch must not refetch
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   chk('re-selecting a language does not refetch it', hits.length===3, `[${hits.join(',')}]`);
   await ctx.close();
 }
@@ -303,7 +303,7 @@ for (const [locale, want] of [['en-US','en'],['ko-KR','ko'],['zh-CN','zh']]) {
   const ctx = await browser.newContext({ locale:'en-US', viewport:{width:1100,height:900} });
   const page = await ctx.newPage();
   await page.goto(`${B}/index.html`,{waitUntil:'networkidle'});
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(600);
+  await lang(page, 'zh');
   const hits = dictHits(page);
   await page.reload({waitUntil:'networkidle'}); await page.waitForTimeout(400);
   chk('choice survives reload and refetches only zh',

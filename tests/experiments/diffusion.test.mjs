@@ -1,4 +1,4 @@
-import { browser, chk, rows, BASE, finish } from '../lib/harness.mjs';
+import { browser, chk, rows, BASE, finish, lang } from '../lib/harness.mjs';
 
 /*
  * Diffusion across a membrane.
@@ -235,11 +235,11 @@ async function flux(cfg, secs, reps) {
 {
   const title = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await title();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await title();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await title();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns',
       en !== ko && ko !== zh && (await title()) === en, `${en} / ${ko} / ${zh}`);
 

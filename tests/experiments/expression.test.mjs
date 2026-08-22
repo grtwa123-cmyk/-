@@ -22,7 +22,7 @@
  * σ ≈ 2.9%, so that bound is 15%. Mean error never exceeded 3.2% and the
  * duty cycle never missed by more than 2.1 points.
  */
-import { browser, chk, url, finish } from '../lib/harness.mjs';
+import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -184,22 +184,28 @@ const show = (r) => `k=${r.q.k} kon=${r.q.kon} koff=${r.q.koff} γ=${r.q.g}`;
   /*
    * A statistical claim should get better with more data, and by the right
    * amount. The spread of the Fano estimate should fall like 1/√cells, so
-   * sixteen times the cells should roughly halve it twice over. Held loosely
-   * — this is asking about the scaling of a noise, from few samples.
+   * sixteen times the cells should quarter it.
+   *
+   * Forty runs at each size, batched into one call rather than one round trip
+   * apiece — which makes forty cheaper than the eight this used to do. Eight
+   * is not enough to estimate a standard deviation, let alone the ratio of
+   * two: measured over twelve trials the ratio ranged 0.13 to 0.82 against a
+   * bound of 0.6, and went over it once in twelve. At forty the same twelve
+   * trials sit between 0.19 and 0.31 with a median of 0.25, which is the
+   * quarter the theory asks for, so the bound comes down to 0.4.
    */
-  const spread = async (cells, reps) => {
+  const spread = (cells, reps) => page.evaluate(([c, r]) => {
     const v = [];
-    for (let i = 0; i < reps; i++) {
-      v.push(await page.evaluate((c) =>
-        window.__expr.run({ cells: c, k: 20, kon: 1, koff: 0, g: 1 }).fano, cells));
+    for (let i = 0; i < r; i++) {
+      v.push(window.__expr.run({ cells: c, k: 20, kon: 1, koff: 0, g: 1 }).fano);
     }
     const m = v.reduce((a, b) => a + b, 0) / v.length;
     return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length);
-  };
-  const small = await spread(200, 8);
-  const big = await spread(3200, 8);
+  }, [cells, reps]);
+  const small = await spread(200, 40);
+  const big = await spread(3200, 40);
   chk('the estimate sharpens as more cells are counted, roughly as 1/√cells',
-      big < small * 0.6,
+      big < small * 0.4,
       `σ(F) = ${small.toFixed(3)} at 200 cells, ${big.toFixed(3)} at 3200 `
       + `(ratio ${(big / small).toFixed(2)}, 1/4 expected)`);
 }
@@ -331,14 +337,12 @@ const show = (r) => `k=${r.q.k} kon=${r.q.kon} koff=${r.q.koff} γ=${r.q.g}`;
    */
   await setV('koff', 0);                       // the dial whose label is a word
   await page.evaluate(() => window.__expr.setRunning(true));
-  await page.click('.lang-btn[data-lang="ko"]');
-  await page.waitForTimeout(500);
+  await lang(page, 'ko');
   const running = await page.evaluate(() => window.__expr.isRunning());
   const btn = await txt('start-btn');
   const koff = await txt('koff-value');
   await page.evaluate(() => window.__expr.setRunning(false));
-  await page.click('.lang-btn[data-lang="en"]');
-  await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('switching language mid-run keeps the button meaning Pause, in the new language',
       running && btn === '일시정지', `running=${running}, button says "${btn}"`);
   chk('and the "never switches off" label follows the language too',
@@ -349,11 +353,11 @@ const show = (r) => `k=${r.q.k} kon=${r.q.kon} koff=${r.q.koff} γ=${r.q.g}`;
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 

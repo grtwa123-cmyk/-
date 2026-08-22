@@ -458,12 +458,22 @@
 
     if (running) step(dtReal * parseFloat(inputs.speed.value), p);
 
-    for (const d of dots) {
-      d.x += d.vx * dtReal; d.y += d.vy * dtReal;
-      if (d.x < 0 || d.x > 1) d.vx *= -1;
-      if (d.y < 0 || d.y > 1) d.vy *= -1;
-      d.x = Math.min(Math.max(d.x, 0), 1);
-      d.y = Math.min(Math.max(d.y, 0), 1);
+    /*
+     * The dots are decoration — the chemistry is a Gillespie walk on the
+     * counts, and where a dot happens to be means nothing. But they were
+     * drifting outside this gate, so Pause stopped the reaction and left the
+     * box moving: measured, six per cent of the canvas kept changing while
+     * paused against six and a half while running, which is to say Pause
+     * looked like it did nothing at all.
+     */
+    if (running) {
+      for (const d of dots) {
+        d.x += d.vx * dtReal; d.y += d.vy * dtReal;
+        if (d.x < 0 || d.x > 1) d.vx *= -1;
+        if (d.y < 0 || d.y > 1) d.vy *= -1;
+        d.x = Math.min(Math.max(d.x, 0), 1);
+        d.y = Math.min(Math.max(d.y, 0), 1);
+      }
     }
 
     render(p);

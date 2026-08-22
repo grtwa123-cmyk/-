@@ -18,7 +18,7 @@
  * grooves of unequal width because the strands sit 120° apart one way round
  * and 240° the other.
  */
-import { browser, chk, url, finish } from '../lib/harness.mjs';
+import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/dna.html');
 const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
@@ -223,11 +223,11 @@ chk(`the model is built — ${scene.n} base pairs, ${scene.spheres.length} backb
 {
   const h1 = () => page.evaluate(() => document.querySelector('h1').textContent.trim());
   const en = await h1();
-  await page.click('.lang-btn[data-lang="ko"]'); await page.waitForTimeout(400);
+  await lang(page, 'ko');
   const ko = await h1();
-  await page.click('.lang-btn[data-lang="zh"]'); await page.waitForTimeout(400);
+  await lang(page, 'zh');
   const zh = await h1();
-  await page.click('.lang-btn[data-lang="en"]'); await page.waitForTimeout(400);
+  await lang(page, 'en');
   chk('title translates en/ko/zh and returns', en !== ko && ko !== zh && (await h1()) === en,
       `${en} / ${ko} / ${zh}`);
 
