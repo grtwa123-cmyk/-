@@ -67,20 +67,35 @@ async function flux(cfg, secs, reps) {
      * from the middle to the top, reflected off it, and came back 22% low.
      * Twenty steps keeps the cloud well inside the box at every step size.
      */
+    /*
+     * Ten dishes, pooled. ⟨r²⟩ = mL² is exact for a walk of m fixed steps in
+     * random directions — the cross terms vanish — so there is no bias here
+     * at all, only sampling noise, and r² has a coefficient of variation of
+     * about one. Eight hundred walkers in a single dish is therefore a 3.5%
+     * standard error against an 8% bound, worst of three step sizes: it
+     * failed one CI run in ten. Eight thousand walkers make it 1.1%, and the
+     * bound tightens to 5%.
+     */
     const got = await page.evaluate(async (a) => {
-      window.__diffusion.set({ n: 800, share: 100, poreH: 320, pores: 1, step: a.step });
-      window.__diffusion.gather();
       const h = window.__diffusion.constants().H_STEP;
-      const out = [];
-      for (let i = 0; i < 4; i++) out.push(window.__diffusion.advance(5 * h));
-      return out.map((q) => ({ t: q.t, r2: q.r2, D: q.D }));
+      const sum = [0, 0, 0, 0];
+      const at = [0, 0, 0, 0];
+      for (let r = 0; r < 10; r++) {
+        window.__diffusion.set({ n: 800, share: 100, poreH: 320, pores: 1, step: a.step });
+        window.__diffusion.gather();
+        for (let i = 0; i < 4; i++) {
+          const q = window.__diffusion.advance(5 * h);
+          sum[i] += q.r2; at[i] = q.t;
+        }
+      }
+      return sum.map((v, i) => ({ t: at[i], r2: v / 10, D: v / 10 / (4 * at[i]) }));
     }, { step });
     const want = step * step / (4 * K.H_STEP);
     for (const g of got) worst = Math.max(worst, Math.abs(g.D / want - 1));
     rowsOut.push(`L=${step}: ${got[got.length - 1].D.toFixed(0)} vs ${want.toFixed(0)}`);
   }
   chk('the walk spreads as ⟨r²⟩ = 4Dt, and D is the L²/4h its own step size implies',
-      worst < 0.08, rowsOut.join('  ') + `  — worst ${(worst * 100).toFixed(1)}%`);
+      worst < 0.05, rowsOut.join('  ') + `  — worst ${(worst * 100).toFixed(1)}%`);
 }
 
 // ── Fick: the net flow is proportional to the difference ─────────────────
