@@ -162,6 +162,30 @@ n·T/Δt, because a cell tells you nothing new about where it is until it has
 had time to cross the dish. Three passes went green and then it flagged a
 defect that only changed a readout's text.
 
+**The defect worth planting is the formula in place of the measurement.** A
+page that quietly reports its own prediction passes every tolerance a
+stochastic check can afford — on `coalescent`, substituting 2N(1 − 1/n) for
+the walk's answer went through all thirty-four checks, because the textbook
+value is within 1.7% of the truth and nothing was allowed to be tighter than
+3%. No tolerance catches this. Two questions do: is the reported mean the
+mean of the very samples the page kept, and do two runs of the same size
+disagree? Measurements differ from each other; formulas do not.
+
+**Hunt flakes locally in bulk, not one CI round-trip at a time.** A suite
+that fails CI on a page nothing touched has a flaky check in it, and the way
+to find it is `for i in $(seq 1 30); do node tests/run.mjs <suite> | grep
+^FAIL; done | sort | uniq -c`. Thirty runs of a twelve-second suite is six
+minutes and it enumerates *every* flaky check at once with its rate attached;
+chasing them through CI is twenty minutes each and finds one. `diffusion` had
+three, all found this way, and all three were bounds sitting between one and
+two sigma of their own noise.
+
+**Two mechanisms enforcing one rule will hide a bug in each other.** The same
+page had a fresh-tally guard in two places, so a defect planted in either one
+walked past both and neither was ever exercised. When a planted defect is not
+caught, check whether the code has a second path doing the same job before
+adding a check — usually the right fix is to delete one of them.
+
 **That is the cheap way to find a flaky check: plant a defect that cannot
 possibly matter.** Rewire one panel readout to display the wrong quantity and
 run the suite. Exactly one check should fail. Anything else that fails is

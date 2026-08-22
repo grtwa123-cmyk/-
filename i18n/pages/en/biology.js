@@ -6,6 +6,8 @@ window.i18nRegister("en", {
   "categoryBiology": "Biology",
   "categoryChemistry": "Chemistry",
   "categoryPhysics": "Physics",
+  "clDesc": "Everyone picks a parent at random. Follow a handful of people back and their lines merge — not because anything drew them together, but because there are only so many parents to pick from.",
+  "clTitle": "The Coalescent &mdash; Where a Family Tree Comes From",
   "ctDesc": "A bacterium is too small to tell which way the food is. It swims, tumbles, and only remembers what things were like a moment ago — and that one comparison is enough to climb the gradient.",
   "ctTitle": "Chemotaxis &mdash; Run and Tumble",
   "dfDesc": "A few hundred walkers that know nothing about concentration, and a wall with holes in it. Fick's law comes out of counting — the traffic is heavy both ways, and the flow is only the difference.",
