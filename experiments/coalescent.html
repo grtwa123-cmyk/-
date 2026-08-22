@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="Everyone picks a parent at random. Follow a sample back and their lineages merge — not because anything drew them together, but because there are only so many parents to pick from. The family tree, and the statistic read off it, come out of counting." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="The Coalescent &mdash; Where a Family Tree Comes From &middot; Biology" />
+  <meta property="og:description" content="Everyone picks a parent at random. Follow a sample back and their lineages merge — not because anything drew them together, but because there are only so many parents to pick from." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/coalescent.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;path d='M12 54 V40 Q12 34 22 34 T32 24 M28 54 V44 Q28 38 22 34 M44 54 V38 Q44 30 32 24 M32 24 V10' stroke='%237be0d0' stroke-width='2.6' fill='none' stroke-linecap='round'/&gt;&lt;circle cx='32' cy='24' r='3.4' fill='%23ffd166'/&gt;&lt;circle cx='22' cy='34' r='3' fill='%23ffd166'/&gt;&lt;/svg&gt;" />
+  <title data-i18n="clPageTitle">The Coalescent — Where a Family Tree Comes From · Biology</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="biology">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../biology.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span style="color: var(--muted); font-size: 0.9rem;" data-i18n="experimentCount35">Biology · The coalescent</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="clTitle">The Coalescent &mdash; Where a Family Tree Comes From</h1>
+      <p data-i18n="clIntro">A population of a fixed size, and one rule: every individual picks a parent at random from the generation before. Nothing is being selected for and nobody has more children on purpose. Now take a handful of them alive today and follow their parents backwards. Sooner or later two of the lines land on the same individual &mdash; not because anything drew them together, but because there are only so many parents to pick from &mdash; and where there were two lines there is now one. Keep going and the whole sample closes down to a single ancestor. Every tree is different; the theory is a statement about their average, which is why this page keeps making new ones.</p>
+    </header>
+
+    <main class="experiment">
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="pop" data-i18n="clPopLabel">Population</label>
+          <span class="value" id="pop-value">16</span>
+          <input type="range" id="pop" min="8" max="60" step="2" value="16" />
+        </div>
+
+        <div class="control">
+          <label for="sample" data-i18n="clSampleLabel">Sample taken today</label>
+          <span class="value" id="sample-value">5</span>
+          <input type="range" id="sample" min="2" max="12" step="1" value="5" />
+        </div>
+
+        <div class="control">
+          <label for="mu" data-i18n="clMuLabel">Mutations per lineage per generation</label>
+          <span class="value" id="mu-value">0.020</span>
+          <input type="range" id="mu" min="0" max="0.05" step="0.005" value="0.02" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="clSpeedLabel">Generations per second</label>
+          <span class="value" id="speed-value">12</span>
+          <input type="range" id="speed" min="2" max="60" step="2" value="12" />
+        </div>
+
+        <div class="buttons">
+          <button id="pause-btn" type="button" data-i18n="wavePauseBtn">Pause</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="clFormulaRule">The rule</span>: <code>each individual picks a parent uniformly at random</code></li>
+            <li><span data-i18n="clFormulaTk">Time with k lineages</span>: <code>E[T_k] = 2N / k(k−1)</code></li>
+            <li><span data-i18n="clFormulaT">Depth of the tree</span>: <code>E[T_MRCA] = 2N(1 − 1/n)</code></li>
+            <li><span data-i18n="clFormulaL">Total branch length</span>: <code>E[L] = 2N · H(n−1)</code></li>
+            <li><span data-i18n="clFormulaW">Watterson</span>: <code>θ̂ = S / H(n−1) estimates 2Nμ</code></li>
+            <li><span data-i18n="clFormulaExact">Exactly, in a finite population</span>: <code>q_k = ∏(N−i)/N, E[T_k] = 1/(1 − q_k)</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="clNotes">Notes</summary>
+          <ul>
+            <li data-i18n="clNote1">Nothing here is drawn towards anything. Two lineages merge only because both drew the same number out of N, and the whole shape of a genealogy &mdash; how deep it is, how long its branches are, how much variation it can carry &mdash; comes out of that one collision probability. There is no selection anywhere in this page.</li>
+            <li data-i18n="clNote2">Most of a family tree is two lineages waiting. The last pair takes 2N/2 = N generations to find each other, which is over half of the tree's whole depth of 2N(1 − 1/n) no matter how big the sample is. Take a thousand people instead of ten and the tree barely gets deeper &mdash; the extra lineages merge almost at once and then everyone waits.</li>
+            <li data-i18n="clNote3">Watch the histogram, not one tree. The depth of a single tree is nearly useless: its spread is about six tenths of its own mean, so a tree twice as deep as average is unremarkable. That is not measurement noise, it is the thing itself &mdash; and it is why a formula about the average needs hundreds of trees to be seen at all.</li>
+            <li data-i18n="clNote4">Mutations fall on the branches at a fixed rate, so counting them measures the total branch length, and dividing by H(n−1) turns that into θ = 2Nμ. That is Watterson's estimator, used on real sequence data to ask how big a population was, and here you can watch it come back out of a cartoon.</li>
+            <li data-i18n="clNote5">The textbook formulas are a limit, not an identity. They hold when the number of lineages squared is small next to the population; here it need not be. With ten lineages in a population of sixteen, 2N/(k(k−1)) says the ten will last 0.36 generations and the truth is 1.03, because ten lineages in sixteen slots cannot all avoid each other for even one generation. The panel shows both, and the gap between them is the size of the approximation.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="800" height="540" aria-label="A pedigree with the present generation along the bottom, every individual's parent drawn faintly, the sampled lineages picked out as they merge going back in time, and a histogram of how deep each tree turned out to be"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="clOutLive">Lineages left</div>
+            <div class="num" id="out-live">5</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutGen">Generations back</div>
+            <div class="num" id="out-gen">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutTrees">Trees so far</div>
+            <div class="num" id="out-trees">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutT">Mean depth, generations</div>
+            <div class="num" id="out-tmrca">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutTExact">The finite population says</div>
+            <div class="num" id="out-tmrca-exact">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutTLimit">2N(1 − 1/n) says</div>
+            <div class="num" id="out-tmrca-limit">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutL">Mean branch length</div>
+            <div class="num" id="out-branch">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutLExact">The finite population says</div>
+            <div class="num" id="out-branch-exact">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutS">Mean segregating sites S</div>
+            <div class="num" id="out-sites">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutTheta">θ̂ = S / H(n−1)</div>
+            <div class="num" id="out-theta">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutThetaTrue">2Nμ is</div>
+            <div class="num" id="out-theta-true">0</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="clOutState">State</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="coalescent.js" defer></script>
+</body>
+</html>

@@ -60,6 +60,7 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "expressionTitle", url: "experiments/expression.html",   cat: "Biology",   tags: ["EXPRESSION", "NOISE"],  colors: ["#150f1d", "#ff6b8a"], method: "measured", motif: "expression" },
   { titleKey: "dfTitle",          url: "experiments/diffusion.html",     cat: "Biology",   tags: ["DIFFUSION", "FICK"],    colors: ["#0a1420", "#6ea8ff"], method: "measured", motif: "diffusion" },
   { titleKey: "ctTitle",          url: "experiments/chemotaxis.html",    cat: "Biology",   tags: ["CHEMOTAXIS", "BACTERIA"], colors: ["#0a1420", "#7be0d0"], method: "measured", motif: "chemotaxis" },
+  { titleKey: "clTitle",          url: "experiments/coalescent.html",    cat: "Biology",   tags: ["GENEALOGY", "DRIFT"],  colors: ["#0d1620", "#7be0d0"], method: "measured", motif: "coalescent" },
   { titleKey: "nsTitle",          url: "experiments/selection.html",     cat: "Biology",   tags: ["EVOLUTION", "DRIFT"],   colors: ["#1a0f24", "#c79bff"], method: "measured", motif: "selection" },
   { titleKey: "mmTitle",          url: "experiments/enzyme.html",        cat: "Biology",   tags: ["ENZYME", "KINETICS"],   colors: ["#0c1f1c", "#7be0d0"], method: "measured", motif: "enzyme" },
   { titleKey: "hhTitle",         url: "experiments/neuron.html",        cat: "Biology",   tags: ["NEURON", "SPIKE"],      colors: ["#1b1206", "#ffd166"], method: "measured", motif: "neuron" },

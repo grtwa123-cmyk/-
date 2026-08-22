@@ -406,6 +406,25 @@ const RENDERERS = {
     ctx.restore();
   },
 
+  coalescent(p, s, ctx) {
+    // Four lines rising out of the present and merging, twice, then once
+    // more — a genealogy read from the bottom up.
+    const y0 = s * 0.95, top = -s * 0.95;
+    const leaf = [-s * 1.35, -s * 0.62, s * 0.18, s * 1.25];
+    const j1 = (leaf[0] + leaf[1]) / 2, h1 = s * 0.15;
+    const j2 = (leaf[2] + leaf[3]) / 2, h2 = -s * 0.3;
+    const j3 = (j1 + j2) / 2;
+    const rise = (x, ya, xb, yb) => { p.line(x, ya, x, yb); p.line(x, yb, xb, yb); };
+    rise(leaf[0], y0, j1, h1); rise(leaf[1], y0, j1, h1);
+    rise(leaf[2], y0, j2, h2); rise(leaf[3], y0, j2, h2);
+    rise(j1, h1, j3, top + s * 0.25); rise(j2, h2, j3, top + s * 0.25);
+    p.line(j3, top + s * 0.25, j3, top);
+    // The sample at the bottom, and the two coalescences above it.
+    for (const x of leaf) p.dot(x, y0, 2.6);
+    p.circ(j1, h1, 2.8); p.circ(j2, h2, 2.8);
+    p.dot(j3, top, 3.4);
+  },
+
   electrolysis(p, s, ctx) {
     // Beaker with two electrodes and rising bubbles (H₂ side busier).
     const w = s * 1.8, h = s * 1.4;

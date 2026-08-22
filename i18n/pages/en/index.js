@@ -10,6 +10,8 @@ window.i18nRegister("en", {
   "categoryPhysics": "Physics",
   "circuitDesc": "Wire three resistors end to end or side by side. In series the current is shared and the voltage divides; in parallel it is the other way round, and the carriers move at the speed of the real current.",
   "circuitTitle": "Ohm’s Law — Series & Parallel",
+  "clDesc": "Everyone picks a parent at random. Follow a handful of people back and their lines merge — not because anything drew them together, but because there are only so many parents to pick from.",
+  "clTitle": "The Coalescent &mdash; Where a Family Tree Comes From",
   "crystalDesc": "Browse common crystal structures — simple cubic, BCC, FCC, NaCl, CsCl, diamond — and compare their atoms, coordination, and packing.",
   "crystalTitle": "Crystal Lattice",
   "ctDesc": "A bacterium is too small to tell which way the food is. It swims, tumbles, and only remembers what things were like a moment ago — and that one comparison is enough to climb the gradient.",

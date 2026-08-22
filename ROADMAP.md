@@ -1,9 +1,9 @@
 # What's next
 
-The catalogue is 41 experiments, every one of them `verified`: 20 physics,
-12 chemistry, 9 biology. 55 test suites, 1550-odd checks. The obvious
-remaining asymmetry was biology, and that is what this plan is about. Two of
-its three items are built; one is left.
+The catalogue is 42 experiments, every one of them `verified`: 20 physics,
+12 chemistry, 10 biology. 56 test suites, 1590-odd checks. The asymmetry this
+plan was about — biology at seven against physics at twenty — is closed. All
+three items are built. What is left is in §3.
 
 Numbers below were checked in node before being written down (see §4).
 
@@ -17,7 +17,7 @@ stochastic gene expression, allele frequencies, enzyme kinetics and the
 action potential. Three things are missing that have hard closed forms and
 do not overlap any of the above.
 
-### 1a. Coalescent — where a family tree comes from
+### 1a. Coalescent — where a family tree comes from ✅ **done**
 
 Trace a sample of *n* chromosomes backwards until they meet. Kingman's
 coalescent says that with *k* lineages left, pairs merge at rate
@@ -44,6 +44,57 @@ the subject — the same population gives a different tree every time, and the
 theory is a statement about the average of those trees. That needs many runs
 to see, which is exactly what a simulation is for and a textbook figure is
 not.
+
+**Built, and the plan's own framing needed correcting twice.**
+
+The first correction is that those three formulas are a *limit*, not the
+answer. They hold as k²/N → 0, and a population small enough to draw is a
+population where it need not be. Exactly, k lineages all miss each other in
+one generation with probability q_k = ∏(N−i)/N, so a level lasts 1/(1 − q_k)
+generations; the totals need the whole chain, because k lineages can drop
+straight past k−1 — they leave exactly j distinct parents with probability
+S(k,j)·N(N−1)···(N−j+1)/N^k. Measured against that chain the simulation lands
+within 0.4%. Measured against the textbook limit it is out by up to 1.7% on
+the depth, and the per-level gap is far worse than that:
+
+```
+N=60 n=6    n²/N = 0.60    the limit is  9% low at k = n
+N=40 n=10   n²/N = 2.50                 37% low
+N=16 n=10   n²/N = 6.25                 65% low
+```
+
+Ten lineages in sixteen slots cannot all avoid each other for even one
+generation, and 2N/(k(k−1)) says they will last 0.36 generations when the
+truth is 1.03. The page carries both numbers side by side, and the panel that
+does it — a bar per level with a tick for each prediction — turned out to be
+the clearest thing on the page. It also shows, at a glance, that k = 2 alone
+is longer than every other level put together.
+
+The second correction is that this section said "the page runs a
+Wright–Fisher population forwards". It does, but it generates the pedigree
+backwards from the present, because the present is the only end a sample
+exists at. The model is unchanged — each individual draws its parent
+uniformly and independently — and every individual gets one, not only the
+ancestral ones, so the picture is a real pedigree with the sample's thread
+picked out of it.
+
+One real page bug, found by the suite before anything was claimed: the per
+lineage paths were indexed by *surviving lineage* rather than by sampled
+individual, so the list shortened under a merge and every entry after it then
+belonged to somebody else. It broke five checks at once and would have made
+the drawing quietly wrong.
+
+Eleven defects were planted. Nine were caught immediately; two walked
+straight through, and both were worth more than the nine. **Reporting
+2N(1 − 1/n) in place of the walk's own answer passed every check in the
+suite** — the textbook value is within 1.7% of the truth, which is inside
+every tolerance a stochastic measurement can afford. The fix is not a tighter
+tolerance but a different question: the reported mean must be the mean of the
+very trees the page kept, and two batches of the same size must disagree,
+because measurements do and formulas do not. The other escapee was not a
+defect at all — it revealed that the page had two mechanisms enforcing one
+rule, each hiding a bug in the other. One of them was dead code and is now
+gone.
 
 ### 1b. Diffusion across a membrane — Fick, from a random walk ✅ **done**
 
@@ -146,7 +197,8 @@ preference exists anywhere in it, and the check that catches it is the tumble
 rate being flat in cos θ to |k| < 0.01.
 
 **Order:** 1b first (simplest mechanism, two clean laws) — **done**; then 1c
-(reuses the walker machinery) — **done**; then 1a (most work, most novel).
+(reuses the walker machinery) — **done**; then 1a (most work, most novel) —
+**done**.
 
 ---
 
@@ -168,9 +220,17 @@ Non-negotiable, per `CLAUDE.md`:
 
 - **`solved` is a category of one.** `circuit` carries it and no other page
   does. Either the badge earns a second page or it should be folded into
-  `measured` — a badge with one member is a footnote, not a category.
-- **Physics is 20 of 39.** Not a problem to fix by adding, but worth not
-  adding to for a while.
+  `measured` — a badge with one member is a footnote, not a category. This is
+  now the oldest item on the list.
+- **Physics is 20 of 42.** Not a problem to fix by adding, and with biology
+  caught up there is no case for adding to it soon.
+- **A theme worth pulling on across the catalogue.** Three pages in a row now
+  have turned on the same thing: a textbook law is a limit, and the page is
+  running somewhere the limit does not hold. Diffusion had the hole size,
+  chemotaxis had the ballistic crossover, the coalescent has k²/N. It is
+  worth going back through the older measured pages and asking, of each
+  closed form, *what is the small parameter, and is it small here* — the gas
+  page and the enzyme page are the first two to look at.
 - **Repo metadata.** The GitHub description still reads `SE`, and Website and
   Topics are empty. The API path is blocked from this environment, so this
   one needs a human.
