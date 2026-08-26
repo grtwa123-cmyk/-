@@ -41,12 +41,23 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
       return { z, br };
     });
     // half-power width gives Q back
-    o.fwhm = [0.02,0.05,0.1].map(z => {
-      const half = R.gain(1,z)/Math.SQRT2, f = rr => R.gain(rr,z) - half;
-      let lo=1e-4, hi=1; for (let i=0;i<200;i++){const m=(lo+hi)/2; f(m)<0?lo=m:hi=m;} const r1=(lo+hi)/2;
-      lo=1; hi=5; for (let i=0;i<200;i++){const m=(lo+hi)/2; f(m)>0?lo=m:hi=m;} const r2=(lo+hi)/2;
-      return { z, q: 1/(r2-r1), want: R.qFactor(z) };
-    });
+    // Two conventions, and they part company as the damping rises. "Half
+    // power" can mean half of the response at f₀, or half of the response at
+    // its own peak; the peak is 4.8% higher than f₀ by ζ = 0.3, so the widths
+    // differ. Both are measured here — the second is the textbook Δω, the
+    // −3 dB width of the resonance curve.
+    const widthAbout = (z, refGain, centre) => {
+      const half = refGain/Math.SQRT2, f = rr => R.gain(rr,z) - half;
+      let lo=1e-6, hi=centre; for (let i=0;i<200;i++){const m=(lo+hi)/2; f(m)<0?lo=m:hi=m;} const r1=(lo+hi)/2;
+      lo=centre; hi=8; for (let i=0;i<200;i++){const m=(lo+hi)/2; f(m)>0?lo=m:hi=m;} const r2=(lo+hi)/2;
+      return 1/(r2-r1);
+    };
+    o.fwhm = [0.02,0.05,0.1,0.2,0.3].map(z => ({
+      z,
+      q: widthAbout(z, R.gain(1,z), 1),                      // referenced to f₀
+      qPeak: widthAbout(z, R.peakGain(z), R.peakRatio(z)),   // referenced to the peak
+      want: R.qFactor(z),
+    }));
     // static limit
     o.static = [0.05,0.5,1.2].map(z => Math.abs(R.gain(0, z) - 1));
     return o;
@@ -65,11 +76,32 @@ const txt = id => page.evaluate(i=>document.getElementById(i)?.textContent.trim(
       r.velPeaks.map(x=>`ζ${x.z}:${x.br.toFixed(5)}`).join(' '));
   // Q = ω₀/Δω is asymptotic in light damping, not exact, so the honest check
   // is that it converges: the error must shrink as the damping does.
+  //
+  // Where it stops converging is the point of the second check. The readout
+  // prints 1/(2ζ) at every damping, and only one of the three meanings of Q
+  // survives out there — the amplification at r = 1, which is exact. Read as
+  // a sharpness the same number is 4.5% out at ζ = 0.2 and 12% at ζ = 0.3,
+  // and past ζ = 1/√2 there is no peak to take a width of at all. That last
+  // one is already checked above; this pins the size of the departure, so
+  // that resNote5's numbers cannot drift away from the model.
   {
     const e = r.fwhm.map(x => Math.abs(x.q - x.want)/x.want);
     chk('half-power width returns Q = ω₀/Δω, converging as damping falls',
-        e[0] < 2e-3 && e[0] < e[1] && e[1] < e[2],
+        e[0] < 2e-3 && e[0] < e[1] && e[1] < e[2] && e[2] < e[3] && e[3] < e[4],
         r.fwhm.map((x,i)=>`ζ${x.z}:${x.q.toFixed(3)}/${x.want} (${(e[i]*100).toFixed(2)}%)`).join('  '));
+    // The −3 dB width of the resonance curve itself. This is the Δω of
+    // Q = ω₀/Δω as it is normally written, and it is what resNote5 quotes:
+    // r± = √(1 − 2ζ² ± 2ζ√(1 − ζ²)), so the departure is second order in ζ.
+    const ep = r.fwhm.map(x => Math.abs(x.qPeak - x.want)/x.want);
+    const closed = (z) => 1/(Math.sqrt(1 - 2*z*z + 2*z*Math.sqrt(1-z*z))
+                           - Math.sqrt(1 - 2*z*z - 2*z*Math.sqrt(1-z*z)));
+    chk('the −3 dB width gives Q back exactly as √(1−2ζ²±2ζ√(1−ζ²)) says it should',
+        r.fwhm.every((x) => Math.abs(x.qPeak - closed(x.z))/closed(x.z) < 1e-9),
+        r.fwhm.map((x)=>`ζ${x.z}:${x.qPeak.toFixed(6)}/${closed(x.z).toFixed(6)}`).join(' '));
+    chk('and read as that sharpness, the printed Q is 4.5% high at ζ = 0.2, 12% high at ζ = 0.3',
+        Math.abs(ep[3] - 0.0447) < 2e-3 && Math.abs(ep[4] - 0.1207) < 3e-3
+        && r.fwhm.every(x => x.qPeak < x.want),
+        `ζ0.2: ${(ep[3]*100).toFixed(2)}%, ζ0.3: ${(ep[4]*100).toFixed(2)}%`);
   }
   chk('static limit A(0) = X₀', r.static.every(d => d < 1e-15), '');
 }

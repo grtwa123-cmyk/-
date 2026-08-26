@@ -1,5 +1,5 @@
 /*
- * The Hodgkin–Huxley axon, integrated as written.
+ * The Hodgkin–Huxley membrane, integrated as written.
  *
  * Four coupled ordinary differential equations and nothing else:
  *
@@ -20,9 +20,28 @@
  * α and β are Hodgkin and Huxley's own fits to their voltage-clamp data, in
  * the modern sign convention where rest is about −65 mV rather than 0.
  *
- * Integration is RK4 at a fixed 5 µs step. The spike's rising phase turns
- * over in well under a millisecond, and a step chosen for the display's frame
- * rate rather than the equations would round the peak off.
+ * Asked of this page, "what is the small parameter" has an odd answer:
+ * there is no closed form here to have one. Nothing is compared against an
+ * analytic result — the threshold, the peak, the refractory period and the
+ * firing rate are all read back off the trajectory. What the question turns
+ * up instead is one term that is missing and one that is provably small.
+ *
+ * The missing one is the cable. Hodgkin and Huxley's axon equation carries
+ * (a/2Rᵢ)∂²V/∂x² and this page does not: V is one number, uniform over the
+ * membrane. That term has not been assumed negligible, it has been removed —
+ * this is the space clamp, the axial wire down the middle of the squid axon
+ * that HH ran their voltage clamp with, and under it the spatial derivative
+ * is exactly zero rather than approximately so. The equations here are then
+ * exact, not asymptotic, and the price is stated rather than hidden: a
+ * space-clamped membrane has no conduction velocity, so the spike on screen
+ * happens everywhere at once and never travels anywhere.
+ *
+ * The provably small one is the step. Integration is RK4 at a fixed 5 µs,
+ * set by the spike rather than by the frame rate: the rising phase turns over
+ * in well under a millisecond, and a step chosen for the display would round
+ * the peak off. Halving it four times over moves the peak by 0.0015 mV — four
+ * parts in a hundred thousand — and moves the measured threshold by less than
+ * 10⁻⁹ µA/cm². tests/experiments/neuron.test.mjs measures both.
  */
 
 (() => {

@@ -19,6 +19,39 @@
  *   D     the slope of the mean square displacement, ⟨r²⟩ = 4Dt
  *   g(r)  counted pair separations, normalised by the ideal-gas expectation
  *
+ * One of those five is not a property of the material. T*, P, ψ₆ and g(r)
+ * describe the liquid at this density and temperature; D describes the box.
+ * In two dimensions the velocity autocorrelation decays as 1/t, so the
+ * Green–Kubo integral for D diverges logarithmically and there is no
+ * diffusion constant in the thermodynamic limit at all — a periodic box
+ * simply cuts the tail off at its own width and reports what is left. The
+ * count slider is enough to see it. Held at ρ* = 0.8 and T* = 0.800 with the
+ * thermostat on, so that temperature cannot be the difference:
+ *
+ *     n =  8   N =  64   L =  9.6σ    D = 0.0452 ± 0.0008
+ *     n = 14   N = 196   L = 16.8σ    D = 0.0524 ± 0.0007
+ *
+ * Sixteen per cent apart, a 6.8σ gap, with the two temperatures 0.02% apart.
+ * Cut free of the thermostat instead, four sizes came out monotone —
+ * D = 0.0435, 0.0470, 0.0493, 0.0511 at L = 9.6, 12.0, 14.4, 16.8σ — and
+ * roughly linear in ln L, as the theory says. So the small parameter behind
+ * ⟨r²⟩ = 4Dt in 2D is 1/ln(L/σ), and it is never small. The law is fine; it
+ * is the slope that belongs to the box.
+ *
+ * The thermostat is doing real work in that comparison and it was not the
+ * first plan. Run free, a hundred particles settle wherever the last rescale
+ * left them: across eight runs the small box came out anywhere from 1.5%
+ * hotter to 4.3% colder than the large one, so a control asserting the two
+ * temperatures agreed failed five times in eight. Holding both at the target
+ * removes the variable rather than arguing about it.
+ *
+ * The other limit on that law does go away by itself. Below the collision
+ * time the motion is ballistic, and the readout's own gate — it stays blank
+ * until the window is half a time unit — is very nearly the worst place to
+ * read it: D(t)/D(∞) peaks at 1.099 at t = 0.5, is within 2% by t = 3 and
+ * within 1% by t = 8. The window only grows from there, so a run left alone
+ * for a couple of seconds has already paid that debt off.
+ *
  * The lattice the run starts from is triangular because that is how discs
  * pack in a plane; starting from a square lattice would melt at the wrong
  * temperature and reform into triangles anyway.

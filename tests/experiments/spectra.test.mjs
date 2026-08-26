@@ -86,6 +86,106 @@ const S = 'const M = window.__spectra;';
       && r.find((x) => x.n1 === 3).series !== r.find((x) => x.n1 === 2).series, '');
 }
 
+// ── What the model leaves out, and why it may ────────────────────────
+/*
+ * Eₙ = −E₁/n² is the Schrödinger–Coulomb answer. Everything beyond it is
+ * ordered by α² = 5.33×10⁻⁵: spin–orbit coupling and the relativistic mass
+ * term split each line into a multiplet, and the page prints one number.
+ *
+ * The claim is not that the splitting is negligible in the abstract — it is
+ * that it lands below the last digit this page shows. That makes it a claim
+ * about the readout, so these checks read the readout's own resolution off
+ * the DOM rather than assuming it, and they compare the dropped correction
+ * against the two the page does handle.
+ */
+{
+  const FS = await page.evaluate(new Function(`${S}
+    const ALPHA2 = 7.2973525693e-3 ** 2;
+    // Dirac: E(n,j) = −E₁/n² · [1 + (α²/n²)(n/(j+½) − ¾)]
+    const level = (n, j) => -(1 / (n * n)) * (1 + (ALPHA2 / (n * n)) * (n / (j + 0.5) - 0.75));
+    // Allowed components of the n₂ → n₁ line: Δl = ±1, j = l ± ½.
+    const states = (n) => {
+      const out = [];
+      for (let l = 0; l < n; l++) for (const j of (l === 0 ? [0.5] : [l - 0.5, l + 0.5])) out.push([l, j]);
+      return out;
+    };
+    const multiplet = (n1, n2) => {
+      const gross = M.wavelengthOf(n1, n2);
+      const dE0 = 1 / (n1 * n1) - 1 / (n2 * n2);
+      const nm = [];
+      for (const [l2, j2] of states(n2)) for (const [l1, j1] of states(n1)) {
+        if (Math.abs(l2 - l1) !== 1) continue;
+        nm.push(gross * dE0 / (level(n2, j2) - level(n1, j1)));
+      }
+      nm.sort((a, b) => a - b);
+      return { gross, nm, spread: nm[nm.length - 1] - nm[0], count: nm.length };
+    };
+    const R_INF = 1.0973731568160e7;
+    const grossInf = (n1, n2) => 1e9 / (R_INF * (1 / (n1 * n1) - 1 / (n2 * n2)));
+    const N_AIR = 1.000293;
+    return [[2,3],[2,4],[2,5],[2,6]].map(([n1, n2]) => {
+      const m = multiplet(n1, n2);
+      return { n1, n2, gross: m.gross, spread: m.spread, count: m.count,
+               top: m.nm[m.nm.length - 1], bottom: m.nm[0],
+               reducedMass: m.gross - grossInf(n1, n2),
+               air: m.gross - m.gross / N_AIR };
+    });`));
+
+  // The whole argument rests on how finely the page prints λ, so take that
+  // from the readout the page actually painted — not from a formatter typed
+  // in here, which would make this check agree with itself. Excite to n = 3
+  // and let the atom emit until the wavelength readout says something.
+  await setV('level', 3);
+  await page.click('#excite-btn');
+  await page.waitForFunction(() => {
+    const t = document.getElementById('out-wavelength')?.textContent.trim();
+    return t && /^[0-9.]+$/.test(t);
+  }, null, { timeout: 8000 });
+  const shown = await page.evaluate(() => {
+    const t = document.getElementById('out-wavelength').textContent.trim();
+    return { text: t, digits: (t.split('.')[1] || '').length };
+  });
+  const resolution = Math.pow(10, -shown.digits);   // nm per printed digit
+
+  chk(`the readout resolves ${resolution} nm — one decimal place`,
+      resolution === 0.1, `painted "${shown.text}" → ${shown.digits} decimal(s)`);
+
+  const ha = FS[0];
+  chk('Hα is eight components, not one, spread over 0.022 nm',
+      ha.count === 8 && Math.abs(ha.spread - 0.02195) < 5e-4,
+      `${ha.count} components, spread ${ha.spread.toFixed(5)} nm`);
+
+  // The gross-structure wavelength is not the centre of the multiplet: seven
+  // of the eight components lie below it and one above. Worth pinning — the
+  // centre is what a reader would assume, and it is not what this is.
+  chk('and the printed wavelength is not their centre — seven of the eight lie below it',
+      ha.gross > ha.bottom && ha.gross < ha.top
+      && Math.abs(ha.gross - ha.bottom) > 4 * Math.abs(ha.top - ha.gross),
+      `gross ${ha.gross.toFixed(5)}, ${(ha.gross - ha.bottom).toFixed(5)} nm above the lowest, `
+      + `${(ha.top - ha.gross).toFixed(5)} nm below the highest`);
+
+  chk('every fine-structure component of every Balmer line prints as the same number',
+      FS.every((x) => x.spread < resolution / 2)
+      && FS.every((x) => x.bottom.toFixed(shown.digits) === x.top.toFixed(shown.digits)),
+      FS.map((x) => `H${'αβγδ'[x.n2 - 3]} ${(x.spread * 1000).toFixed(1)} pm`).join(', '));
+
+  // Ordering is the real result: the correction that is applied is far larger
+  // than the one that is merely named, which is far larger than the one that
+  // is dropped. Get that ordering wrong and dropping α² stops being defensible.
+  const ratios = FS.map((x) => ({ n2: x.n2, rm: x.reducedMass / x.spread, air: x.air / x.spread }));
+  // Both margins are narrowest at Hα and widen up the series, because the
+  // splitting falls off faster with n than the line spacing does. Hα is
+  // therefore the only line worth bounding tightly; the rest need a floor.
+  chk('the reduced-mass correction the page applies is 16× the splitting it drops at Hα, and more above it',
+      Math.abs(ratios[0].rm - 16.3) < 0.5 && ratios.every((x) => x.rm >= 16)
+      && ratios[3].rm > ratios[0].rm,
+      ratios.map((x) => `H${'αβγδ'[x.n2 - 3]} ${x.rm.toFixed(1)}×`).join(', '));
+  chk('and the vacuum-to-air difference the page names is 8.8× it at Hα, rising to 19× at Hδ',
+      Math.abs(ratios[0].air - 8.8) < 0.4 && Math.abs(ratios[3].air - 18.6) < 0.6
+      && ratios.every((x) => x.air > 8),
+      ratios.map((x) => `H${'αβγδ'[x.n2 - 3]} ${x.air.toFixed(1)}×`).join(', '));
+}
+
 // ── Rydberg's constant, fitted to emitted lines ──────────────────────
 {
   const r = await page.evaluate(new Function(`${S}

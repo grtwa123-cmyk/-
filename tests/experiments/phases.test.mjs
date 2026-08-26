@@ -135,6 +135,102 @@ const MK = `const M = window.__md;
       r.map(x=>`${x.want}→${x.got.toFixed(4)}`).join(' '));
 }
 
+// ── D is a property of the box, not of the liquid ─────────────────────
+/*
+ * The page prints five numbers off the trajectory and four of them describe
+ * the material. The fifth does not. In two dimensions the velocity
+ * autocorrelation falls off as 1/t, the Green–Kubo integral for D diverges
+ * logarithmically, and there is no diffusion constant in the thermodynamic
+ * limit — a periodic box truncates the tail at its own width. So D must move
+ * when the box does, and the count slider is a wide enough lever to see it.
+ *
+ * Two things had to be settled before this could be claimed.
+ *
+ * The estimator. The readout takes one time origin, which scatters 33% run to
+ * run and would need ~76 replicates a side to resolve the gap. Averaging the
+ * same slope over many origins costs nothing extra in simulation and cuts the
+ * scatter to ~5%, so that is how D is measured here rather than by calling
+ * measure().
+ *
+ * The temperature. This began as an unthermostatted run plus a control check
+ * asserting the two sizes settled at the same T. They do not, reliably: eight
+ * runs put the small box between 1.5% hotter and 4.3% colder than the large
+ * one, because a hundred particles cut free of the thermostat land wherever
+ * the last rescale left them, ±5%. Rather than widen that control until it
+ * passed, it was deleted and the variable removed — the production window
+ * runs thermostatted, both sizes are held at T* = 0.800, and a thermal
+ * explanation is then not available rather than merely improbable.
+ *
+ * Sized against measured scatter, thermostatted, 8 replicates a side:
+ * D = 0.0452 ± 0.0008 at n = 8 against 0.0524 ± 0.0007 at n = 14 — a 16% gap
+ * at 6.8σ, with the two temperatures 0.02% apart. This runs 6 replicates and
+ * bounds the gap at 3σ and at half the measured 16%.
+ */
+{
+  const r = await page.evaluate(new Function(`${MK}
+    // D from the MSD slope over many time origins: the readout's estimator,
+    // averaged instead of sampled once. The thermostat stays on through the
+    // production window so temperature cannot be the difference.
+    function measureD(n) {
+      const equil = 5000, prod = 30000, stride = 25, tLo = 2, tHi = 8;
+      M.build({ n, N: n*n, rho: 0.8, T: 0.8, steps: 1, thermostat: true });
+      for (let i = 0; i < equil; i++) { M.step(); if (i % 10 === 0) M.setTemperature(0.8); }
+      const S = M.system();
+      const snaps = [];
+      let tSum = 0, tN = 0;
+      for (let i = 0; i < prod; i++) {
+        M.step();
+        if (i % 10 === 0) M.setTemperature(0.8);
+        if (i % stride === 0) { snaps.push([Float64Array.from(S.ux), Float64Array.from(S.uy)]); tSum += M.temperature(); tN++; }
+      }
+      const k0 = Math.round(tLo / (stride * M.DT)), k1 = Math.round(tHi / (stride * M.DT));
+      let sxx = 0, sxy = 0;
+      for (let k = k0; k <= k1; k++) {
+        let m = 0, c = 0;
+        for (let o = 0; o + k < snaps.length; o += 2) {
+          const [ax, ay] = snaps[o], [bx, by] = snaps[o + k];
+          let sum = 0;
+          for (let i = 0; i < S.N; i++) { const dx = bx[i]-ax[i], dy = by[i]-ay[i]; sum += dx*dx + dy*dy; }
+          m += sum / S.N; c++;
+        }
+        const t = k * stride * M.DT;
+        sxx += t * t; sxy += t * (m / c);          // slope through the origin = 4D
+      }
+      return { D: sxy / sxx / 4, T: tSum / tN };
+    }
+    const stat = (a) => {
+      const m = a.reduce((x, y) => x + y, 0) / a.length;
+      const sd = Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1));
+      return { mean: m, sem: sd / Math.sqrt(a.length) };
+    };
+    const out = {};
+    for (const n of [8, 14]) {
+      const runs = [];
+      for (let i = 0; i < 6; i++) runs.push(measureD(n));
+      out[n] = { D: stat(runs.map(x => x.D)), T: stat(runs.map(x => x.T)) };
+    }
+    return out;`));
+
+  const small = r[8], big = r[14];
+  const gap = big.D.mean - small.D.mean;
+  const sem = Math.hypot(small.D.sem, big.D.sem);
+
+  // Stated first, because the whole result rests on it: the two runs are at
+  // the same temperature. Not "close enough" — the thermostat holds both to
+  // the target, so this is a check that it did, and it is what makes the
+  // diffusion gap unattributable to heat.
+  const dT = Math.abs(small.T.mean - big.T.mean) / big.T.mean;
+  chk('both box sizes run at the same temperature, T* = 0.800',
+      dT < 0.005 && Math.abs(small.T.mean - 0.8) < 0.005 && Math.abs(big.T.mean - 0.8) < 0.005,
+      `T(n=8) ${small.T.mean.toFixed(5)}, T(n=14) ${big.T.mean.toFixed(5)} — ${(100*dT).toFixed(3)}% apart`);
+
+  chk('the same liquid diffuses faster in a bigger box — D is the box’s, not the substance’s',
+      gap > 0 && gap / sem > 3 && gap / small.D.mean > 0.08,
+      `n=8: ${small.D.mean.toFixed(5)}±${small.D.sem.toFixed(5)}  |  `
+      + `n=14: ${big.D.mean.toFixed(5)}±${big.D.sem.toFixed(5)}  |  `
+      + `gap ${gap.toFixed(5)} (${(gap / sem).toFixed(1)}σ, ${(100 * gap / small.D.mean).toFixed(0)}%)`);
+}
+
 // ── g(r) is the structural fingerprint ────────────────────────────────
 {
   const r = await page.evaluate(new Function(`${MK}

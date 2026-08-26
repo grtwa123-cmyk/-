@@ -21,6 +21,28 @@
  * is the integrator and the algebra checking each other rather than one being
  * drawn from the other.
  *
+ * Asked "what is the small parameter", this page comes back clean, and for a
+ * reason worth stating: the closed form above is the exact steady-state
+ * solution of the exact equation being integrated. There is no expansion in
+ * it and no regime where it stops holding — the suite matches the integrator
+ * to it at ζ = 1.0, where every light-damping approximation is long dead.
+ * Linearity is not an assumption here either; it is the definition. A real
+ * spring is linear only for small x, and a real dashpot linear only in slow
+ * v, but the force law integrated here is exactly −ω₀²x − 2ζω₀ẋ at every
+ * amplitude. Worth knowing which way that cuts: resonance is precisely where
+ * a real oscillator would leave its linear range first, since the whole point
+ * of the peak is that x is Q times the static deflection — 33 times, at the
+ * lightest preset on the slider.
+ *
+ * The one limit anywhere near the page is in a word rather than a formula.
+ * Q is printed as 1/(2ζ), which is *exactly* the amplification at r = 1 — the
+ * meaning the notes use. It is only asymptotically the other two things "Q"
+ * usually means: the bandwidth ratio ω₀/Δω is 0.9999 of it at ζ = 0.01 but
+ * 0.955 at ζ = 0.2 and 0.879 at ζ = 0.3, and past ζ = 1/√2 there is no peak
+ * to take a width of at all, while the readout goes on printing a number.
+ * tests/experiments/resonance.test.mjs holds that as a convergence rather
+ * than as an identity, which is the honest form of the claim.
+ *
  * Three facts are worth watching for and all fall out of the same expression:
  * amplitude peaks at r = √(1−2ζ²), slightly *below* resonance, and stops
  * peaking at all once ζ ≥ 1/√2; the phase lag is exactly 90° at r = 1 for

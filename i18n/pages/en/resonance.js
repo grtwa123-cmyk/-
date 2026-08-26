@@ -29,6 +29,7 @@ window.i18nRegister("en", {
   "resNote2": "Watch the phase, not just the size. Well below resonance the mass moves with the force; well above it moves against it; and at f₀ exactly it lags by a quarter cycle, for every damping value there is. That 90° crossing is the sharpest way to find a resonance in a real measurement.",
   "resNote3": "The peak is not quite at f₀. Amplitude peaks at √(1−2ζ²) — slightly below — and past ζ = 1/√2 there is no peak at all, just a curve sliding downhill. Velocity and absorbed power, by contrast, always peak exactly at f₀.",
   "resNote4": "Press Reset and watch the start. The mass does not jump to its final swing: the transient beats against the drive and dies away as e^(−ζω₀t), which is why a high-Q system is both the most dramatic at resonance and the slowest to get there.",
+  "resNote5": "The Q on the panel is 1/(2ζ), and it means one specific thing: the amplitude at f₀ divided by the amplitude the same force produces pushed infinitely slowly. That is exact at every damping — it is what the readout is measured against. It is only approximately the other two things people mean by Q. As a sharpness, ω₀ divided by the half-power width, it is right to a part in ten thousand at ζ = 0.01 but 4.5% off by ζ = 0.2 and 12% off by ζ = 0.3; and past ζ = 1/√2 there is no peak left to measure a width of, though the panel still prints a number. Slide the damping up and read it as an amplification, not as a sharpness.",
   "resNotes": "What to look for",
   "resOutAmp": "Amplitude A / X₀",
   "resOutError": "Measured vs theory",

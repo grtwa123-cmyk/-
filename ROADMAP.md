@@ -224,13 +224,14 @@ Non-negotiable, per `CLAUDE.md`:
   now the oldest item on the list.
 - **Physics is 20 of 42.** Not a problem to fix by adding, and with biology
   caught up there is no case for adding to it soon.
-- **A theme worth pulling on across the catalogue.** Three pages in a row
-  turned on the same thing: a textbook law is a limit, and the page is running
-  somewhere the limit does not hold. Diffusion had the hole size, chemotaxis
-  the ballistic crossover, the coalescent k²/N. So the older measured pages
-  are being asked, of each closed form, *what is the small parameter, and is
-  it small here*. Three answered so far, all of them clean, and each for a
-  different reason worth keeping:
+- **A theme worth pulling on across the catalogue — now finished.** Three
+  pages in a row turned on the same thing: a textbook law is a limit, and the
+  page is running somewhere the limit does not hold. Diffusion had the hole
+  size, chemotaxis the ballistic crossover, the coalescent k²/N. So every
+  older measured page was asked, of each closed form, *what is the small
+  parameter, and is it small here*. All eight are answered. Two came back
+  with a real defect in the page's own account of itself; the rest are clean,
+  and each is clean for a different reason worth keeping:
 
   - **gas** — there is no small parameter. The particles do not collide with
     each other at all, only with the walls, so the gas is exactly ideal rather
@@ -246,8 +247,91 @@ Non-negotiable, per `CLAUDE.md`:
     independent and Michaelis–Menten is exact. That is the initial-rate assay
     and it is a fine choice, but nothing said so. It is now in the notes, the
     source header, and two checks that measure it.
+  - **wave** — already answered before the sweep reached it, and it is the
+    model for what an answered page looks like. Two small parameters, both
+    named on the page with their sizes: obliquity (λ/d, which no amount of
+    moving the screen back repays) and the near screen (d/L, which does fade).
+    The readout prints the measurement, the exact hyperbola crossing and the
+    small-angle λL/d side by side, and the suite holds the gap between the
+    last two to the closed form for the error rather than to a tolerance.
+  - **resonance** — clean, for a third reason: the closed form *is* the exact
+    steady-state solution of the exact equation being integrated, so there is
+    no expansion in it to have a small parameter, and the suite matches the
+    integrator to it at ζ = 1.0 where any light-damping assumption is long
+    dead. Linearity is not assumed small either — the force law is exactly
+    −ω₀²x − 2ζω₀ẋ at every amplitude — though it is worth knowing which way
+    that cuts, since resonance is exactly where a real oscillator would leave
+    its linear range first.
 
-  Still to ask: `phases`, `neuron`, `resonance`, `wave`, `spectra`.
+    The one limit near the page turned out to be in a word rather than a
+    formula, and it is now in a note. Q is printed as 1/(2ζ), which is
+    *exactly* the amplification at r = 1 — but only asymptotically the two
+    other things "Q" usually means. Read as the −3 dB sharpness ω₀/Δω the
+    same number is 0.01% out at ζ = 0.01, 4.5% at ζ = 0.2 and 12% at ζ = 0.3,
+    and past ζ = 1/√2 there is no peak to take a width of while the readout
+    goes on printing a number. Two new checks pin those figures, one of them
+    against √(1 − 2ζ² ± 2ζ√(1 − ζ²)) exactly.
+  - **spectra** — clean, and the reason is the readout. Eₙ = −13.6 eV/n² is
+    the Schrödinger–Coulomb answer and every correction to it is ordered by
+    α² = 5.3×10⁻⁵: spin and relativity split Hα into eight components over
+    22 pm, and — worth knowing — the single printed wavelength is not their
+    centre, since seven of the eight lie below it. That spread is 4.6× finer
+    than the 0.1 nm the page prints, 8.8× finer than the vacuum-to-air
+    difference the page names, and 16× finer than the reduced-mass correction
+    the page applies. So the small parameter is small *because of what is
+    shown*, which makes it a claim about the readout: the new checks read the
+    printed resolution off the painted DOM rather than from a formatter typed
+    into the test, and print a third decimal and they go red.
+  - **neuron** — the odd one: there is no closed form here at all. Nothing is
+    compared against an analytic result; the threshold, the peak, the
+    refractory period and the firing rate are all read back off the
+    trajectory. What the question turned up instead was a term that is
+    missing and a term that is provably small, and only the first was news.
+
+    The missing one is the cable. HH's axon equation carries (a/2Rᵢ)∂²V/∂x²
+    and this page does not — it is space-clamped, HH's own axial-wire
+    preparation, under which the spatial derivative is exactly zero rather
+    than approximately so. The equations are then exact, and the price is
+    that nothing propagates and there is no conduction velocity. None of that
+    was stated, and the source header opened by calling the page an axon.
+    Both are fixed. No new check: the two measurable halves — RK4
+    convergence, and the all-or-none cliff at 2% of stimulus spanning 90 mV —
+    were already in the suite, and a check invented to cover the space clamp
+    would have been a decoration.
+  - **phases** — the one that found real physics. Of the five numbers the
+    page reports, four describe the material and D does not. In two
+    dimensions the velocity autocorrelation decays as 1/t, the Green–Kubo
+    integral for D diverges logarithmically, and there is no diffusion
+    constant in the thermodynamic limit at all: a periodic box truncates the
+    tail at its own width. The count slider is a wide enough lever to show
+    it. Thermostatted at ρ* 0.8, T* 0.800, six replicates a side:
+
+    ```
+    n =  8   N =  64   L =  9.6σ    D = 0.0452 ± 0.0008
+    n = 14   N = 196   L = 16.8σ    D = 0.0524 ± 0.0007
+    ```
+
+    Sixteen per cent apart at 6.8σ, temperatures 0.02% apart. Cut free of the
+    thermostat, four sizes come out monotone (0.0435, 0.0470, 0.0493, 0.0511
+    at L = 9.6 … 16.8σ) and roughly linear in ln L. So the small parameter is
+    1/ln(L/σ) and it is never small — ⟨r²⟩ = 4Dt still holds; it is the slope
+    that belongs to the box.
+
+    The other limit on that law does go away by itself, and the page's own
+    gate is nearly the worst place to read it: D(t)/D(∞) peaks at 1.099 at
+    t = 0.5, which is exactly when the readout stops being blank, and is
+    within 2% by t = 3 and 1% by t = 8.
+
+    **One check was written, failed its own honesty test, and was deleted.**
+    The first version ran unthermostatted and carried a control asserting the
+    two sizes settled at the same temperature. Eight runs under load put the
+    small box between 1.5% hotter and 4.3% colder — a hundred particles cut
+    free of the thermostat land wherever the last rescale left them, ±5% —
+    so the control failed five times in eight. Widening it would have been
+    the wrong repair. The variable was removed instead: the production window
+    now runs thermostatted, both sizes are held at the target, and a thermal
+    explanation is unavailable rather than merely improbable.
+
 - **Repo metadata.** The GitHub description still reads `SE`, and Website and
   Topics are empty. The API path is blocked from this environment, so this
   one needs a human.

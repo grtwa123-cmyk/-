@@ -19,6 +19,23 @@
  * tables — those are measured in air, where n ≈ 1.000293 shortens λ by about
  * 0.03%.
  *
+ * What is left out, and what it would be worth. Eₙ = −13.6 eV/n² is the
+ * Schrödinger–Coulomb answer, and every correction to it is ordered by
+ * α² = 5.33×10⁻⁵. Spin–orbit coupling and the relativistic mass term split
+ * each line into a multiplet: Hα is not one line but eight, spread over
+ * 22 pm, and the gross-structure wavelength is not their centre — seven of
+ * the eight sit below it, 19 pm at the furthest, and one sits 3 pm above.
+ * That spread is 4.6× finer than the 0.1 nm this page prints, 9× finer than
+ * the vacuum-to-air difference named just above, and 16× finer than the
+ * reduced-mass correction that *is* applied — and those two margins only
+ * widen up the series, to 19× and 35× by Hδ. The Lamb shift, 1058 MHz on a
+ * 457 THz line, is 1.5 pm: another factor of 14 down again.
+ *
+ * So the small parameter is α², it is small here, and the reason it can be
+ * dropped is the page's own resolution: every correction the model omits
+ * lands below the last digit shown. Print a third decimal and that stops
+ * being true — tests/experiments/spectra.test.mjs holds the two together.
+ *
  * The cascade picks uniformly at random among the allowed lower levels. Real
  * atoms weight those jumps by Einstein A coefficients (Lyman-α dominates
  * heavily), so the relative line *brightness* here is schematic — the line

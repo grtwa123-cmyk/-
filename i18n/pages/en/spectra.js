@@ -36,6 +36,7 @@ window.i18nRegister("en", {
   "spectraNote1": "The electron can only sit on the rungs, never between them, so only certain energies can ever be released — that is why the spectrum is sharp lines instead of a smooth rainbow.",
   "spectraNote2": "Only the Balmer series (landing on n = 2) falls in visible light. Lyman jumps land on n = 1 and are far into the ultraviolet; Paschen jumps land on n = 3, out in the infrared.",
   "spectraNote3": "The rungs crowd together as n grows because the energy goes as 1/n². Above the n = ∞ limit the electron is free and the atom is ionised, which takes 13.6 eV from the ground state.",
+  "spectraNote4": "Every wavelength here comes from Eₙ = −13.6 eV/n², and the corrections that equation leaves out are all of order α² = 5.3×10⁻⁵. Spin and relativity split Hα into eight components spread over 0.022 nm, and the single number printed is not their centre: seven of the eight lie below it. That spread is finer than the 0.1 nm shown, and finer still than two corrections the page does account for — the reduced-mass one worth 0.36 nm, which is applied, and the 0.19 nm between vacuum and air, which is named. The small parameter is small; the readout is why you can ignore it.",
   "spectraNotes": "Notes",
   "spectraOutEnergy": "Photon energy",
   "spectraOutFrequency": "Frequency",
