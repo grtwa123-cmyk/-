@@ -1080,6 +1080,23 @@ body:not([data-theme]) header.site-header p {
   gap: 1.4rem;
 }
 
+/* Every stage on the site is computed in the browser, so with JavaScript off
+   the reader gets a blank rectangle and dials that do nothing — and, until
+   now, nothing saying why. The prose is all in the markup and stays readable,
+   so the note points at that rather than apologising. It spans both columns
+   of the grid because it belongs to the page, not to the panel. */
+.noscript-note {
+  grid-column: 1 / -1;
+  margin: 0 0 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--glass-tint);
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 @media (max-width: 800px) {
   .experiment { grid-template-columns: 1fr; }
   /* The experiment first, the dials second. In source order the panel wins,

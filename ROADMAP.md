@@ -237,6 +237,15 @@ nobody has to measure them again to decide they are fine.
   Everything except neuron is inside one frame or close to it.
 
 
+- **The 540 / 560 px breakpoints are not an inconsistency.** Four blocks in
+  `styles.css` sit within 20 px of each other and style four unrelated things:
+  the theme button's label at 560, the subnav's collapse to one column at 540,
+  the method badge's type size at 560, the sound toggle's size at 540. Each
+  fires when its own component runs out of room, and between 540 and 560 the
+  result is the intended sequence — a shortened theme button in a subnav that
+  is still three columns — not a half-adapted layout. Consolidating them onto
+  one number would move two components off the width they were fitted at, for
+  a tidiness nobody can see. Left as is.
 
 - **`solved` is a category of one.** `circuit` carries it and no other page
   does. Either the badge earns a second page or it should be folded into

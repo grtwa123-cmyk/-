@@ -120,6 +120,23 @@ a row there too; `tests/smoke.mjs` will say so.
 
 ---
 
+**A dictionary value is text, not markup.** `i18n.js` paints with
+`el.textContent = val`, so `&mdash;` in a string reaches the reader as those
+seven characters. Two pages shipped that way — the chemotaxis and coalescent
+titles, in all three languages — and nothing noticed, because the key
+resolves, parity passes and the switch works. `tests/lint.mjs` refuses an
+HTML entity in any dictionary or chunk. The two `ssDiameter` keys are the
+exception that proves it: they carry `<b>` on purpose and are painted with
+`innerHTML`, never through `data-i18n`.
+
+**Anything hand-maintained beside the catalogue drifts, so hold it to the
+catalogue in a test.** Three copies were found stale or unchecked in one pass:
+a 42-URL `VERIFIED` set in `table-view.js`, the hub cards and screen-reader
+nav, and the `<noscript>` list on the landing page, which was missing the five
+newest experiments. Counts are not enough — the hubs had the right *number* of
+cards while nothing checked they were the right ones. Add the copy to
+`smoke.mjs` in both directions the same day you add the copy.
+
 ## 3b. What is already the way it should be
 
 Written down so a later pass does not spend a day rediscovering it, or worse,
@@ -232,6 +249,21 @@ fix is nearly always more replicates, a longer window, or a parameter choice
 that decorrelates the samples faster. On `chemotaxis` the tumble-rate fit
 scattered 1.4% against a 4% bound at 24 replicates; at 48 it scatters 0.76%,
 and the bound was **tightened** to 3%.
+
+**A sigma is not enough — look at the shape of the tail.** `epidemic` held R₀
+to 6% on four replicates whose per-run scatter is 2.6%, which reads like four
+sigma and is not. 25,000 runs at R₀ = 1.5 put 116 of them under half the
+population, a left tail about ten times fatter than a Gaussian, and one of
+those in a batch of four moves the average by 3%. When a check sits near a
+threshold, a critical point, or anywhere the answer is steep in what is being
+measured, sample the distribution before trusting its standard deviation.
+
+**A filter is a claim, so check what it threw away.** The same sweep kept runs
+that reached 2% of the population, while a note in the same file had already
+measured that a *subcritical* chain reaches 3.8% — so dead runs were being
+averaged in as epidemics. Every `if (…) keep` in a test is an assertion about
+the mechanism and should be written as one: the sweep now fails unless nine
+of every ten runs took off.
 
 **Known flake, do not chase:** `kinetics` fails about 1.24% of runs by
 construction. Four hypotheses were tested and all four killed by

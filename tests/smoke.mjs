@@ -117,6 +117,29 @@ check("and no hub carries a card the catalogue does not",
     wrong.length === 0, wrong.slice(0, 3).join("; "));
 }
 
+/*
+ * And the experiment pages themselves. Every stage on the site is computed in
+ * the browser, so with JavaScript off the reader got a blank rectangle, dials
+ * that do nothing, and no word about why — on 41 of 42 pages. The prose is all
+ * in the markup and stays readable, so each page now says so.
+ *
+ * Checked as source rather than in a browser: it is markup being present, and
+ * a page added without it should fail before anything is launched. The two
+ * full-bleed 3D pages do not link styles.css, so theirs carry their own
+ * declarations; both spellings are accepted, an empty <noscript> is not.
+ */
+{
+  const naked = [];
+  for (const f of fs.readdirSync(path.join(root, "experiments")).filter((n) => n.endsWith(".html"))) {
+    const src = fs.readFileSync(path.join(root, "experiments", f), "utf8");
+    const ns = (src.match(/<noscript>[\s\S]*?<\/noscript>/) || [""])[0];
+    if (!/class="noscript-note"/.test(ns)) naked.push(f);
+    else if (ns.replace(/<[^>]*>/g, "").trim().length < 80) naked.push(`${f} (note is empty)`);
+  }
+  check("every experiment page says something when JavaScript is off",
+    naked.length === 0, naked.slice(0, 5).join(", "));
+}
+
 // ── i18n parity ───────────────────────────────────────────────────────────
 // Each dictionary is a call to window.i18nRegister, so they are read as
 // source rather than imported. Parity is what lets the runtime drop
