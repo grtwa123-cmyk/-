@@ -101,6 +101,23 @@ for (const r of results) {
   if (r.code !== 0) failedSuites++;
   const status = r.code === 0 ? "ok  " : "FAIL";
   console.log(`  ${status}  ${r.name.padEnd(38)} ${total ? `${pass}/${total}` : `exit ${r.code}`}`);
+  /*
+   * Repeat the failing lines here. A suite's own output is echoed above, but
+   * on a long run that is thousands of lines and CI log viewers hand back the
+   * tail — four times in one session a red build said only "sweep 14/15" and
+   * finding out which check meant re-running the shard locally for a quarter
+   * of an hour. The summary is the part anyone actually reads, so the names
+   * go in it.
+   */
+  if (r.code !== 0) {
+    const lines = r.out.split("\n").filter((l) => l.startsWith("FAIL "));
+    for (const l of lines.slice(0, 6)) console.log(`          ${l.slice(5).trim()}`);
+    if (lines.length > 6) console.log(`          ... and ${lines.length - 6} more`);
+    if (!lines.length) {
+      const crash = r.out.split("\n").find((l) => /Error|Timeout|uncaught/i.test(l));
+      if (crash) console.log(`          ${crash.trim().slice(0, 160)}`);
+    }
+  }
 }
 console.log(`\n${results.length - failedSuites}/${results.length} suites, ` +
   `${passed}/${checks} checks, ${((Date.now() - started) / 1000).toFixed(1)}s`);
