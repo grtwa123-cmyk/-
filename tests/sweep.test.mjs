@@ -108,7 +108,22 @@ function urlProbe(name) {
         // Let it accumulate something first, so Reset has work to do.
         const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
         if (await start.count() === 1 && await start.isEnabled()) await start.click();
-        await page.waitForTimeout(2200);
+        /*
+         * Wait until a readout that opened empty has filled, rather than for
+         * a fixed 2.2 s. How many fill in a given wall-clock window is a
+         * property of the machine, and the floor below counts pages that
+         * filled — so on a slow runner the floor was the thing that failed,
+         * not the pages.
+         */
+        const blanks = Object.entries(blank).filter(([, v]) => EMPTY.has(v)).map(([k]) => k);
+        await page.waitForFunction((keys) => {
+          const now = [...document.querySelectorAll('.readout')].map((r) => [
+            (r.querySelector('.label')?.textContent || '').trim().slice(0, 40),
+            (r.querySelector('.num')?.textContent || '').trim()]);
+          const EMPTY2 = ['0', '0.0', '0.00', '0.000', '—', '-', '', '0 %', '0%'];
+          return now.some(([k, v]) => keys.includes(k) && !EMPTY2.includes(v));
+        }, blanks, { timeout: 6000 }).catch(() => {});
+        await page.waitForTimeout(600);
         const filled = await readouts();
         await btn.click();
         await page.waitForTimeout(300);
@@ -388,7 +403,18 @@ function urlProbe(name) {
     try {
       await page.goto(url(`experiments/${name}.html`),
                       { waitUntil: 'domcontentloaded', timeout: 25000 });
-      await page.waitForTimeout(500);
+      /*
+       * Wait for a canvas that has been laid out and sized, rather than half
+       * a second. A page still booting reports a zero-width box and drops out
+       * of the count, and on a slower runner enough of them dropped out to
+       * take the coverage floor below its minimum — this check went red on CI
+       * while passing here three times running. The two 3D pages need seconds,
+       * not milliseconds, before their canvas exists at its real size.
+       */
+      await page.waitForFunction(() => {
+        const c = document.querySelector('canvas');
+        return c && c.width > 2 && c.getBoundingClientRect().width > 2;
+      }, null, { timeout: 20000 }).catch(() => {});
       const r = await page.evaluate(() => {
         const c = document.querySelector('canvas');
         if (!c) return null;
