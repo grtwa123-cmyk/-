@@ -173,6 +173,35 @@ for (const file of text) {
   }
 }
 
+// ── 4. no HTML entities in a dictionary ───────────────────────────────────
+/*
+ * i18n's paint() assigns to textContent, so a dictionary string is text, not
+ * markup: "&mdash;" in a value reaches the reader as those seven characters.
+ *
+ * Two pages shipped with it. The chemotaxis title read "Chemotaxis &mdash;
+ * Run and Tumble" on screen in all three languages, and the coalescent title
+ * and both intros the same, because the markup those strings were drafted
+ * from used entities and the drafting carried them across. Nothing noticed:
+ * the key resolves, the parity check passes, the translation switches.
+ *
+ * The dictionaries are UTF-8 and every other value in them spells the
+ * character out, so the rule is that all of them must.
+ */
+{
+  const files = tracked.filter((f) => /^i18n\/(([a-z]{2})\.js|pages\/[a-z]{2}\/[a-z0-9]+\.js)$/.test(f));
+  for (const f of files) {
+    const src = fs.readFileSync(path.join(root, f), "utf8");
+    for (const [i, line] of src.split("\n").entries()) {
+      const hit = /&(?:[a-zA-Z][a-zA-Z0-9]{1,9}|#\d{1,6}|#x[0-9a-fA-F]{1,5});/.exec(line);
+      if (hit) {
+        failures.push(`${f}:${i + 1}: the dictionary carries the HTML entity ${hit[0]} — `
+          + "i18n sets textContent, so it reaches the reader literally; "
+          + "write the character");
+      }
+    }
+  }
+}
+
 // ── Report ────────────────────────────────────────────────────────────────
 if (failures.length) {
   for (const f of failures.slice(0, 40)) console.error(`FAIL  ${f}`);

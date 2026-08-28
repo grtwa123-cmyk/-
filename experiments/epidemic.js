@@ -226,8 +226,29 @@
   // ── Drawing ────────────────────────────────────────────────────────────
   const COL = { s: "#6ea8ff", i: "#ff6b8a", r: "#7be0d0" };
 
+  /*
+   * The drawing's own coordinate space, fixed. The backing store is this
+   * times the display's pixel ratio; every other stage on the site does the
+   * same and this one did not, so on a 2× display it was handing the
+   * compositor 860 px to stretch over 1316 and everything came out soft —
+   * measured at 1.31× where the rest of the catalogue is 2.00×. The numbers
+   * below are the ones the markup already declared, so nothing about the
+   * picture moves; only how many device pixels it is painted into.
+   */
+  const VIEW_W = 860, VIEW_H = 440;
+
+  function fitCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(VIEW_W * dpr), h = Math.round(VIEW_H * dpr);
+    if (canvas.width === w && canvas.height === h) return;
+    canvas.width = w;
+    canvas.height = h;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
   function draw() {
-    const w = canvas.width, h = canvas.height;
+    fitCanvas();
+    const w = VIEW_W, h = VIEW_H;
     const css = getComputedStyle(document.body);
     ctx.clearRect(0, 0, w, h);
     if (!st) return;

@@ -116,6 +116,11 @@
   let history = [];                 // { t, a, b, c }
   let dots = [];                    // drawn molecules; a depiction only
   let settleWindow = [];            // recent Q samples, for the measured K
+  // A slow exponential mean of Q, for the direction readout only. It needs a
+  // longer memory than measuredK does — see the note where the label is
+  // chosen — and it is re-seeded, not cleared, so the label never goes blank.
+  let qAcc = 0, qWeight = 0;
+  const Q_SMOOTH_ALPHA = 1 / 500;
 
   const HISTORY_SPAN = 30;          // simulated time units on screen
 
@@ -167,6 +172,7 @@
     simT = 0; fwd = 0; rev = 0;
     history = [];
     settleWindow = [];
+    qAcc = 0; qWeight = 0;
     rebuildDots();
   }
 
@@ -174,6 +180,7 @@
   function disturb() {
     fwd = 0; rev = 0;
     settleWindow = [];
+    qAcc = 0; qWeight = 0;
   }
 
   /**
@@ -207,6 +214,19 @@
     if (Number.isFinite(q)) {
       settleWindow.push(q);
       if (settleWindow.length > 400) settleWindow.shift();
+      /*
+       * The climb to equilibrium is not part of "where Q has been sitting",
+       * so the mean starts when Q arrives — and it starts unbiased, the
+       * accumulator carrying its own weight so that the first sample is the
+       * mean of one rather than a value blended with a zero that was never
+       * measured. Without that the mean read 30% under K eight seconds in,
+       * which is the seed still showing through.
+       */
+      const K = predictedK(p);
+      if (qWeight > 0 || Math.abs(q - K) <= 0.25 * K) {
+        qAcc = qAcc * (1 - Q_SMOOTH_ALPHA) + q * Q_SMOOTH_ALPHA;
+        qWeight = qWeight * (1 - Q_SMOOTH_ALPHA) + Q_SMOOTH_ALPHA;
+      }
     }
   }
 
@@ -430,10 +450,43 @@
     out.kpred.textContent = fmt(K);
     out.events.textContent = `${fwd.toLocaleString()} · ${rev.toLocaleString()}`;
 
+    /*
+     * Which way the mixture is shifting, from the recent mean of Q rather
+     * than from this instant's Q.
+     *
+     * Q is a ratio of three small integer counts under a Gillespie walk, and
+     * at equilibrium it scatters by about 14% of K — measured over sixty
+     * samples: mean 1.042 K, sd 0.145 K, range 0.75 to 1.45. The band here is
+     * ±10%, narrower than the noise, so an equilibrated mixture spent 53% of
+     * its time saying "at equilibrium" and the other 47% flickering between
+     * the two disturbance messages several times a second. The words claim
+     * something about the state of the mixture; the number they were reading
+     * was about the last microsecond of it.
+     *
+     * Neither measuredK's 400-sample window nor a running mean since the
+     * last disturbance does the job. The samples are one per frame and Q is
+     * autocorrelated over about 27 of them, so 400 spans only a few
+     * correlation times and its mean still wandered 17% between runs; a
+     * cumulative mean is the opposite problem — it never forgets, and one
+     * run that overshot on the way in sat 26% high for as long as it was
+     * watched. What works is an exponential mean with a 500-sample memory,
+     * started when Q arrives and carrying its own weight so it is unbiased
+     * from its first sample.
+     *
+     * The band is wide because the thing it has to separate is wide. Real
+     * disturbances here are not tens of percent: injecting a hundred
+     * molecules of A puts Q at 0.36 K, and the temperature dial alone moves
+     * K from 15.9 to 0.55 against a resting 6.1. So 40% is far inside every
+     * disturbance the page offers and far outside the noise.
+     *
+     * Q itself, the plot, K and the measured K are all untouched.
+     */
+    const qShown = qWeight > 0 ? qAcc / qWeight : q;
+
     let key = "eqShiftEq", fallback = "at equilibrium";
-    if (!Number.isFinite(q)) { key = "eqShiftNone"; fallback = "—"; }
-    else if (q < K * 0.9) { key = "eqShiftFwd"; fallback = "Q < K → making C"; }
-    else if (q > K * 1.1) { key = "eqShiftRev"; fallback = "Q > K → breaking C"; }
+    if (!Number.isFinite(qShown)) { key = "eqShiftNone"; fallback = "—"; }
+    else if (qShown < K * 0.6) { key = "eqShiftFwd"; fallback = "Q < K → making C"; }
+    else if (qShown > K * 1.4) { key = "eqShiftRev"; fallback = "Q > K → breaking C"; }
     out.shift.textContent = i18nText(key, fallback);
   }
 
@@ -553,6 +606,9 @@
     setCounts: (a, b, c) => { N = { A: a, B: b, C: c }; syncDots(); disturb(); },
     events: () => ({ fwd, rev }),
     measuredK,
+    /** The Q samples measuredK reads, and the longer mean the label reads. */
+    qWindow: () => settleWindow.slice(),
+    qMean: () => (qWeight > 0 ? qAcc / qWeight : NaN),
     state: () => ({ t: simT, ...N, running, q: quotient(params()) }),
     setRunning: (v) => { running = v; },
     /**

@@ -23,7 +23,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { browser, chk, url, finish, ROOT } from './lib/harness.mjs';
+import { browser, chk, url, serveCdn, finish, ROOT } from './lib/harness.mjs';
 
 const PAGES = fs.readdirSync(path.join(ROOT, 'experiments'))
   .filter((f) => f.endsWith('.html')).map((f) => f.slice(0, -5)).sort();
@@ -68,7 +68,7 @@ function urlProbe(name) {
   const page = await ctx.newPage();
 
   const noRestore = [], audio = [], fonts = [], flat = [], drifted = [], errs = [];
-  const kept = [];
+  const kept = [], notClimbing = [];
   let probed = 0, resettable = 0, watched = 0;
 
   /*
@@ -79,11 +79,35 @@ function urlProbe(name) {
    * that survived a Reset. The existing check compares controls only, so a
    * chart of recorded points or a running tally could sail through it.
    */
-  const EMPTY = new Set(['0', '0.0', '0.00', '0.000', '—', '-', '', '0 %', '0%']);
-  const readouts = () => page.evaluate(() => Object.fromEntries(
-    [...document.querySelectorAll('.readout')].map((r) => [
-      (r.querySelector('.label')?.textContent || '').trim().slice(0, 40),
-      (r.querySelector('.num')?.textContent || '').trim()])));
+  /*
+   * Which readouts are cumulative tallies is named here, not inferred.
+   *
+   * Inferring it was tried twice and failed twice, both times on chemotaxis.
+   * "Opens empty and fills" describes a fit as well as a count, and a fit
+   * does not behave like one: ℓ off a nearly-flat histogram opens at 24312,
+   * comes down through 7269, 3818, 2829 towards 1000, and starts high again
+   * after a Reset — read as a tally, a Reset that did nothing. Requiring it
+   * to climb only swapped which readout slipped through, because the r²
+   * beside it climbs. Requiring it to open at a literal 0 only swapped it
+   * back, because a hopeless fit prints 0.000.
+   *
+   * There is no property of the numbers that separates a count from a
+   * statistic, so the pages say which is which. Five of them carry one, and
+   * a page that stops carrying one is named by the coverage check below
+   * rather than quietly dropping out of it.
+   */
+  const TALLIES = {
+    decay: ['out-decayed', 'out-halves', 'out-elapsed'],
+    epidemic: ['out-r', 'out-time'],
+    expression: ['out-time'],
+    kinetics: ['out-c', 'out-collisions'],
+    titration: ['out-pct'],
+  };
+  const tallies = (ids) => page.evaluate((keys) => Object.fromEntries(keys.map((id) => {
+    const n = parseFloat((document.getElementById(id)?.textContent || '')
+      .replace(/[^0-9.eE+-]/g, ''));
+    return [id, Number.isFinite(n) ? n : null];
+  })), ids);
 
   /** Every addressable control's value, as the page currently has it. */
   const controlState = () => page.evaluate(() => Object.fromEntries(
@@ -101,15 +125,28 @@ function urlProbe(name) {
                       { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.waitForTimeout(450);
       const opened = await controlState();
-      const blank = await readouts();
       const btn = page.locator('#reset-btn, #reset').first();
       if (await btn.count() === 1 && await btn.isEnabled()) {
         resettable++;
         // Let it accumulate something first, so Reset has work to do.
         const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
         if (await start.count() === 1 && await start.isEnabled()) await start.click();
-        await page.waitForTimeout(2200);
-        const filled = await readouts();
+        /*
+         * Wait until the page's named tallies have all started, rather than
+         * for a fixed 2.2 s. How much fills in a given wall-clock window is a
+         * property of the machine, not of the page.
+         */
+        const ids = TALLIES[name] || [];
+        if (ids.length) {
+          await page.waitForFunction((keys) => keys.every((id) => {
+            const n = parseFloat((document.getElementById(id)?.textContent || '')
+              .replace(/[^0-9.eE+-]/g, ''));
+            return Number.isFinite(n) && n > 0;
+          }), ids, { timeout: 15000 }).catch(() => {});
+        }
+        const mid = await tallies(ids);
+        await page.waitForTimeout(600);
+        const filled = await tallies(ids);
         await btn.click();
         await page.waitForTimeout(300);
         const after = await controlState();
@@ -118,14 +155,12 @@ function urlProbe(name) {
           drifted.push(`${name} ${moved.slice(0, 2)
             .map((k) => `#${k} ${opened[k]}→${after[k]}`).join(', ')}`);
         }
-        const back = await readouts();
-        const fills = Object.keys(blank).filter((k) =>
-          EMPTY.has(blank[k]) && !EMPTY.has(filled[k]));
-        if (fills.length) watched++;
-        const stuck = fills.filter((k) => !EMPTY.has(back[k]));
-        if (stuck.length) {
-          kept.push(`${name} ${stuck.slice(0, 2)
-            .map((k) => `"${k}" 0→${filled[k]}→${back[k]}`).join(', ')}`);
+        const back = await tallies(ids);
+        for (const id of ids) {
+          const a = mid[id], b = filled[id], c = back[id];
+          if (!(a > 0) || !(b > a)) { notClimbing.push(`${name} #${id} ${a} → ${b}`); continue; }
+          watched++;
+          if (!(c < b)) kept.push(`${name} #${id} ${a} → ${b} → ${c}`);
         }
       }
     } catch (e) { errs.push(`${name}: ${e.message.slice(0, 50)}`); continue; }
@@ -173,14 +208,10 @@ function urlProbe(name) {
       fonts.length === 0, fonts.slice(0, 4).join(', '));
   chk('every page repaints when the theme changes',
       flat.length === 0, flat.slice(0, 4).join(', '));
-  /*
-   * Only the readouts that open empty and fill are watched — a live noisy
-   * quantity reads differently every time and can say nothing. That gives
-   * this teeth on the pages that count something up in the first two
-   * seconds, and the count is printed so it cannot quietly fall to zero.
-   */
-  chk(`and empties what the page had counted up — ${watched} pages show a tally that fills`,
-      kept.length === 0 && watched >= 6, kept.slice(0, 4).join(' | ') || `only ${watched} watched`);
+  chk(`and empties what the page had counted up — ${watched} tallies watched`,
+      kept.length === 0, kept.slice(0, 4).join(' | '));
+  chk('and every tally the pages are supposed to keep was climbing before it',
+      notClimbing.length === 0, notClimbing.slice(0, 4).join(' | '));
   chk(`Reset returns a page to the state it opened in — ${resettable} pages with the button`,
       drifted.length === 0, drifted.slice(0, 4).join(' | '));
   await ctx.close();
@@ -349,6 +380,115 @@ function urlProbe(name) {
       moving.length === 0, moving.slice(0, 5).join(', '));
   chk('and every one of them could be photographed paused',
       broke.length === 0, broke.slice(0, 3).join(' | '));
+  await ctx.close();
+}
+
+/*
+ * Every stage has to hand the display as many pixels as the display has.
+ *
+ * A canvas whose backing store is smaller than its CSS box times the device
+ * pixel ratio is upscaled by the compositor: soft edges, blurred text, and
+ * nothing in the page to say so. epidemic was doing it — 860 px of store
+ * stretched over a 658 px box on a 2× screen, 1.31× where the other
+ * forty-one pages are 2.00× or better — because it sized its canvas from the
+ * width attribute in the markup and never looked at devicePixelRatio.
+ *
+ * Checked at 2×, because at 1× an under-sized store is indistinguishable
+ * from a correct one.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 },
+                                         deviceScaleFactor: 2 });
+  /*
+   * The two 3D pages fetch three.js from a CDN, which this container's browser
+   * cannot reach and CI can — so without this the sweep measured 40 canvases
+   * here and 42 there, and the two it dropped were the only ones on the site
+   * whose backing store is not simply width × dpr. The check went green here
+   * three times and red on CI on a page that had never been looked at locally.
+   */
+  await serveCdn(ctx);
+  const page = await ctx.newPage();
+  const soft = [], broke = [], exceptions = [];
+  let measured = 0;
+  /*
+   * Pages that hand the display fewer pixels than it has, on purpose, with
+   * the fraction they were built to use. blackhole ray-marches a geodesic per
+   * pixel — up to 240 integration steps at Medium — so its preset renders at
+   * 0.8 of the device ratio and offers High and Ultra to anyone who would
+   * rather have the pixels than the frame rate. That is a different thing
+   * from forgetting devicePixelRatio, and the check below proves which it is.
+   */
+  const BELOW_ON_PURPOSE = { blackhole: 0.8 };
+  for (const name of PAGES) {
+    try {
+      await page.goto(url(`experiments/${name}.html`),
+                      { waitUntil: 'domcontentloaded', timeout: 25000 });
+      /*
+       * Wait for a canvas that has been laid out and sized, rather than half
+       * a second. A page still booting reports a zero-width box and drops out
+       * of the count, and on a slower runner enough of them dropped out to
+       * take the coverage floor below its minimum — this check went red on CI
+       * while passing here three times running. The two 3D pages need seconds,
+       * not milliseconds, before their canvas exists at its real size.
+       */
+      await page.waitForFunction(() => {
+        const c = document.querySelector('canvas');
+        return c && c.width > 2 && c.getBoundingClientRect().width > 2;
+      }, null, { timeout: 20000 }).catch(() => {});
+      const r = await page.evaluate(() => {
+        const c = document.querySelector('canvas');
+        if (!c) return null;
+        const box = c.getBoundingClientRect();
+        if (box.width < 2 || c.width < 2) return null;
+        return { store: c.width, css: Math.round(box.width),
+                 dpr: window.devicePixelRatio, ratio: c.width / box.width };
+      });
+      if (!r) continue;
+      measured++;
+      const want = (BELOW_ON_PURPOSE[name] ?? 1) * r.dpr;
+      // Allow a little slack for rounding, not for a halved store.
+      if (r.ratio < want * 0.95) {
+        soft.push(`${name} (${r.store} px store for a ${r.css} px box at ${r.dpr}× — `
+          + `${r.ratio.toFixed(2)}×, wanted ${want.toFixed(2)}×)`);
+      }
+      if (name in BELOW_ON_PURPOSE) exceptions.push({ name, ...r });
+    } catch (e) {
+      broke.push(`${name}: ${String(e.message || e).split('\n')[0]}`);
+    }
+  }
+  chk(`no stage is upscaled on a 2× display — ${measured} canvases measured`,
+      soft.length === 0 && measured >= 35, soft.slice(0, 4).join(' | ') || `only ${measured} measured`);
+  chk('and every one of them could be measured', broke.length === 0, broke.slice(0, 3).join(' | '));
+
+  /*
+   * The exception, held to the reason it was granted.
+   *
+   * Allowing blackhole to sit at 1.6× on a list would let a genuinely lost
+   * devicePixelRatio hide behind the same number for ever. So the claim is
+   * that the shortfall is the quality preset and nothing else: at Medium the
+   * store is dpr × 0.8, and asking for High has to move it to the full dpr on
+   * the same page in the same box. A page that had dropped the pixel ratio
+   * would not move.
+   */
+  if (exceptions.some((e) => e.name === 'blackhole')) {
+    await page.goto(url('experiments/blackhole.html'), { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__bh && document.querySelector('canvas')?.width > 2,
+                               null, { timeout: 30000 }).catch(() => {});
+    const seen = {};
+    for (const q of ['medium', 'high', 'ultra']) {
+      await page.evaluate((n) => window.__bh.preset(n), q);
+      await page.waitForTimeout(300);
+      seen[q] = await page.evaluate(() => {
+        const c = document.querySelector('canvas');
+        return c.width / c.getBoundingClientRect().width;
+      });
+    }
+    const ok = Math.abs(seen.medium / (2 * 0.8) - 1) < 0.05
+      && Math.abs(seen.high / 2 - 1) < 0.05
+      && seen.ultra > seen.high * 1.1;
+    chk('and the one stage below 2× is the quality preset saying so, not a lost ratio',
+        ok, Object.entries(seen).map(([q, v]) => `${q} ${v.toFixed(2)}×`).join(', '));
+  }
   await ctx.close();
 }
 

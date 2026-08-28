@@ -104,4 +104,39 @@ for (const r of results) {
 }
 console.log(`\n${results.length - failedSuites}/${results.length} suites, ` +
   `${passed}/${checks} checks, ${((Date.now() - started) / 1000).toFixed(1)}s`);
+
+/*
+ * And the failing lines again, dead last.
+ *
+ * A suite's own output is echoed above, but on a long run that is thousands
+ * of lines and every CI log viewer hands back a fixed budget from the end.
+ * Putting the names inside the summary list was not enough — the list itself
+ * is fourteen lines and the tail still cut the top off it. Last is the only
+ * position that is always visible.
+ */
+if (failedSuites) {
+  console.log("\n──  what failed");
+  for (const r of results) {
+    if (r.code === 0) continue;
+    console.log(`  ${r.name}`);
+    const lines = r.out.split("\n").filter((l) => l.startsWith("FAIL "));
+    for (const l of lines.slice(0, 8)) console.log(`      ${l.slice(5).trim()}`);
+    if (lines.length > 8) console.log(`      ... and ${lines.length - 8} more`);
+    if (!lines.length) {
+      /*
+       * A suite that died before recording a check. Skip its own PASS/FAIL
+       * lines when looking for the reason — "no console errors" matched
+       * /Error/i and got printed as the cause, which is worse than printing
+       * nothing. Show the tail as well: the throw is usually the last thing.
+       */
+      const body = r.out.split("\n")
+        .filter((l) => l.trim() && !/^(PASS|FAIL)\s/.test(l.trim()));
+      const crash = body.find((l) => /uncaughtException|^\s*\w*Error\b|Timeout \d|exceeded/.test(l));
+      console.log(`      exit ${r.code}, no checks recorded`);
+      if (crash) console.log(`      ${crash.trim().slice(0, 200)}`);
+      for (const l of body.slice(-3)) console.log(`      | ${l.trim().slice(0, 160)}`);
+    }
+  }
+}
+
 process.exit(failedSuites ? 1 : 0);

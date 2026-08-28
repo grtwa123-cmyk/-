@@ -211,20 +211,59 @@ const MK = `const E = window.__eq;
   chk('the page measures K from its own counts and it matches k₀/k₋',
       Number.isFinite(measured) && Math.abs(measured - predicted) / predicted < 0.12,
       `measured ${measured} vs k₀/k₋ ${predicted}`);
-  const ev = await page.evaluate(()=>window.__eq.events());
-  chk('both directions keep firing at equilibrium',
-      ev.fwd > 500 && ev.rev > 500 && Math.abs(ev.fwd/ev.rev - 1) < 0.15,
-      `${ev.fwd} fwd / ${ev.rev} rev`);
-  // The measured K settles as soon as the quotient stops drifting, which can
-  // be a little before Q has actually arrived. Wait for arrival, not for the
-  // readout to appear.
-  await page.waitForFunction(() => {
-    const s = window.__eq.state();
-    const K = window.__eq.predictedK(window.__eq.params());
-    return Math.abs(s.q - K) / K < 0.05;
-  }, { timeout: 45000 }).catch(()=>{});
-  chk('the direction readout says equilibrium',
-      /equilibrium|평형|平衡/.test(await txt('out-shift')), await txt('out-shift'));
+  /*
+   * Counted over a window, not since the page opened.
+   *
+   * The tallies run from the first step, and the first thing the mixture does
+   * is rush one way to reach equilibrium — a head start to the forward count
+   * equal to the net displacement, which never goes away. So the cumulative
+   * ratio is not 1 and is not meant to be; it decays towards 1 as the
+   * transient is diluted, and how far it has got depends on how fast the
+   * machine ran. Measured: cumulative 1.191 at four seconds, 1.068 at eight,
+   * 1.029 at sixteen, against a 15% bound — which is why this failed on a
+   * slow run. Over a window taken after equilibrium the same three
+   * measurements are 1.001, 1.001 and 0.989.
+   *
+   * Five seconds gives about 1600 events each way, so the Poisson noise on
+   * the ratio is 3.5% and the bound below is four sigma.
+   */
+  const evA = await page.evaluate(()=>window.__eq.events());
+  await page.waitForTimeout(5000);
+  const evB = await page.evaluate(()=>window.__eq.events());
+  const fwd = evB.fwd - evA.fwd, rev = evB.rev - evA.rev;
+  chk('both directions keep firing at equilibrium, at the same rate',
+      fwd > 1000 && rev > 1000 && Math.abs(fwd/rev - 1) < 0.15,
+      `${fwd} fwd / ${rev} rev over five seconds — ratio ${(fwd/rev).toFixed(3)}`);
+  /*
+   * The direction readout, asked ten times rather than once.
+   *
+   * Once was a coin. Q is a ratio of three small counts and scatters by 17.5%
+   * of K at equilibrium — measured, 240 samples over six runs, worst
+   * excursion 57.6% — and the page's band was ±10%, so an equilibrated
+   * mixture said "at equilibrium" 53% of the time and spent the rest
+   * flickering between the two disturbance messages. This check had been
+   * landing right. The page now reads the label off an exponential mean of Q
+   * with a 500-sample memory, started when Q arrives, and the band is 40% —
+   * six sigma of that mean and far inside any disturbance the page offers,
+   * since injecting A puts Q at 0.36 K and the temperature dial alone moves
+   * K from 15.9 to 0.55.
+   *
+   * So the claim worth making is that it settles and STAYS: ten readings
+   * spread over a second and a half, all of which must agree. Reverting the
+   * page to the instantaneous Q fails this within two or three readings.
+   */
+  await page.waitForFunction(() => Number.isFinite(window.__eq.qMean()),
+                             { timeout: 45000 }).catch(()=>{});
+  await page.waitForTimeout(3000);
+  const said = [];
+  for (let i = 0; i < 10; i++) {
+    said.push(await txt('out-shift'));
+    await page.waitForTimeout(150);
+  }
+  const eq = /equilibrium|평형|平衡/;
+  chk('the direction readout says equilibrium, and keeps saying it',
+      said.every((t) => eq.test(t)),
+      [...new Set(said)].join(' / ') + ` — ${said.filter((t) => eq.test(t)).length}/10`);
 }
 {
   // Injecting A must push Q below K and then let it walk back.

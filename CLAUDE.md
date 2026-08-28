@@ -120,6 +120,43 @@ a row there too; `tests/smoke.mjs` will say so.
 
 ---
 
+**A dictionary value is text, not markup.** `i18n.js` paints with
+`el.textContent = val`, so `&mdash;` in a string reaches the reader as those
+seven characters. Two pages shipped that way — the chemotaxis and coalescent
+titles, in all three languages — and nothing noticed, because the key
+resolves, parity passes and the switch works. `tests/lint.mjs` refuses an
+HTML entity in any dictionary or chunk. The two `ssDiameter` keys are the
+exception that proves it: they carry `<b>` on purpose and are painted with
+`innerHTML`, never through `data-i18n`.
+
+**Anything hand-maintained beside the catalogue drifts, so hold it to the
+catalogue in a test.** Three copies were found stale or unchecked in one pass:
+a 42-URL `VERIFIED` set in `table-view.js`, the hub cards and screen-reader
+nav, and the `<noscript>` list on the landing page, which was missing the five
+newest experiments. Counts are not enough — the hubs had the right *number* of
+cards while nothing checked they were the right ones. Add the copy to
+`smoke.mjs` in both directions the same day you add the copy.
+
+## 3b. What is already the way it should be
+
+Written down so a later pass does not spend a day rediscovering it, or worse,
+"improves" it.
+
+- **Model and UI are already separable.** All 41 experiment scripts expose a
+  `window.__x` hook, and all 56 suites drive the model through it rather than
+  through the page. Splitting each file into model/renderer/ui would make 82
+  new files, a script-ordering problem, and no testability that is not
+  already there.
+- **The stylesheet is already tokenised.** 1436 lines, zero hex outside the
+  `:root` / `[data-theme]` / `prefers-color-scheme` blocks, four
+  `!important` — all of them inside `prefers-reduced-motion`, which is what
+  that is for — and two z-index values. Splitting it into nine files under a
+  no-build site costs eight requests and buys nothing at this size.
+- **i18n key parity is enforced both ways** across all three dictionaries,
+  1574 keys, in `tests/smoke.mjs`.
+- **Every canvas is labelled** (44 of 44), no page allocates inside `resize`,
+  and `AudioContext` is gated behind a gesture with a check to prove it.
+
 ## 4. Tests
 
 `npm test` runs everything: `tests/run.mjs` walks `tests/*.test.mjs`,
@@ -212,6 +249,52 @@ fix is nearly always more replicates, a longer window, or a parameter choice
 that decorrelates the samples faster. On `chemotaxis` the tumble-rate fit
 scattered 1.4% against a 4% bound at 24 replicates; at 48 it scatters 0.76%,
 and the bound was **tightened** to 3%.
+
+**A readout whose band is narrower than its own noise is a defect in the
+readout.** equilibrium called the mixture "at equilibrium" when Q was within
+10% of K, and Q — a ratio of three small integer counts — scatters by 17.5%
+of K at equilibrium. The label flickered between three contradictory
+statements several times a second, and the check that asked once had been
+landing right. Before widening a bound in a test that reads a *label*, ask
+whether the label's own threshold is inside the noise; if it is, the fix is
+on the page.
+
+**An exception granted to a check must be held to its reason.** blackhole
+renders at 0.8 of the device ratio on purpose — every pixel is a ray-marched
+geodesic — so the 2× sweep has to let it through. Putting it on an allowed
+list would let a genuinely lost devicePixelRatio hide behind the same number
+forever, so the check asserts the reason instead: Medium is dpr × 0.8, High
+is the full dpr, Ultra exceeds High. An exception you cannot state as a
+positive claim is a hole.
+
+**There is no property of a number that says whether it is a count.** Twice
+the Reset sweep tried to infer which readouts are tallies — "opens empty and
+fills" lets in a fit, "climbs" lets in an r², "opens at a literal 0" lets in
+a hopeless fit printing 0.000 — and twice chemotaxis found the hole. Name
+them. Five pages carry a real count, the elements are listed, and a second
+check requires each to have been climbing before the Reset so that a page
+which stops carrying one is named rather than dropping out of the coverage.
+
+**This container's browser cannot reach a CDN and CI's can.** Any sweep that
+walks every page therefore covers 40 here and 42 there, and the two missing
+are blackhole and solarsystem — the heaviest and least ordinary renderers on
+the site. `serveCdn(ctx)` from the harness closes it. If a whole-catalogue
+check passes here three times and fails on CI naming a 3D page, this is why.
+
+**A sigma is not enough — look at the shape of the tail.** `epidemic` held R₀
+to 6% on four replicates whose per-run scatter is 2.6%, which reads like four
+sigma and is not. 25,000 runs at R₀ = 1.5 put 116 of them under half the
+population, a left tail about ten times fatter than a Gaussian, and one of
+those in a batch of four moves the average by 3%. When a check sits near a
+threshold, a critical point, or anywhere the answer is steep in what is being
+measured, sample the distribution before trusting its standard deviation.
+
+**A filter is a claim, so check what it threw away.** The same sweep kept runs
+that reached 2% of the population, while a note in the same file had already
+measured that a *subcritical* chain reaches 3.8% — so dead runs were being
+averaged in as epidemics. Every `if (…) keep` in a test is an assertion about
+the mechanism and should be written as one: the sweep now fails unless nine
+of every ten runs took off.
 
 **Known flake, do not chase:** `kinetics` fails about 1.24% of runs by
 construction. Four hypotheses were tested and all four killed by

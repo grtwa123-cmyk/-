@@ -218,6 +218,35 @@ Non-negotiable, per `CLAUDE.md`:
 
 ## 3. Smaller items
 
+### Measured, and deliberately left alone
+
+Two costs were measured during a code-quality pass and are recorded here so
+nobody has to measure them again to decide they are fine.
+
+- **`neuron`'s "Find threshold" blocks the main thread for 277 ms.** It is
+  forty-one full Hodgkin–Huxley integrations: one probe at 400 µA/cm² and
+  forty bisection steps, each running up to 60 ms of model time at DT =
+  0.005 ms. The only lever that helps is fewer bisection steps, and that
+  changes the answer — measured, 28 steps moves it by 1.7e-7 and 32 by
+  3.4e-8. A worker would mean the whole HH model living in two places for one
+  button pressed once per parameter set. 277 ms on a deliberate click is a
+  small lag, not a freeze, so the numerics stay as they are.
+- **No other page has a case for a worker.** Timed through each page's own
+  hook: `diffraction.scan` 15 ms, `wave.scanScreen` 7 ms, 20 s of `enzyme`
+  assay 15 ms, 200 `coalescent` trees 17 ms, `projectile.bestAngle` 35 ms.
+  Everything except neuron is inside one frame or close to it.
+
+
+- **The 540 / 560 px breakpoints are not an inconsistency.** Four blocks in
+  `styles.css` sit within 20 px of each other and style four unrelated things:
+  the theme button's label at 560, the subnav's collapse to one column at 540,
+  the method badge's type size at 560, the sound toggle's size at 540. Each
+  fires when its own component runs out of room, and between 540 and 560 the
+  result is the intended sequence — a shortened theme button in a subnav that
+  is still three columns — not a half-adapted layout. Consolidating them onto
+  one number would move two components off the width they were fitted at, for
+  a tidiness nobody can see. Left as is.
+
 - **`solved` is a category of one.** `circuit` carries it and no other page
   does. Either the badge earns a second page or it should be folded into
   `measured` — a badge with one member is a footnote, not a category. This is

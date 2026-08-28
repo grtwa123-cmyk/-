@@ -24,8 +24,8 @@ const KEY = {
 
 // ── The catalogue ─────────────────────────────────────────────────────
 const cat = read('assets/index/experiments.js');
-const entries = [...cat.matchAll(/url: "(experiments\/([a-z]+)\.html)"[^}]*?method: "([a-z]+)"/g)]
-  .map((m) => ({ url: m[1], name: m[2], method: m[3] }));
+const entries = [...cat.matchAll(/url: "(experiments\/([a-z]+)\.html)"[^}]*?method: "([a-z]+)"([^}]*)/g)]
+  .map((m) => ({ url: m[1], name: m[2], method: m[3], verified: /verified: true/.test(m[4]) }));
 
 chk('every catalogue entry declares a method',
     entries.length === (cat.match(/url: "experiments\//g) || []).length,
@@ -65,15 +65,21 @@ const verifiedCount = entries.filter((e) => suites.has(e.name)).length;
   chk('a page is marked verified exactly when it has a suite of its own',
       wrong.length === 0, wrong.slice(0, 4).join(' | '));
 
-  // The table view repeats the claim, so it has to agree as well.
-  const tv = read('assets/index/table-view.js');
-  const listed = new Set([...tv.matchAll(/"(experiments\/[a-z]+\.html)"/g)].map((m) => m[1]));
-  const should = new Set(entries.filter((e) => suites.has(e.name)).map((e) => e.url));
-  const missing = [...should].filter((u) => !listed.has(u));
-  const extra = [...listed].filter((u) => !should.has(u));
-  chk("the table view's verified list matches the suites on disk",
+  /*
+   * The catalogue carries the same claim as a field, and the browser has to
+   * be told it because it cannot see the tests directory. It used to be a
+   * second list of forty-two URLs inside table-view.js, maintained by hand
+   * beside the catalogue; it is now `verified: true` on the entry it is a
+   * fact about, and this holds it to the suites on disk exactly as before.
+   */
+  const missing = entries.filter((e) => suites.has(e.name) && !e.verified).map((e) => e.url);
+  const extra = entries.filter((e) => !suites.has(e.name) && e.verified).map((e) => e.url);
+  chk("the catalogue's verified flag matches the suites on disk",
       missing.length === 0 && extra.length === 0,
       `missing ${missing.join(',') || 'none'}; extra ${extra.join(',') || 'none'}`);
+  chk('and the table view reads that flag rather than a list of its own',
+      !read('assets/index/table-view.js').includes('experiments/'),
+      'table-view.js still names experiment URLs');
 }
 
 // ── `measured` has to mean something ──────────────────────────────────
