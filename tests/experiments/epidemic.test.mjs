@@ -36,17 +36,46 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
 }, v);
 const txt = (id) => page.evaluate((i) => document.getElementById(i)?.textContent.trim(), id);
 
-/** Average several epidemics at one setting, keeping only the ones that took off. */
-const sweep = (cases, N = 4000, reps = 4) => page.evaluate(
+/*
+ * Average several epidemics at one setting, keeping only the ones that took off.
+ *
+ * Both numbers here were guesses, and both were wrong in the same direction.
+ *
+ * FOUR replicates. One epidemic of four thousand measures R₀ to 2.6% — that is
+ * 1/√(transmissions counted) and nothing can be done about it inside one run —
+ * so four of them measure it to 1.3%, and the check downstream was held at 6%.
+ * That reads like four sigma until the shape of the distribution is looked at.
+ * Twenty-five thousand runs of the worst setting, R₀ = 1.5:
+ *
+ *   final size   0–5%   40–45%   45–50%   50–55%   55–60%   60–65%   65–70%
+ *   runs           44        2      114     2586    14471     7631      152
+ *
+ * The left tail is about ten times fatter than a Gaussian — 116 runs came in
+ * under half the population, measuring R₀ near 1.33 — and one of those in a
+ * batch of four moves the average by 3%. CI found it: 1.409 against 1.50.
+ *
+ * TWO PERCENT for "it took off". Forty-four of those runs died out, and the
+ * biggest of them still reached 3.9% of the population, so a dead run was
+ * being averaged in as though it were an epidemic. The threshold note further
+ * down had already measured this and settled on ten percent — a subcritical
+ * chain reached 3.8% there, and 16.5% at R₀ = 1 exactly — and this line was
+ * never brought into line with it. Ten percent, then, with the gap it was
+ * chosen for: the largest die-out seen was 3.9%, the smallest real outbreak
+ * 40.3%.
+ *
+ * Forty replicates and a ten-percent floor cost two seconds. What that bought,
+ * over 120 sweeps, is in the bounds below — every one of them tightened.
+ */
+const sweep = (cases, N = 4000, reps = 40) => page.evaluate(
   ([list, pop, n]) => list.map(([c, p, g]) => {
     const runs = [];
     for (let k = 0; k < n; k++) {
       const r = window.__epi.run({ N: pop, c, p, g, speed: 1 });
-      if (r.finalFraction > 0.02) runs.push(r);
+      if (r.finalFraction > 0.10) runs.push(r);
     }
     const avg = (f) => runs.map(f).reduce((a, b) => a + b, 0) / runs.length;
     return {
-      set: (c * p) / g, took: runs.length,
+      set: (c * p) / g, took: runs.length, tried: n,
       r0: avg((x) => x.r0), beta: avg((x) => x.beta), period: avg((x) => x.period),
       fin: avg((x) => x.finalFraction), finT: avg((x) => x.finalTheory),
       peak: avg((x) => x.peakFraction), peakT: avg((x) => x.peakTheory),
@@ -58,22 +87,40 @@ const CASES = [[3, 0.5, 1], [4, 0.5, 1], [5, 0.5, 1], [3, 0.8, 1], [6, 0.4, 1.2]
 const runs = await sweep(CASES);
 {
   /*
+   * The filter first, because everything below is an average over what it
+   * kept. Sixteen seeds and R₀ above one is not a close thing — a single
+   * chain survives with probability 1 − q where q solves q = e^(−R₀(1−q)),
+   * so all sixteen dying at R₀ = 1.5 runs about one in a million and the
+   * measured rate over 25,000 runs was 0.18%. Anything approaching a tenth
+   * of the batch being thrown away means the filter has started deciding
+   * the answer, and that is worth failing over rather than averaging over.
+   */
+  chk('nearly every one of these outbreaks took off, so almost nothing is filtered',
+      runs.every((r) => r.took >= r.tried * 0.9),
+      runs.map((r) => `R₀=${r.set.toFixed(2)}: ${r.took}/${r.tried}`).join(', '));
+
+  /*
    * β and the infectious period are what the mechanism was actually set to, so
    * they can be checked against the dials directly — this is the half that
    * says the counting is right before anything is concluded from it.
+   *
+   * Both bounds are 2.5%, halved from the 5% they were written at. Over 120
+   * sweeps the worst of the five settings sat 1.01 ± 0.19% out on β and
+   * 0.83 ± 0.21% on the period, neither exceeding 1.6%. R₀ is their product
+   * and gets 3%, against a worst of 0.78 ± 0.27% that never passed 1.6%.
    */
   const worstB = Math.max(...runs.map((r, i) => Math.abs(r.beta / (CASES[i][0] * CASES[i][1]) - 1)));
   const worstP = Math.max(...runs.map((r, i) => Math.abs(r.period * CASES[i][2] - 1)));
   chk(`the counted transmission rate is the contact rate times the transmission chance — ${runs.length} diseases`,
-      worstB < 0.05,
+      worstB < 0.025,
       runs.map((r, i) => `${r.beta.toFixed(3)} vs ${(CASES[i][0] * CASES[i][1]).toFixed(2)}`).join(', '));
   chk('and the measured infectious period is 1/γ',
-      worstP < 0.05,
+      worstP < 0.025,
       runs.map((r, i) => `${r.period.toFixed(3)} vs ${(1 / CASES[i][2]).toFixed(3)}`).join(', '));
 
   const worst0 = Math.max(...runs.map((r) => Math.abs(r.r0 / r.set - 1)));
   chk('so R₀ comes out of the run as β/γ, without being told',
-      worst0 < 0.06,
+      worst0 < 0.03,
       runs.map((r) => `${r.r0.toFixed(3)} vs ${r.set.toFixed(2)}`).join(', '));
 }
 
@@ -82,13 +129,13 @@ const runs = await sweep(CASES);
   /*
    * The heart of it. r = 1 − e^(−R₀r) cannot be rearranged for r, so the page
    * bisects for it — and the fraction of the population that was actually
-   * infected has to agree. Held at 3%: over these five settings the worst
-   * offline replicate ran 0.5%, and the run-to-run scatter of a finite
-   * population is what the rest of the margin is for.
+   * infected has to agree. Over 120 sweeps of forty replicates the worst of
+   * the five settings sat 0.26 ± 0.05 points away and never exceeded 0.39.
+   * The bound is 0.8 points, four sigma past the worst that was seen.
    */
   const worst = Math.max(...runs.map((r) => Math.abs(r.fin - r.finT)));
   chk('the fraction ever infected solves r = 1 − e^(−R₀·r), for the R₀ that was measured',
-      worst < 0.03,
+      worst < 0.008,
       runs.map((r) => `R₀=${r.r0.toFixed(2)}: ${r.fin.toFixed(4)} vs ${r.finT.toFixed(4)}`).join(', '));
 
   /*
@@ -103,9 +150,9 @@ const runs = await sweep(CASES);
    *
    * So a pair is evidence only when the final sizes predicted for the two
    * measured R₀s differ by more than four points. That admits two pairs of
-   * the four, and leaves them enormous: over twenty sweeps the smallest
-   * surviving margin averaged 7.80 ± 0.66 points and never fell below 6.57,
-   * which is twelve sigma from an inversion. Nothing was loosened — the
+   * the four, and leaves them enormous: over 120 sweeps the smallest
+   * surviving margin averaged 8.05 ± 0.25 points and never fell below 7.3,
+   * which is thirty sigma from an inversion. Nothing was loosened — the
    * comparisons that were carrying the claim still carry it, and the two
    * that were carrying noise are now checked below for what they can
    * actually say.
@@ -128,10 +175,9 @@ const runs = await sweep(CASES);
    * the same R₀ by different routes — four contacts a day at p = 0.5 with
    * γ = 1, against six at p = 0.4 with γ = 1.2 — and if R₀ is really what
    * governs an outbreak they must end in the same place, even though every
-   * dial differs. Over twenty sweeps they landed 0.73 points apart on
-   * average and never more than 2.79, against final sizes that range from
-   * 59% to 90% across the sweep. The bound is 4 points, a little over four
-   * sigma of the difference.
+   * dial differs. Over 120 sweeps they landed 0.26 points apart on average
+   * and never more than 0.87, against final sizes that range from 59% to 90%
+   * across the sweep. The bound is 2 points, five sigma of the difference.
    */
   const twins = [];
   for (let a = 0; a < runs.length; a++) {
@@ -140,7 +186,7 @@ const runs = await sweep(CASES);
     }
   }
   chk('two outbreaks with the same R₀ but no dial in common end in the same place',
-      twins.length >= 1 && twins.every(([x, y]) => Math.abs(x.fin - y.fin) < 0.04),
+      twins.length >= 1 && twins.every(([x, y]) => Math.abs(x.fin - y.fin) < 0.02),
       twins.map(([x, y]) => `R₀ ${x.set.toFixed(2)}: `
         + `${(x.fin * 100).toFixed(1)}% vs ${(y.fin * 100).toFixed(1)}% `
         + `(measured ${x.r0.toFixed(2)}, ${y.r0.toFixed(2)})`).join('; ')
@@ -151,7 +197,7 @@ const runs = await sweep(CASES);
 {
   const worst = Math.max(...runs.map((r) => Math.abs(r.peak - r.peakT)));
   chk('the highest fraction infectious at once is 1 − (1 + ln R₀)/R₀',
-      worst < 0.02,
+      worst < 0.015,
       runs.map((r) => `R₀=${r.r0.toFixed(2)}: ${r.peak.toFixed(4)} vs ${r.peakT.toFixed(4)}`).join(', '));
 
   /*
