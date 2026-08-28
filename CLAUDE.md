@@ -250,6 +250,37 @@ that decorrelates the samples faster. On `chemotaxis` the tumble-rate fit
 scattered 1.4% against a 4% bound at 24 replicates; at 48 it scatters 0.76%,
 and the bound was **tightened** to 3%.
 
+**A readout whose band is narrower than its own noise is a defect in the
+readout.** equilibrium called the mixture "at equilibrium" when Q was within
+10% of K, and Q — a ratio of three small integer counts — scatters by 17.5%
+of K at equilibrium. The label flickered between three contradictory
+statements several times a second, and the check that asked once had been
+landing right. Before widening a bound in a test that reads a *label*, ask
+whether the label's own threshold is inside the noise; if it is, the fix is
+on the page.
+
+**An exception granted to a check must be held to its reason.** blackhole
+renders at 0.8 of the device ratio on purpose — every pixel is a ray-marched
+geodesic — so the 2× sweep has to let it through. Putting it on an allowed
+list would let a genuinely lost devicePixelRatio hide behind the same number
+forever, so the check asserts the reason instead: Medium is dpr × 0.8, High
+is the full dpr, Ultra exceeds High. An exception you cannot state as a
+positive claim is a hole.
+
+**There is no property of a number that says whether it is a count.** Twice
+the Reset sweep tried to infer which readouts are tallies — "opens empty and
+fills" lets in a fit, "climbs" lets in an r², "opens at a literal 0" lets in
+a hopeless fit printing 0.000 — and twice chemotaxis found the hole. Name
+them. Five pages carry a real count, the elements are listed, and a second
+check requires each to have been climbing before the Reset so that a page
+which stops carrying one is named rather than dropping out of the coverage.
+
+**This container's browser cannot reach a CDN and CI's can.** Any sweep that
+walks every page therefore covers 40 here and 42 there, and the two missing
+are blackhole and solarsystem — the heaviest and least ordinary renderers on
+the site. `serveCdn(ctx)` from the harness closes it. If a whole-catalogue
+check passes here three times and fails on CI naming a 3D page, this is why.
+
 **A sigma is not enough — look at the shape of the tail.** `epidemic` held R₀
 to 6% on four replicates whose per-run scatter is 2.6%, which reads like four
 sigma and is not. 25,000 runs at R₀ = 1.5 put 116 of them under half the
