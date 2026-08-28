@@ -247,6 +247,14 @@ nobody has to measure them again to decide they are fine.
   one number would move two components off the width they were fitted at, for
   a tidiness nobody can see. Left as is.
 
+- **Eight raw colours in `styles.css` should be tokens.** Sixteen hex values
+  sit outside the token blocks; five are legend dots that mirror fixed canvas
+  colours on purpose and three are gradients, so the debt is the other eight —
+  `#0b1024` four times and `#fff` twice as foregrounds on coloured chrome,
+  plus `#b8c2db` and `#ecf0fb`. Small, and worth doing next time that part of
+  the sheet is open. An earlier audit recorded this as zero, which was a
+  miscount.
+
 - **`solved` is a category of one.** `circuit` carries it and no other page
   does. Either the badge earns a second page or it should be folded into
   `measured` — a badge with one member is a footnote, not a category. This is
