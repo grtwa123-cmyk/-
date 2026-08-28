@@ -122,7 +122,20 @@ function urlProbe(name) {
         const fills = Object.keys(blank).filter((k) =>
           EMPTY.has(blank[k]) && !EMPTY.has(filled[k]));
         if (fills.length) watched++;
-        const stuck = fills.filter((k) => !EMPTY.has(back[k]));
+        /*
+         * Empty again, or started over from something smaller. Requiring
+         * empty alone was wrong: chemotaxis fits ℓ off a histogram that
+         * begins refilling the moment the page runs, so three hundred
+         * milliseconds after a Reset it legitimately shows a number again —
+         * a smaller one, 4219 → 2452. A tally that actually survived does
+         * not start over, it carries on: 105 → 107.
+         */
+        const num = (v) => { const n = parseFloat(String(v).replace(/[^0-9.eE+-]/g, '')); return Number.isFinite(n) ? n : null; };
+        const stuck = fills.filter((k) => {
+          if (EMPTY.has(back[k])) return false;
+          const was = num(filled[k]), now = num(back[k]);
+          return was === null || now === null || now >= was;
+        });
         if (stuck.length) {
           kept.push(`${name} ${stuck.slice(0, 2)
             .map((k) => `"${k}" 0→${filled[k]}→${back[k]}`).join(', ')}`);
@@ -349,6 +362,54 @@ function urlProbe(name) {
       moving.length === 0, moving.slice(0, 5).join(', '));
   chk('and every one of them could be photographed paused',
       broke.length === 0, broke.slice(0, 3).join(' | '));
+  await ctx.close();
+}
+
+/*
+ * Every stage has to hand the display as many pixels as the display has.
+ *
+ * A canvas whose backing store is smaller than its CSS box times the device
+ * pixel ratio is upscaled by the compositor: soft edges, blurred text, and
+ * nothing in the page to say so. epidemic was doing it — 860 px of store
+ * stretched over a 658 px box on a 2× screen, 1.31× where the other
+ * forty-one pages are 2.00× or better — because it sized its canvas from the
+ * width attribute in the markup and never looked at devicePixelRatio.
+ *
+ * Checked at 2×, because at 1× an under-sized store is indistinguishable
+ * from a correct one.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 },
+                                         deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  const soft = [], broke = [];
+  let measured = 0;
+  for (const name of PAGES) {
+    try {
+      await page.goto(url(`experiments/${name}.html`),
+                      { waitUntil: 'domcontentloaded', timeout: 25000 });
+      await page.waitForTimeout(500);
+      const r = await page.evaluate(() => {
+        const c = document.querySelector('canvas');
+        if (!c) return null;
+        const box = c.getBoundingClientRect();
+        if (box.width < 2 || c.width < 2) return null;
+        return { store: c.width, css: Math.round(box.width),
+                 dpr: window.devicePixelRatio, ratio: c.width / box.width };
+      });
+      if (!r) continue;
+      measured++;
+      // Allow a little slack for rounding, not for a halved store.
+      if (r.ratio < r.dpr * 0.95) {
+        soft.push(`${name} (${r.store} px store for a ${r.css} px box at ${r.dpr}× — ${r.ratio.toFixed(2)}×)`);
+      }
+    } catch (e) {
+      broke.push(`${name}: ${String(e.message || e).split('\n')[0]}`);
+    }
+  }
+  chk(`no stage is upscaled on a 2× display — ${measured} canvases measured`,
+      soft.length === 0 && measured >= 35, soft.slice(0, 4).join(' | ') || `only ${measured} measured`);
+  chk('and every one of them could be measured', broke.length === 0, broke.slice(0, 3).join(' | '));
   await ctx.close();
 }
 

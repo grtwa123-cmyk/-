@@ -26,9 +26,22 @@ const open = async (file, { cdn = true, w = 1280 } = {}) => {
 // Waits for the switch to have landed rather than for a clock: i18n.js
 // sets <html lang> only after the page's chunk is in, and a fixed sleep
 // is a race a loaded runner loses.
+/*
+ * Clicking on these two pages needs a deadline of its own.
+ *
+ * blackhole integrates a photon geodesic per pixel, and under the software GL
+ * this container and CI both use one frame takes eight to ten seconds.
+ * Playwright's default thirty seconds for a click covers three frames, and
+ * the actionability wait spends them: measured here on a clean checkout, the
+ * click times out with the log stopping at "done scrolling". It is not a
+ * regression and it is not contention — it reproduces alone, on main.
+ *
+ * The wait afterwards is on <html lang>, which i18n.js sets only once the
+ * page's chunk is in; a fixed sleep would be a race on top of a slow page.
+ */
 const lang = async (p, l) => {
-  await p.click(`.lang-btn[data-lang="${l}"]`);
-  await p.waitForFunction((c) => document.documentElement.lang === c, l, { timeout: 10000 });
+  await p.click(`.lang-btn[data-lang="${l}"]`, { timeout: 90000 });
+  await p.waitForFunction((c) => document.documentElement.lang === c, l, { timeout: 30000 });
 };
 const text = (p, sel) => p.$eval(sel, e => e.textContent.trim()).catch(() => '<none>');
 

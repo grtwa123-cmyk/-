@@ -39,40 +39,6 @@ const METHOD_MARK = {
   formula: "=", model: "◆", illustrated: "○",
 };
 
-/*
- * Which experiments a dedicated physics suite holds against a closed form.
- * Listed rather than derived because the browser cannot see the tests
- * directory — `tests/method-badges.test.mjs` fails if this drifts from what
- * is actually on disk, so the claim can never outrun the evidence.
- */
-const VERIFIED = new Set([
-  "experiments/cannon.html",
-  "experiments/circuit.html", "experiments/decay.html", "experiments/diffraction.html",
-  "experiments/atom.html", "experiments/crystal.html", "experiments/dna.html",
-  "experiments/diode.html", "experiments/semiconductor.html",
-  "experiments/blackhole.html", "experiments/solarsystem.html",
-  "experiments/redox.html",
-  "experiments/diffusion.html",
-  "experiments/chemotaxis.html",
-  "experiments/coalescent.html",
-  "experiments/solar.html",
-  "experiments/doppler.html",
-  "experiments/molecule.html",
-  "experiments/epidemic.html",
-  "experiments/expression.html",
-  "experiments/electrolysis.html",
-  "experiments/enzyme.html", "experiments/gas.html", "experiments/generator.html",
-  "experiments/impact.html", "experiments/kinetics.html",
-  "experiments/equilibrium.html", "experiments/lens.html", "experiments/neuron.html",
-  "experiments/lotka.html", "experiments/orbit.html", "experiments/pendulum.html",
-  "experiments/phases.html",
-  "experiments/photoelectric.html",
-  "experiments/projectile.html", "experiments/refraction.html",
-  "experiments/resonance.html",
-  "experiments/selection.html", "experiments/spectra.html", "experiments/string.html",
-  "experiments/titration.html",
-  "experiments/wave.html",
-]);
 const CAT_KEY = {
   Physics: "categoryPhysics",
   Chemistry: "categoryChemistry",
@@ -199,7 +165,7 @@ function buildTable() {
     mTag.append(mark(METHOD_MARK[e.method]), tr(METHOD_KEY[e.method], e.method));
     mTag.title = tr(METHOD_KEY[e.method] + "Why", "");
     method.appendChild(mTag);
-    if (VERIFIED.has(e.url)) {
+    if (e.verified) {
       const v = document.createElement("span");
       v.className = "method-verified";
       v.append(mark("✓"), tr("methodVerified", "Verified"));
@@ -268,7 +234,7 @@ function buildLegend() {
   // Verified is not a method but a second, independent claim, so it sits
   // apart from the six and is counted the same way the rows are marked.
   row("✓", tr("methodVerified", "Verified"),
-      EXPERIMENTS.filter((e) => VERIFIED.has(e.url)).length,
+      EXPERIMENTS.filter((e) => e.verified).length,
       tr("methodVerifiedWhy", ""), "tv-legend-verified");
 
   sec.appendChild(dl);

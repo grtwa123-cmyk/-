@@ -43,6 +43,45 @@ check("every catalogue entry points at a file that exists",
 const dupes = EXPERIMENTS.map((e) => e.url).filter((u, i, a) => a.indexOf(u) !== i);
 check("no duplicate entries in the catalogue", dupes.length === 0, dupes.join(", "));
 
+/*
+ * The catalogue is the list, and three hub pages plus the landing page's
+ * screen-reader navigation each repeat it in markup — a card and a link per
+ * experiment, written by hand so that a reader with no JavaScript, and a
+ * crawler, still get the whole site. Nothing held those copies to the
+ * catalogue: an experiment could be added to the list and never appear on
+ * its hub, or linger on a hub after being renamed, and every existing check
+ * would pass. Counts alone would not do it either — the hubs had the right
+ * number of cards while nothing checked they were the right ones.
+ */
+const HUB = { Physics: "physics.html", Chemistry: "chemistry.html", Biology: "biology.html" };
+const hubText = Object.fromEntries(Object.entries(HUB)
+  .map(([c, f]) => [c, fs.readFileSync(path.join(root, f), "utf8")]));
+const indexText = fs.readFileSync(path.join(root, "index.html"), "utf8");
+
+const offHub = [], offIndex = [];
+for (const e of EXPERIMENTS) {
+  const card = `class="card" href="${e.url}"`;
+  if (!hubText[e.cat] || !hubText[e.cat].includes(card)) offHub.push(`${e.url} not on ${HUB[e.cat]}`);
+  if (!indexText.includes(`href="${e.url}"`)) offIndex.push(e.url);
+}
+check(`every catalogue entry has a card on its own hub — ${EXPERIMENTS.length} experiments`,
+  offHub.length === 0, offHub.slice(0, 4).join("; "));
+check("and a link in the landing page's screen-reader navigation",
+  offIndex.length === 0, offIndex.slice(0, 4).join(", "));
+
+const known = new Set(EXPERIMENTS.map((e) => e.url));
+const strays = [];
+for (const [cat, file] of Object.entries(HUB)) {
+  for (const m of hubText[cat].matchAll(/class="card" href="(experiments\/[a-z0-9]+\.html)"/g)) {
+    if (!known.has(m[1])) strays.push(`${file} still shows ${m[1]}`);
+    else if (EXPERIMENTS.find((e) => e.url === m[1]).cat !== cat) {
+      strays.push(`${m[1]} is filed under ${EXPERIMENTS.find((e) => e.url === m[1]).cat} but carded on ${file}`);
+    }
+  }
+}
+check("and no hub carries a card the catalogue does not",
+  strays.length === 0, strays.slice(0, 4).join("; "));
+
 // ── i18n parity ───────────────────────────────────────────────────────────
 // Each dictionary is a call to window.i18nRegister, so they are read as
 // source rather than imported. Parity is what lets the runtime drop

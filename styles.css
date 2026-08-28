@@ -857,6 +857,17 @@ body:not([data-theme]) header.site-header p {
   margin-bottom: 1.5rem;
 }
 
+/*
+ * The category label on an experiment's crumbs line. It carried
+ * style="color: var(--muted); font-size: 0.9rem;" inline on forty pages —
+ * the same declaration forty times, in the one place a stylesheet cannot see
+ * it. Same two properties, one rule.
+ */
+.crumb-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .version-tag {
   display: inline-block;
   margin-left: 0.55rem;
