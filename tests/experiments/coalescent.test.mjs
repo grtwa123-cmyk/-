@@ -294,9 +294,21 @@ async function spectrum(N, n, trees) {
    * goes from two thirds of 2N to eleven twelfths of it. And it can never
    * buy more than 2N however many are sampled, which is the harder half of
    * the claim and the one a page with a runaway tree would fail.
+   *
+   * Two checks, because there are two statements and only one of them is a
+   * measurement. "Under 40%" is a fact about the theory and is settled by
+   * arithmetic; testing it against six thousand noisy trees made a 1.65σ
+   * bound out of it — the true ratio is 1.375, the standard error 1.1%, and
+   * CI duly came back with 1.41. So the theory claim is checked on the
+   * theory, exactly, and the trees are held to the ratio the exact chain
+   * predicts, which at 4.5σ is both stronger and stable.
    */
-  chk('quadrupling the sample deepens the tree by under 40%',
-      ratio < 1.4 && ratio > 1.2, `n = 3 → ${small.meanT.toFixed(0)}, n = 12 → ${big.meanT.toFixed(0)} — ${ratio.toFixed(2)}×`);
+  const wantRatio = chain(60, 12).T / chain(60, 3).T;
+  chk('the theory says quadrupling the sample deepens the tree by under 40%',
+      wantRatio < 1.4 && wantRatio > 1.2, `exactly ${wantRatio.toFixed(4)}×`);
+  chk('and the trees agree with that ratio, within 5%',
+      Math.abs(ratio / wantRatio - 1) < 0.05,
+      `n = 3 → ${small.meanT.toFixed(0)}, n = 12 → ${big.meanT.toFixed(0)} — ${ratio.toFixed(3)}× against ${wantRatio.toFixed(3)}×`);
   chk('and however large the sample the depth stays under 2N',
       big.meanT < 2 * 60, `${big.meanT.toFixed(0)} against 2N = 120`);
 }

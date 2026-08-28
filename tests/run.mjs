@@ -101,24 +101,32 @@ for (const r of results) {
   if (r.code !== 0) failedSuites++;
   const status = r.code === 0 ? "ok  " : "FAIL";
   console.log(`  ${status}  ${r.name.padEnd(38)} ${total ? `${pass}/${total}` : `exit ${r.code}`}`);
-  /*
-   * Repeat the failing lines here. A suite's own output is echoed above, but
-   * on a long run that is thousands of lines and CI log viewers hand back the
-   * tail — four times in one session a red build said only "sweep 14/15" and
-   * finding out which check meant re-running the shard locally for a quarter
-   * of an hour. The summary is the part anyone actually reads, so the names
-   * go in it.
-   */
-  if (r.code !== 0) {
-    const lines = r.out.split("\n").filter((l) => l.startsWith("FAIL "));
-    for (const l of lines.slice(0, 6)) console.log(`          ${l.slice(5).trim()}`);
-    if (lines.length > 6) console.log(`          ... and ${lines.length - 6} more`);
-    if (!lines.length) {
-      const crash = r.out.split("\n").find((l) => /Error|Timeout|uncaught/i.test(l));
-      if (crash) console.log(`          ${crash.trim().slice(0, 160)}`);
-    }
-  }
 }
 console.log(`\n${results.length - failedSuites}/${results.length} suites, ` +
   `${passed}/${checks} checks, ${((Date.now() - started) / 1000).toFixed(1)}s`);
+
+/*
+ * And the failing lines again, dead last.
+ *
+ * A suite's own output is echoed above, but on a long run that is thousands
+ * of lines and every CI log viewer hands back a fixed budget from the end.
+ * Putting the names inside the summary list was not enough — the list itself
+ * is fourteen lines and the tail still cut the top off it. Last is the only
+ * position that is always visible.
+ */
+if (failedSuites) {
+  console.log("\n──  what failed");
+  for (const r of results) {
+    if (r.code === 0) continue;
+    console.log(`  ${r.name}`);
+    const lines = r.out.split("\n").filter((l) => l.startsWith("FAIL "));
+    for (const l of lines.slice(0, 8)) console.log(`      ${l.slice(5).trim()}`);
+    if (lines.length > 8) console.log(`      ... and ${lines.length - 8} more`);
+    if (!lines.length) {
+      const crash = r.out.split("\n").find((l) => /Error|Timeout|uncaught/i.test(l));
+      console.log(`      ${crash ? crash.trim().slice(0, 200) : `exit ${r.code}, no checks recorded`}`);
+    }
+  }
+}
+
 process.exit(failedSuites ? 1 : 0);
