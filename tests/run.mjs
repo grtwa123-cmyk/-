@@ -123,8 +123,18 @@ if (failedSuites) {
     for (const l of lines.slice(0, 8)) console.log(`      ${l.slice(5).trim()}`);
     if (lines.length > 8) console.log(`      ... and ${lines.length - 8} more`);
     if (!lines.length) {
-      const crash = r.out.split("\n").find((l) => /Error|Timeout|uncaught/i.test(l));
-      console.log(`      ${crash ? crash.trim().slice(0, 200) : `exit ${r.code}, no checks recorded`}`);
+      /*
+       * A suite that died before recording a check. Skip its own PASS/FAIL
+       * lines when looking for the reason — "no console errors" matched
+       * /Error/i and got printed as the cause, which is worse than printing
+       * nothing. Show the tail as well: the throw is usually the last thing.
+       */
+      const body = r.out.split("\n")
+        .filter((l) => l.trim() && !/^(PASS|FAIL)\s/.test(l.trim()));
+      const crash = body.find((l) => /uncaughtException|^\s*\w*Error\b|Timeout \d|exceeded/.test(l));
+      console.log(`      exit ${r.code}, no checks recorded`);
+      if (crash) console.log(`      ${crash.trim().slice(0, 200)}`);
+      for (const l of body.slice(-3)) console.log(`      | ${l.trim().slice(0, 160)}`);
     }
   }
 }
