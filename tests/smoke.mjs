@@ -82,6 +82,41 @@ for (const [cat, file] of Object.entries(HUB)) {
 check("and no hub carries a card the catalogue does not",
   strays.length === 0, strays.slice(0, 4).join("; "));
 
+/*
+ * And the fourth copy, which nothing was watching: the <noscript> list on the
+ * landing page. The index is drawn with WebGL, so without JavaScript that
+ * list IS the site — and it had gone stale. Five experiments were missing
+ * from it, all five added in the last fortnight, and the impact page was
+ * still under a title it had outgrown. The screen-reader check above did not
+ * see it because that one reads the <nav>.
+ *
+ * Held to the catalogue in both directions, and to the English dictionary for
+ * the words, since a link a reader cannot recognise is only half a link.
+ */
+{
+  const ns = (indexText.match(/<noscript>[\s\S]*?<\/noscript>/) || [""])[0];
+  const listed = new Map([...ns.matchAll(/href="(experiments\/[a-z0-9]+\.html)">([^<]*)<\/a>/g)]
+    .map((m) => [m[1], m[2]]));
+  const missing = EXPERIMENTS.filter((e) => !listed.has(e.url)).map((e) => e.url);
+  const stray = [...listed.keys()].filter((u) => !known.has(u));
+  check(`the no-JavaScript list is the catalogue — ${EXPERIMENTS.length} experiments, both ways`,
+    missing.length === 0 && stray.length === 0,
+    [...missing.map((u) => `missing ${u}`), ...stray.map((u) => `stray ${u}`)].slice(0, 5).join(", "));
+
+  // The English titles, read out of the dictionary as source. \uXXXX is the
+  // only escape the file uses; JSON.parse handles it and rejects anything odd.
+  const enTitles = Object.fromEntries(
+    [...fs.readFileSync(path.join(root, "i18n", "en.js"), "utf8")
+      .matchAll(/^\s{2}([A-Za-z_]\w*):\s*("(?:[^"\\]|\\.)*"),$/gm)]
+      .map((m) => [m[1], JSON.parse(m[2])]));
+  const decode = (t) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  const wrong = EXPERIMENTS
+    .filter((e) => listed.has(e.url) && decode(listed.get(e.url)) !== enTitles[e.titleKey])
+    .map((e) => `${e.url}: "${decode(listed.get(e.url))}" vs "${enTitles[e.titleKey]}"`);
+  check("and each entry is under the title the dictionary gives it",
+    wrong.length === 0, wrong.slice(0, 3).join("; "));
+}
+
 // ── i18n parity ───────────────────────────────────────────────────────────
 // Each dictionary is a call to window.i18nRegister, so they are read as
 // source rather than imported. Parity is what lets the runtime drop

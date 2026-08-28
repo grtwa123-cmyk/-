@@ -17,9 +17,12 @@
  *                 formula     a closed-form expression evaluated and drawn
  *                 model       a 3D structure built from measured constants
  *                 illustrated an animation of the idea, no quantitative model
- *               Whether a page is additionally *verified* is not stored here:
- *               it is derived from whether tests/experiments/<name>.test.mjs
- *               exists, so the claim cannot drift away from the evidence.
+ *   verified  – true when tests/experiments/<name>.test.mjs holds the page's
+ *               numbers against their closed forms. Stored here rather than
+ *               derived at runtime, because the surfaces that show it are
+ *               static; tests/method-badges.test.mjs holds the field to the
+ *               suites actually on disk, in both directions, so the claim
+ *               still cannot drift away from the evidence.
  *   tags      – short uppercase tokens shown on the bottom row
  *   colors    – [from, to] gradient stops for the card's image block
  *   motif     – key handled by motifs.js (line-art glyph)
