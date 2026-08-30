@@ -132,20 +132,22 @@ function urlProbe(name) {
         const start = page.locator('#start-btn, #launch-btn, #excite-btn').first();
         if (await start.count() === 1 && await start.isEnabled()) await start.click();
         /*
-         * Wait until the page's named tallies have all started, rather than
-         * for a fixed 2.2 s. How much fills in a given wall-clock window is a
-         * property of the machine, not of the page.
+         * Two waits on conditions, no wall clock. First until every named
+         * tally has started, then until every one of them has moved past
+         * where it was — because "started" is not "climbing", and 600 ms of
+         * head start is a property of the machine. CI caught that: kinetics
+         * counts one molecule of C, and six hundred milliseconds later on a
+         * two-core runner it had still counted one.
          */
         const ids = TALLIES[name] || [];
-        if (ids.length) {
-          await page.waitForFunction((keys) => keys.every((id) => {
-            const n = parseFloat((document.getElementById(id)?.textContent || '')
-              .replace(/[^0-9.eE+-]/g, ''));
-            return Number.isFinite(n) && n > 0;
-          }), ids, { timeout: 15000 }).catch(() => {});
-        }
+        const climbed = (before) => page.waitForFunction(([keys, was]) => keys.every((id) => {
+          const n = parseFloat((document.getElementById(id)?.textContent || '')
+            .replace(/[^0-9.eE+-]/g, ''));
+          return Number.isFinite(n) && n > (was ? was[id] : 0);
+        }), [ids, before], { timeout: 30000 }).catch(() => {});
+        if (ids.length) await climbed(null);
         const mid = await tallies(ids);
-        await page.waitForTimeout(600);
+        if (ids.length) await climbed(mid);
         const filled = await tallies(ids);
         await btn.click();
         await page.waitForTimeout(300);
