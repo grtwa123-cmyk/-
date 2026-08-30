@@ -190,10 +190,22 @@ const metals = await page.evaluate(() => window.__redox.metals());
   // time: a loaded cell reads lower than an open one for reasons that have
   // nothing to do with Q, and 0.82 V against 1.14 V says nothing at all.
   const restBefore = (await set({ A: 'Zn', B: 'Cu', cA: 0.01, cB: 1, T: 298.15, R: null })).V;
-  await set({ A: 'Zn', B: 'Cu', cA: 0.01, cB: 1, T: 298.15, R: 20 });
-  const before = await page.evaluate(() => window.__redox.read());
-  const after = await page.evaluate(() => window.__redox.advance(300, 600));
-  const c = await page.evaluate(() => window.__redox.constants());
+  /*
+   * Set it up, read it and discharge it inside ONE evaluate.
+   *
+   * They used to be three, and the page's own animation frame ran in the gaps
+   * — a loaded cell does not wait to be asked. The moles below are counted
+   * from the restart, so a frame between the restart and the reading puts
+   * charge into nA that never appears in cA − cA(before): CI caught it as
+   * Zn²⁺ 0.0101→0.0740 where the restart had left 0.0100, a tenth of a
+   * millimolar against a tolerance of 1e-9. Nothing can land between two
+   * synchronous calls in the same evaluate.
+   */
+  const { before, after, c } = await page.evaluate(() => ({
+    before: window.__redox.set({ A: 'Zn', B: 'Cu', cA: 0.01, cB: 1, T: 298.15, R: 20 }),
+    after: window.__redox.advance(300, 600),
+    c: window.__redox.constants(),
+  }));
 
   const nFromCharge = after.charge / (2 * c.F);
   chk('the metal that moved is the charge that passed, divided by zF',
@@ -224,8 +236,10 @@ const metals = await page.evaluate(() => window.__redox.metals());
 
 // ── a concentration cell closes its own gap ───────────────────────────────
 {
-  await set({ A: 'Cu', B: 'Cu', cA: 0.002, cB: 0.2, T: 298.15, R: 5 });
-  const start = await page.evaluate(() => window.__redox.read());
+  // Same reason as above: the reading has to come out of the same evaluate as
+  // the restart, or a frame discharges the cell before it is looked at.
+  const start = await page.evaluate(() =>
+    window.__redox.set({ A: 'Cu', B: 'Cu', cA: 0.002, cB: 0.2, T: 298.15, R: 5 }));
   let prev = start.cB / start.cA, crossed = false, mono = true;
   let last = start;
   for (let k = 0; k < 8; k++) {
