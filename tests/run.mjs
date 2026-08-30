@@ -119,8 +119,31 @@ if (failedSuites) {
   for (const r of results) {
     if (r.code === 0) continue;
     console.log(`  ${r.name}`);
-    const lines = r.out.split("\n").filter((l) => l.startsWith("FAIL "));
-    for (const l of lines.slice(0, 8)) console.log(`      ${l.slice(5).trim()}`);
+    /*
+     * A failure message can run to several lines, and the suites that go to
+     * the most trouble use them: kinetics carries a per-setting forensic
+     * block into its message precisely so that a red run does not have to be
+     * reproduced to be read. Taking only the lines that start with FAIL threw
+     * every one of those away — the summary showed one setting out of five and
+     * nothing about the halves. So a FAIL takes its indented continuation with
+     * it, up to the next check.
+     */
+    const out = r.out.split("\n");
+    const lines = [];
+    for (let i = 0; i < out.length; i++) {
+      if (!out[i].startsWith("FAIL ")) continue;
+      const block = [out[i].slice(5).trim()];
+      for (let j = i + 1; j < out.length; j++) {
+        if (/^(PASS|FAIL)\s/.test(out[j]) || !out[j].trim()) break;
+        if (!/^\s/.test(out[j])) break;
+        block.push(out[j].trim());
+      }
+      lines.push(block);
+    }
+    for (const block of lines.slice(0, 8)) {
+      console.log(`      ${block[0]}`);
+      for (const cont of block.slice(1, 6)) console.log(`        ${cont}`);
+    }
     if (lines.length > 8) console.log(`      ... and ${lines.length - 8} more`);
     if (!lines.length) {
       /*

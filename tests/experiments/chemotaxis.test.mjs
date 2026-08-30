@@ -91,19 +91,47 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
      * while the cell is pointed up the ramp, and the fitted k comes back 6%
      * high. Each replicate is freshly scattered and stopped after ten
      * seconds, over which the population's centre moves about 50 px in a
-     * 716 px dish, and the tallies from forty-eight of them are pooled. The
-     * The estimator is unbiased — over six trials it sits 0.2% from the truth
-     * — so the width below is set by how much walking is paid for, not by how
-     * far the model is off. Twenty-four replicates gave a scatter of 1.4%,
-     * which made a 4% bound three sigma and flagged two display-only defects
-     * before it was paid for; forty-eight give 0.76%, and the bound tightens
-     * to 3%.
+     * 716 px dish, and the tallies from a hundred and twenty of them are
+     * pooled.
+     *
+     * The estimator is unbiased and that was worth confirming rather than
+     * assuming. Signed error, ten trials at each length, forty-eight dishes:
+     *
+     *        4 s      +0.28  −0.68  −0.80  +0.17  %
+     *        7 s      −0.50  −0.22  −0.19  −0.24  %
+     *       10 s      +0.46  −0.35  +0.47  −0.13  %
+     *
+     * — no drift with run length and no sign to any of it, so the wall is not
+     * biasing this the way it biases a dish left running.
+     *
+     * The width is therefore only about how much walking is paid for, and it
+     * was under-bought. "Forty-eight give 0.76%" was written here off the mean
+     * of |error|, which for a zero-mean scatter is 0.8σ, not σ: the real σ is
+     * about 1.35%, so a 3% bound was 2.2 sigma per setting. The check takes
+     * the WORST of four settings, and the max of four folded normals clears 3%
+     * about once in forty runs. CI drew it: worst 3.9%.
+     *
+     * Two and a half times the dishes, measured over sixteen trials:
+     *
+     *   dishes    |err| by setting              worst of four
+     *      48     0.76  0.80  0.86  0.92 %      1.36 ± 0.34 %, max 1.83
+     *     120     0.49  0.52  0.47  0.73 %      1.18 ± 0.41 %, max 2.04
+     *
+     * σ per setting is about 0.75% now, which puts the same 3% bound at four
+     * sigma and the max-of-four past it about once in four thousand. The bound
+     * does not move; the sample does. (Splitting the same cells over more
+     * dishes was tried and is not the lever: 192 × 300 left the worst setting
+     * at 0.92 ± 0.82% with a 3.21% draw in twenty.)
+     *
+     * And the cell count is 600, not the 800 that was written here. The count
+     * slider stops at 600 and set() writes through it, so the extra 200 were
+     * never there.
      */
     const d = await page.evaluate(async (a) => {
       const steps = new Array(12).fill(0), sum = new Array(12).fill(0), tum = new Array(12).fill(0);
       let n = 0;
-      for (let r = 0; r < 48; r++) {
-        window.__chemo.set({ n: 800, v: a.v, tau: a.tau, beta: a.beta });
+      for (let r = 0; r < 120; r++) {
+        window.__chemo.set({ n: 600, v: a.v, tau: a.tau, beta: a.beta });
         window.__chemo.advance(1);
         window.__chemo.clearStats();
         const q = window.__chemo.advance(10);
@@ -141,14 +169,33 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
  */
 {
   /*
-   * |k| < 0.01 is a tenth of the smallest bias the page can be set to, so it
-   * needs the walking to back it: the fitted k scatters by about 0.004 on
-   * 36 000 cell-seconds, and 0.0025 on 96 000, which is what is pooled here.
+   * This wants the walking to back it, and the first sizing of it was wrong.
+   *
+   * Eight dishes were pooled — 96 000 cell-seconds — with the scatter put at
+   * 0.0025 and the bound at 0.01, which reads as four sigma. Thirty trials
+   * say the scatter is 0.00365, so the bound was 2.7 sigma and the check a
+   * one-in-a-hundred-and-seventy coin. CI drew it: |k| = 0.0108.
+   *
+   * Only more dishes help. Raising the cell count instead buys nothing, and
+   * not for a statistical reason: the count slider stops at 600, so
+   * set({ n: 2400 }) is silently clamped and eight dishes of "2400" measure
+   * exactly as well as eight of 600 — RMS 0.00386 against 0.00365. Anything
+   * pushed through set() is clamped to its slider, so check the markup before
+   * believing a parameter was raised.
+   *
+   *   dishes   cell-seconds   RMS |k|   trials
+   *      8         96 000     0.00365     30
+   *     32        384 000     0.00205     60
+   *     48        576 000     0.00147     40      ← here, worst of 40: 0.00467
+   *
+   * Forty-eight cost four seconds and the bound tightens to 0.007, which is
+   * 4.8 sigma of that scatter and a twenty-fourth of the smallest bias the
+   * fits above are run at.
    */
   const d = await page.evaluate(async () => {
     const steps = new Array(12).fill(0), sum = new Array(12).fill(0), tum = new Array(12).fill(0);
     let n = 0;
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < 48; r++) {
       window.__chemo.set({ n: 600, v: 60, tau: 0.6, beta: 0 });
       window.__chemo.advance(1);
       window.__chemo.clearStats();
@@ -166,8 +213,8 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
   }
   const f = lsq(xs, ys);
   const kFit = Math.abs(-f.slope / f.inter);
-  chk('with the memory off the tumble rate is flat in cos θ, |k| < 0.01',
-      kFit < 0.01, `|k| = ${kFit.toFixed(4)}`);
+  chk('with the memory off the tumble rate is flat in cos θ, |k| < 0.007',
+      kFit < 0.007, `|k| = ${kFit.toFixed(4)}`);
 }
 
 // ── spreading: the crossover, not one of its limits ─────────────────────

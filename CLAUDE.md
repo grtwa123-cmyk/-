@@ -147,11 +147,15 @@ Written down so a later pass does not spend a day rediscovering it, or worse,
   through the page. Splitting each file into model/renderer/ui would make 82
   new files, a script-ordering problem, and no testability that is not
   already there.
-- **The stylesheet is already tokenised.** 1436 lines, zero hex outside the
-  `:root` / `[data-theme]` / `prefers-color-scheme` blocks, four
-  `!important` — all of them inside `prefers-reduced-motion`, which is what
-  that is for — and two z-index values. Splitting it into nine files under a
-  no-build site costs eight requests and buys nothing at this size.
+- **The stylesheet is essentially tokenised.** 1464 lines, four `!important`
+  — all inside `prefers-reduced-motion`, which is what that is for — and two
+  z-index values. Splitting it into nine files under a no-build site costs
+  eight requests and buys nothing at this size. "Zero hex outside the token
+  blocks" was claimed here once and was wrong: there are sixteen. Five are
+  legend dots deliberately mirroring the fixed canvas colours they explain,
+  three are gradients, and the remaining eight are foreground colours on
+  coloured chrome — `#0b1024` four times, `#fff` twice — which are the only
+  ones that should become tokens. Count before writing "zero".
 - **i18n key parity is enforced both ways** across all three dictionaries,
   1574 keys, in `tests/smoke.mjs`.
 - **Every canvas is labelled** (44 of 44), no page allocates inside `resize`,
