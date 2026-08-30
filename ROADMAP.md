@@ -284,7 +284,40 @@ nobody has to measure them again to decide they are fine.
     and it is a fine choice, but nothing said so. It is now in the notes, the
     source header, and two checks that measure it.
 
-  Still to ask: `phases`, `neuron`, `resonance`, `wave`, `spectra`.
+  And the last five, which closes the sweep. Eight pages asked, one defect:
+
+  - **phases** — the defect. `D` was the chord ⟨r²⟩/4t, which is what the
+    label ⟨r²⟩ = 4Dt says and is right wherever that law is right. In a solid
+    it is not: the particles are caged, ⟨r²⟩ plateaus, and the chord is that
+    plateau over however long the page has been open — 1.4e-2 half a time unit
+    in, 5.0e-3 at t = 2, 7.4e-4 at t = 10, 1.8e-4 at t = 100. The first few
+    readings are within a factor of three of a real liquid's 4e-2, and the
+    page's own first note says D "leaves zero" on melting, which the chord
+    never does. It is the slope over a trailing window now.
+  - **resonance** — there is no small parameter. A/X₀ = 1/√((1−r²)² + (2ζr)²)
+    is exact for a linear oscillator at every ζ, and the page already names
+    the three places people substitute a limit for it: the amplitude peak at
+    r = √(1−2ζ²) rather than 1, the peak vanishing at ζ ≥ 1/√2, and velocity
+    resonance at exactly r = 1. The one limit that is real — steady state — is
+    displayed as a settled fraction, and the error readout is withheld until
+    99.9% of the transient is gone.
+  - **wave** — asked and answered before the question was a habit. The page
+    prints three numbers side by side: the located fringe spacing, the exact
+    hyperbola crossing y(q) = (qλ/2)√(1 + L²/((d/2)² − (qλ/2)²)), and the
+    λL/d approximation — and quantifies what the approximation costs, 8.2% at
+    the default geometry of which 6.1% survives at infinite screen distance
+    because obliquity never goes away.
+  - **spectra** — the correction is applied rather than assumed away. R_H is
+    the reduced-mass value, not R_∞, and the page says what that is worth:
+    Hα at 656.5 nm instead of 656.1. Vacuum against air is named too (656.3
+    in tables), and the one thing that *is* schematic — line brightness,
+    which really wants Einstein A coefficients — is labelled as such while
+    the positions are exact.
+  - **neuron** — nothing is compared to a closed form, so there is no limit to
+    be outside of. Four ODEs are integrated as written and every number
+    reported is the trajectory. The only approximation is the RK4 step, and
+    `tests/experiments/neuron.test.mjs` checks its convergence directly:
+    halving it moves the peak under 0.01 mV, quadrupling it is visibly wrong.
 - **Repo metadata.** The GitHub description still reads `SE`, and Website and
   Topics are empty. The API path is blocked from this environment, so this
   one needs a human.

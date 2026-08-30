@@ -99,6 +99,12 @@
   let simT = 0;
   let grAcc = new Float64Array(GR_BINS), grFrames = 0;
   let msdRef = null, msdRefT = 0;
+  /*
+   * Marks along ⟨r²⟩(t) since the reference, for the diffusion constant.
+   * One every MSD_MARK time units, keeping the last MSD_WINDOW worth.
+   */
+  const MSD_WINDOW = 20, MSD_MARK = 1.25;
+  let msdMarks = [];
   let psiSmoothed = NaN, dSmoothed = NaN;
   // Ring buffer of recent wrapped positions, for the optional path overlay.
   const TRAIL = 56;
@@ -214,6 +220,16 @@
       vx[i] += 0.5 * DT * fx[i]; vy[i] += 0.5 * DT * fy[i];
     }
     simT += DT;
+    // A mark on ⟨r²⟩(t) every MSD_MARK, keeping one window's worth plus the
+    // one that just fell off its far end.
+    if (msdRef) {
+      const el = simT - msdRefT;
+      const last = msdMarks[msdMarks.length - 1];
+      if (!last || el - last.t >= MSD_MARK) {
+        msdMarks.push({ t: el, m: msd() });
+        while (msdMarks.length > 2 && el - msdMarks[1].t >= MSD_WINDOW) msdMarks.shift();
+      }
+    }
   }
 
   /** Virial pressure — from the forces themselves, not an equation of state. */
@@ -253,12 +269,48 @@
   const takeMsdReference = () => {
     msdRef = { x: Float64Array.from(S.ux), y: Float64Array.from(S.uy) };
     msdRefT = simT;
+    msdMarks = [{ t: 0, m: 0 }];
   };
-  /** ⟨r²⟩ = 4Dt in two dimensions. */
+
+  /**
+   * D from the slope of ⟨r²⟩ over a trailing window — 4D = d⟨r²⟩/dt.
+   *
+   * It used to be the chord from the reference, ⟨r²⟩/4t, which is what the
+   * label ⟨r²⟩ = 4Dt says and is right exactly where that law is right. In a
+   * solid it is not. The particles are caged, ⟨r²⟩ plateaus, and the chord is
+   * that plateau divided by however long the page has been open: measured at
+   * T* = 0.15, ρ = 0.8, it reads 1.4e-2 half a time unit after the reference,
+   * 5.0e-3 at t = 2, 7.4e-4 at t = 10, 1.8e-4 at t = 100 — a factor of 23,
+   * with the first few readings within a factor of three of a real liquid's
+   * 4e-2. A reader who opened the page a moment ago and one who left it
+   * running get different numbers for the same crystal, and the page's own
+   * first note says the diffusion constant "leaves zero" on melting, which
+   * the chord never does.
+   *
+   * The slope does. Over 64 readings between t = 40 and t = 120:
+   *
+   *              solid T*=0.15            liquid T*=0.80
+   *   chord      1.24e-4 ± 4.6e-5         4.17e-2 ± 2.6e-3   (still falling)
+   *   slope     −0.07e-4 ± 0.8e-4         3.94e-2 ± 1.4e-2
+   *
+   * — zero in the solid to within its own noise, against a liquid four
+   * hundred times larger, and neither number moves with the watch. The slope
+   * is the noisier estimator of the two, which the readout's existing
+   * exponential smoothing absorbs.
+   *
+   * It returns NaN until a full window exists, because a diffusion constant
+   * is a late-time property and there is nothing honest to print before the
+   * walk has had time to become one. At the default speed that is about seven
+   * seconds.
+   */
   function diffusion() {
-    if (!msdRef) return NaN;
-    const dt = simT - msdRefT;
-    return dt > 0.5 ? msd() / (4 * dt) : NaN;
+    if (!msdRef || msdMarks.length < 3) return NaN;
+    const oldest = msdMarks[0];
+    if (simT - msdRefT - oldest.t < MSD_WINDOW * 0.9) return NaN;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    const n = msdMarks.length;
+    for (const q of msdMarks) { sx += q.t; sy += q.m; sxx += q.t * q.t; sxy += q.t * q.m; }
+    return (n * sxy - sx * sy) / (n * sxx - sx * sx) / 4;
   }
 
   /** g(r) by counting pair separations against the ideal-gas expectation. */

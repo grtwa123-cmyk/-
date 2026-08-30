@@ -117,6 +117,58 @@ const MK = `const M = window.__md;
       r.map(x=>`T${x.target}:${x.P.toFixed(2)}`).join(' '));
 }
 
+// ── D is zero in a solid, and zero is a claim about its sign ─────────────
+/*
+ * The readout used to be the chord, ⟨r²⟩/4t, which is exactly what the label
+ * ⟨r²⟩ = 4Dt says — and is right wherever that law is right. In a solid it is
+ * not: the particles are caged, ⟨r²⟩ plateaus, and the chord is that plateau
+ * divided by however long the page has been open. Measured at T* = 0.15,
+ * ρ = 0.8: 1.4e-2 half a time unit after the reference, 5.0e-3 at t = 2,
+ * 7.4e-4 at t = 10, 1.8e-4 at t = 100 — a factor of 23, with the first
+ * readings within a factor of three of a real liquid's 4e-2.
+ *
+ * A magnitude bound cannot catch that. By t = 30 the chord is already down to
+ * 4.6e-4 against the liquid's 4.5e-2, so "much smaller than a liquid" passes
+ * either way. What separates them is the sign. A plateau divided by t is
+ * positive every single time; a slope through a plateau is as often below
+ * zero as above it. Sixteen independently built crystals:
+ *
+ *              mean        sd        t = mean/(sd/√16)   below zero
+ *   chord     4.57e-4   5.70e-4           3.21             0 / 16
+ *   slope     2.60e-4   1.01e-3           1.04             8 / 16
+ *
+ * The bound is distribution-free: under "D is zero" the count below zero is
+ * Binomial(16, ½), so 2 through 14 is a one-in-nineteen-hundred failure and
+ * the chord's nought is a one-in-sixty-five-thousand event. The slope's mean
+ * is pulled up by one crystal in the sixteen reading 4.0e-3 — a dislocation
+ * nucleating and gliding, which is the same event tests already document for
+ * the Lindemann ratio — so the magnitude below is stated as a median.
+ */
+{
+  const t0 = Date.now();
+  const d = await page.evaluate(new Function(`${MK}
+    const solid = [];
+    for (let r = 0; r < 16; r++) {
+      M.build(mk({ T: 0.15, rho: 0.8 }));
+      for (let i = 0; i < 20000; i++) { M.step(); if (i % 10 === 0) M.setTemperature(0.15); }
+      M.takeMsdReference();
+      for (let i = 0; i < 7500; i++) M.step();
+      solid.push(M.diffusion());
+    }
+    const liquid = M.measure(mk({ T: 0.80, rho: 0.8 }), { equil: 6000, sample: 8000 }).D;
+    return { solid, liquid };`));
+  const below = d.solid.filter((x) => x < 0).length;
+  const med = [...d.solid].map(Math.abs).sort((a, b) => a - b)[8];
+  chk('a solid does not diffuse: D is as often below zero as above it',
+      below >= 2 && below <= 14,
+      `${below}/16 crystals read below zero, median |D| ${med.toExponential(2)} `
+      + `(${((Date.now() - t0) / 1000).toFixed(0)}s)`);
+  chk('and it is far below the liquid measured the same way',
+      med < 0.005 * d.liquid,
+      `median |D| ${med.toExponential(2)} vs liquid ${d.liquid.toExponential(2)} `
+      + `— ${(100 * med / d.liquid).toFixed(2)}%`);
+}
+
 // ── The thermostat delivers the temperature it is asked for ───────────
 {
   const r = await page.evaluate(new Function(`${MK}

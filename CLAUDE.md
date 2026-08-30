@@ -254,6 +254,33 @@ that decorrelates the samples faster. On `chemotaxis` the tumble-rate fit
 scattered 1.4% against a 4% bound at 24 replicates; at 48 it scatters 0.76%,
 and the bound was **tightened** to 3%.
 
+**A bound is sized from the scatter of the statistic the check computes, over
+at least thirty trials.** Two chemotaxis bounds went red in consecutive CI
+runs and both had the same cause: the sizing runs were too short, and the
+number written down was the mean of |error| rather than its sigma. For a
+zero-mean scatter those differ by 0.8, which turns four sigma into 2.7. And
+if the check takes the WORST of n settings, size the max of n — not one
+setting: four folded normals at 2.2 sigma each clear their bound once in
+forty runs, which is a red CI every other day.
+
+**A number divided by "however long you have been watching" is not a constant.**
+`phases` reported D as ⟨r²⟩/4t from a single reference — which is exactly what
+the label ⟨r²⟩ = 4Dt says, and is right wherever that law is right. In a solid
+it is not: the walk is caged, ⟨r²⟩ plateaus, and the readout became the plateau
+divided by the age of the page — 1.4e-2 at half a time unit, 1.8e-4 at a
+hundred. Two readers of the same crystal got different numbers. Wherever a
+quantity is a ratio to elapsed time, ask what it does as the elapsed time
+grows; if the answer is "shrinks forever", it is a chord and the thing wanted
+is a slope over a trailing window.
+
+**Where a magnitude bound cannot separate two estimators, the sign often can.**
+Both the chord and the slope read ~1e-4 for a solid against a liquid's 4e-2,
+so "much smaller than a liquid" passes either way. But a plateau divided by t
+is positive every single time, and a slope through a plateau is as often below
+zero as above: 0 of 16 crystals against 8 of 16. Under "the true value is
+zero" the count below zero is Binomial(n, ½), which needs no tolerance to be
+chosen and no scatter to be measured.
+
 **A readout whose band is narrower than its own noise is a defect in the
 readout.** equilibrium called the mixture "at equilibrium" when Q was within
 10% of K, and Q — a ratio of three small integer counts — scatters by 17.5%
