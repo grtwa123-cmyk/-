@@ -92,7 +92,7 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
      * high. Each replicate is freshly scattered and stopped after ten
      * seconds, over which the population's centre moves about 50 px in a
      * 716 px dish, and the tallies from forty-eight of them are pooled. The
-     * The estimator is unbiased — over six trials it sits 0.2% from the truth
+     * estimator is unbiased — over six trials it sits 0.2% from the truth
      * — so the width below is set by how much walking is paid for, not by how
      * far the model is off. Twenty-four replicates gave a scatter of 1.4%,
      * which made a 4% bound three sigma and flagged two display-only defects
@@ -141,14 +141,33 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
  */
 {
   /*
-   * |k| < 0.01 is a tenth of the smallest bias the page can be set to, so it
-   * needs the walking to back it: the fitted k scatters by about 0.004 on
-   * 36 000 cell-seconds, and 0.0025 on 96 000, which is what is pooled here.
+   * This wants the walking to back it, and the first sizing of it was wrong.
+   *
+   * Eight dishes were pooled — 96 000 cell-seconds — with the scatter put at
+   * 0.0025 and the bound at 0.01, which reads as four sigma. Thirty trials
+   * say the scatter is 0.00365, so the bound was 2.7 sigma and the check a
+   * one-in-a-hundred-and-seventy coin. CI drew it: |k| = 0.0108.
+   *
+   * Only more dishes help. Raising the cell count instead buys nothing, and
+   * not for a statistical reason: the count slider stops at 600, so
+   * set({ n: 2400 }) is silently clamped and eight dishes of "2400" measure
+   * exactly as well as eight of 600 — RMS 0.00386 against 0.00365. Anything
+   * pushed through set() is clamped to its slider, so check the markup before
+   * believing a parameter was raised.
+   *
+   *   dishes   cell-seconds   RMS |k|   trials
+   *      8         96 000     0.00365     30
+   *     32        384 000     0.00205     60
+   *     48        576 000     0.00147     40      ← here, worst of 40: 0.00467
+   *
+   * Forty-eight cost four seconds and the bound tightens to 0.007, which is
+   * 4.8 sigma of that scatter and a twenty-fourth of the smallest bias the
+   * fits above are run at.
    */
   const d = await page.evaluate(async () => {
     const steps = new Array(12).fill(0), sum = new Array(12).fill(0), tum = new Array(12).fill(0);
     let n = 0;
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < 48; r++) {
       window.__chemo.set({ n: 600, v: 60, tau: 0.6, beta: 0 });
       window.__chemo.advance(1);
       window.__chemo.clearStats();
@@ -166,8 +185,8 @@ const crossover = (v, tau, t) => 2 * v * v * tau * tau * (t / tau - 1 + Math.exp
   }
   const f = lsq(xs, ys);
   const kFit = Math.abs(-f.slope / f.inter);
-  chk('with the memory off the tumble rate is flat in cos θ, |k| < 0.01',
-      kFit < 0.01, `|k| = ${kFit.toFixed(4)}`);
+  chk('with the memory off the tumble rate is flat in cos θ, |k| < 0.007',
+      kFit < 0.007, `|k| = ${kFit.toFixed(4)}`);
 }
 
 // ── spreading: the crossover, not one of its limits ─────────────────────
