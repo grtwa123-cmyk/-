@@ -219,6 +219,85 @@ function urlProbe(name) {
   await ctx.close();
 }
 
+// ── The sliders are big enough to hit ────────────────────────────────────
+/*
+ * 158 range inputs across the catalogue, and the box they lived in was 4px
+ * tall. The real hit height was 16 — the UA thumb overhangs by six either
+ * side — measured by clicking at each vertical offset from the track centre
+ * and watching for the value to move. WCAG 2.5.8 asks for 24, and the hit
+ * height follows the box exactly once the box is taller than the thumb.
+ *
+ * So the box is what is checked here: it is the thing that regressed, it is
+ * one property, and reading it costs nothing. The click-by-click measurement
+ * that ties it to the real target is in the note beside the rule.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  const thin = [];
+  let sliders = 0;
+  for (const name of PAGES) {
+    await page.goto(url(`experiments/${name}.html`),
+                    { waitUntil: 'domcontentloaded', timeout: 25000 });
+    await page.waitForTimeout(250);
+    const r = await page.evaluate(() => [...document.querySelectorAll('input[type="range"]')]
+      .map((el) => ({ id: el.id, h: Math.round(el.getBoundingClientRect().height) }))
+      .filter((x) => x.h > 0));
+    sliders += r.length;
+    for (const x of r) if (x.h < 24) thin.push(`${name} #${x.id} ${x.h}px`);
+  }
+  chk(`every slider is at least 24px tall — ${sliders} of them`,
+      thin.length === 0 && sliders > 140, thin.slice(0, 5).join(', ') || `only ${sliders} found`);
+  await ctx.close();
+}
+
+// ── Every keyboard stop is visible ───────────────────────────────────────
+/*
+ * `:focus { outline: none }` with a list of selectors that get a ring back
+ * leaves anything off the list invisible, and three kinds were: the
+ * checkboxes, redox's two metal selects, and the .stage itself, which
+ * Chromium puts in the tab order because it is a scroll container.
+ *
+ * Four pages rather than all forty-six — the rule is now universal, so this
+ * is here to prove the ring renders rather than to enumerate the site, and
+ * `tests/lint.mjs` refuses the blanket removal that caused it. redox carries
+ * the selects, atom and circuit the checkboxes, and all three the stage.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const page = await ctx.newPage();
+  const dark = [];
+  let stops = 0;
+  for (const name of ['index.html', 'experiments/redox.html',
+                      'experiments/atom.html', 'experiments/circuit.html']) {
+    await page.goto(url(name), { waitUntil: 'domcontentloaded', timeout: 25000 });
+    await page.waitForTimeout(400);
+    const seen = new Set();
+    for (let i = 0; i < 40; i++) {
+      await page.keyboard.press('Tab');
+      const r = await page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el || el === document.body) return null;
+        const cs = getComputedStyle(el);
+        return {
+          key: `${el.tagName.toLowerCase()}${el.type ? '[' + el.type + ']' : ''}`
+            + `${el.id ? '#' + el.id : ''}`,
+          visible: el.matches(':focus-visible'),
+          ring: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0,
+        };
+      });
+      if (!r) break;
+      if (seen.has(r.key) || !r.visible) continue;
+      seen.add(r.key);
+      stops++;
+      if (!r.ring) dark.push(`${name} ${r.key}`);
+    }
+  }
+  chk(`every keyboard stop draws a focus ring — ${stops} distinct stops over four pages`,
+      dark.length === 0 && stops > 30, dark.slice(0, 5).join(', ') || `only ${stops} stops`);
+  await ctx.close();
+}
+
 // ── Pass B: the same catalogue under prefers-reduced-motion ──────────────
 {
   const ctx = await browser.newContext({

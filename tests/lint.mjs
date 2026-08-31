@@ -202,6 +202,34 @@ for (const file of text) {
   }
 }
 
+// ── 5. no blanket focus-ring removal ──────────────────────────────────────
+/*
+ * `:focus { outline: none }` followed by a list of selectors that get a ring
+ * back is the pattern that lost the ring on twenty-one checkboxes, two
+ * selects and the .stage on twenty-nine pages: anything off the list had no
+ * indicator at all, and a keyboard reader had invisible stops on most of the
+ * site. The list cannot be kept complete by hand — the browser decides what
+ * is focusable, and Chromium focuses scroll containers.
+ *
+ * So the removal has to be qualified. `:focus:not(:focus-visible)` takes the
+ * ring off exactly where a mouse click would have drawn one and nowhere else.
+ */
+{
+  const css = fs.readFileSync(path.join(root, "styles.css"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const [i, line] of css.split("\n").entries()) {
+    const m = /(^|[,{}])\s*([^,{}]*:focus)\s*(,|\{)/.exec(line);
+    if (!m) continue;
+    const sel = m[2].trim();
+    if (/:focus-visible|:not\(\s*:focus-visible\s*\)/.test(sel)) continue;
+    if (!/outline\s*:\s*none/.test(line + css.split("\n").slice(i + 1, i + 4).join("\n"))) continue;
+    if (sel !== ":focus") continue;
+    failures.push(`styles.css:${i + 1}: \`${sel}\` removes the focus ring from everything `
+      + "that can hold it — qualify it as :focus:not(:focus-visible) "
+      + "(see the note in tests/lint.mjs)");
+  }
+}
+
 // ── Report ────────────────────────────────────────────────────────────────
 if (failures.length) {
   for (const f of failures.slice(0, 40)) console.error(`FAIL  ${f}`);
