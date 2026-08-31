@@ -328,9 +328,12 @@ body {
  * no indicator at all. Tabbing through all 46 pages found three kinds:
  * twenty-one checkboxes, the two metal selects on redox, and the .stage on
  * twenty-nine experiment pages, which Chromium puts in the tab order because
- * it is a scroll container (it has to be: a canvas wider than a phone scrolls
- * inside its stage rather than dragging the page sideways). A keyboard reader
- * had invisible stops on most of the site.
+ * it is a scroll container — and that stop earns its place: at 320px, 18 of
+ * the 42 stages really do overflow, because a canvas wider than a phone
+ * scrolls inside its stage rather than dragging the page sideways. Measured
+ * on cannon at 320px: Tab reaches the stage after eleven stops and two
+ * ArrowRights scroll it from 0 to 37. A keyboard reader had invisible stops
+ * on most of the site, and this was the one that could actually do something.
  *
  * Inverting it means the list cannot go stale: the browser's own ring is
  * removed only where ours replaces it. `outline` follows the element's own
