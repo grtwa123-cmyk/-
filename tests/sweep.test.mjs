@@ -68,7 +68,7 @@ function urlProbe(name) {
   const page = await ctx.newPage();
 
   const noRestore = [], audio = [], fonts = [], flat = [], drifted = [], errs = [];
-  const kept = [], notClimbing = [];
+  const kept = [], notClimbing = [], nameless = [];
   let probed = 0, resettable = 0, watched = 0;
 
   /*
@@ -199,6 +199,39 @@ function urlProbe(name) {
     const light = await shot('light'), dark = await shot('dark');
     if (light === dark) flat.push(name);
     await page.evaluate(() => window.Theme.set('auto'));
+
+    /*
+     * Everything a reader can operate has to have a name they can hear.
+     *
+     * Two did not, both on the pages that carry their own chrome: the quality
+     * select on blackhole and the time-rate slider on solarsystem, which a
+     * screen reader announced as an unnamed combo box and an unnamed slider.
+     * ssSpeedAria and ssPauseAria were in all three dictionaries already and
+     * wired to nothing — the strings were written and the attributes never
+     * added — so this is the check that would have said so.
+     */
+    const unnamed = await page.evaluate(() => {
+      const seen = (el) => (el.getAttribute('aria-label') || '').trim()
+        || (el.getAttribute('title') || '').trim()
+        || (document.getElementById(el.getAttribute('aria-labelledby') || '')?.textContent || '').trim()
+        || el.textContent.trim();
+      const bad = [];
+      for (const el of document.querySelectorAll('button, a[href], [role="tab"], [role="button"]')) {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        if (!seen(el)) bad.push(`${el.tagName.toLowerCase()}#${el.id || '?'} has no name`);
+      }
+      for (const el of document.querySelectorAll('input, select, textarea')) {
+        if (el.type === 'hidden') continue;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        const lab = (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`))
+          || el.closest('label') || el.getAttribute('aria-label') || el.getAttribute('aria-labelledby');
+        if (!lab) bad.push(`${el.tagName.toLowerCase()}#${el.id || '?'} has no label`);
+      }
+      return bad;
+    });
+    for (const u of unnamed) nameless.push(`${name} ${u}`);
   }
 
   chk(`every page loads (${PAGES.length} experiments)`, errs.length === 0, errs.slice(0, 3).join(' | '));
@@ -210,6 +243,8 @@ function urlProbe(name) {
       fonts.length === 0, fonts.slice(0, 4).join(', '));
   chk('every page repaints when the theme changes',
       flat.length === 0, flat.slice(0, 4).join(', '));
+  chk('every control a reader can operate has a name they can hear',
+      nameless.length === 0, nameless.slice(0, 5).join(' | '));
   chk(`and empties what the page had counted up — ${watched} tallies watched`,
       kept.length === 0, kept.slice(0, 4).join(' | '));
   chk('and every tally the pages are supposed to keep was climbing before it',

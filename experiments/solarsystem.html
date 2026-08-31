@@ -282,8 +282,10 @@
 
 <div class="dock">
   <div class="ctrl-row">
-    <button type="button" class="btn" id="pauseBtn">&#9208; Pause</button>
-    <input type="range" id="speed" min="0" max="100" value="50">
+    <button type="button" class="btn" id="pauseBtn"
+            aria-label="Pause" data-i18n-aria="ssPauseAria">&#9208; Pause</button>
+    <input type="range" id="speed" min="0" max="100" value="50"
+           aria-label="Time rate" data-i18n-aria="ssSpeedAria">
     <span id="spdLab">&times;1.0</span>
     <button type="button" class="btn" id="labelBtn" data-i18n="ssLabels">Labels</button>
     <button type="button" class="btn" id="resetBtn" data-i18n="ssOverview">Overview</button>
