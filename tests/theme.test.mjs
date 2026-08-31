@@ -260,11 +260,23 @@ for (const [mode, page] of [["light", "physics.html"], ["dark", "physics.html"],
 
   const worst = await p.evaluate(new Function(`${CONTRAST}
     const out = [];
-    // The chips and the description are spans and divs, so they need naming:
-    // a bare tag list walks straight past a pill whose whole job is colour.
-    const sel = 'h1,h2,h3,p,label,a,button,.num,.label,td,th,small,'
-      + '.tv-desc,.tv-cat,.method-tag,.method-verified';
-    for (const el of document.querySelectorAll(sel)) {
+    /*
+     * Everything that paints a text node, rather than a list of selectors.
+     *
+     * The list was 'h1,h2,h3,p,label,a,button,.num,.label,td,th,small,…' and
+     * it had a hole of exactly the shape the last one had: a control whose
+     * label is wrapped — <button><span data-i18n>Start</span></button>, which
+     * is what i18n does to almost every button — has no direct text node, so
+     * the button was skipped, and the span was not on the list. 134 controls
+     * of 405 were invisible to this check, among them every .mol-btn preset,
+     * every hub card and the theme button. The primary buttons' text sat at
+     * 3.01:1 in light mode and this file did not see it.
+     *
+     * Walking every element and keeping the ones that render a text node has
+     * no list to keep up to date.
+     */
+    for (const el of document.querySelectorAll('*')) {
+      if (el.closest('.sr-only, noscript')) continue;
       const st = getComputedStyle(el);
       if (st.display === 'none' || st.visibility === 'hidden' || !el.offsetParent) continue;
       // Only leaf-ish text, so a wrapper's colour is not judged against text
@@ -277,14 +289,16 @@ for (const [mode, page] of [["light", "physics.html"], ["dark", "physics.html"],
       // WCAG AA: 3.0 for large text (>=24px, or >=18.66px bold), else 4.5.
       const need = (size >= 24 || (bold && size >= 18.66)) ? 3.0 : 4.5;
       const r = ratio(el);
-      if (r < need) out.push({ tag: el.tagName, text: text.slice(0, 34), r: +r.toFixed(2), need });
+      if (r < need) out.push({ tag: el.tagName.toLowerCase()
+        + (el.className ? '.' + String(el.className).trim().split(/\s+/)[0] : ''),
+        text: text.slice(0, 34), r: +r.toFixed(2), need });
     }
     return out;`));
 
   chk(`${page} in ${mode}: every piece of text clears WCAG AA against what it sits on`,
       worst.length === 0,
       worst.length
-        ? worst.slice(0, 4).map((w) => `${w.tag} "${w.text}" ${w.r}:1 (needs ${w.need})`).join(" | ")
+        ? worst.slice(0, 6).map((w) => `${w.tag} "${w.text}" ${w.r}:1 (needs ${w.need})`).join(" | ")
         : "all pass");
   await ctx.close();
 }
