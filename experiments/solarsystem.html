@@ -93,7 +93,7 @@
   }
   .btn:active{transform:scale(.96)}
   .btn:focus-visible,.chip:focus-visible{outline:2px solid #8fb4ff;outline-offset:2px}
-  #speed{flex:1;min-width:60px;accent-color:#aab6dd;height:22px}
+  #speed{flex:1;min-width:60px;accent-color:#aab6dd;height:24px}
   #spdLab{font-family:var(--mono);font-size:12px;color:var(--dim);min-width:46px;text-align:right}
 
   .chip-rail{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
@@ -282,11 +282,13 @@
 
 <div class="dock">
   <div class="ctrl-row">
-    <button class="btn" id="pauseBtn">&#9208; Pause</button>
-    <input type="range" id="speed" min="0" max="100" value="50">
+    <button type="button" class="btn" id="pauseBtn"
+            aria-label="Pause" data-i18n-aria="ssPauseAria">&#9208; Pause</button>
+    <input type="range" id="speed" min="0" max="100" value="50"
+           aria-label="Time rate" data-i18n-aria="ssSpeedAria">
     <span id="spdLab">&times;1.0</span>
-    <button class="btn" id="labelBtn" data-i18n="ssLabels">Labels</button>
-    <button class="btn" id="resetBtn" data-i18n="ssOverview">Overview</button>
+    <button type="button" class="btn" id="labelBtn" data-i18n="ssLabels">Labels</button>
+    <button type="button" class="btn" id="resetBtn" data-i18n="ssOverview">Overview</button>
   </div>
   <div class="chip-rail" id="chips"></div>
 </div>
@@ -298,7 +300,7 @@
       <div class="eyebrow"><span data-i18n="ssCard">Observation Card</span> &middot; <span id="pEn">EARTH</span></div>
       <h2 id="pName">Earth</h2>
     </div>
-    <button class="btn" id="pClose" data-i18n="ssClose">Close &#10005;</button>
+    <button type="button" class="btn" id="pClose" data-i18n="ssClose">Close &#10005;</button>
   </div>
   <p class="p-desc" id="pDesc"></p>
   <dl class="grid" id="pGrid"></dl>

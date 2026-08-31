@@ -79,6 +79,15 @@
   --accent-glow: rgba(110, 168, 255, 0.42);
   --danger: #ff6b8a;
   --border: rgba(255, 255, 255, 0.10);
+  /* Text on a filled accent. The dark theme's accent is pale, so near-black
+     reads on it; the light theme's has to be deep enough to work as link text
+     on paper, and at that depth the fill wants white. Four places carry text
+     on an accent — the two active pills, the active molecule button, and every
+     primary button — and three of them had a hand-written light-theme
+     override while the fourth did not: "Start" was #0b1024 on #7530b8, 3.01:1
+     measured off the pixels, against a 4.5 requirement. A token cannot be
+     forgotten on one member of the set. */
+  --on-accent: #0b1024;
   /* The two spotlights the body plate is lit with. Liquid Glass needs
      something underneath to sample or the panes read as flat grey. */
   --spot-warm: rgba(255, 184, 107, 0.07);
@@ -154,6 +163,7 @@ body[data-theme="biology"] {
   --accent-glow: rgba(36, 92, 200, 0.26);
   --danger: #cf2f4c;
   --border: rgba(18, 24, 46, 0.12);
+  --on-accent: #ffffff;
   --spot-warm: rgba(255, 170, 80, 0.16);
   --spot-cool: rgba(90, 150, 255, 0.16);
 
@@ -248,12 +258,6 @@ body[data-theme="biology"] {
               inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* On a pale accent (dark theme) the filled pill carries near-black text. A
-   light theme's accent has to be deep enough to read as link text on paper,
-   and at that depth the pill wants white on it instead. */
-:root[data-theme-mode="light"] .lang-btn.active,
-:root[data-theme-mode="light"] .hub-tab.active,
-:root[data-theme-mode="light"] .hub-tab.active:hover { color: #fff; }
 
 /* ── Base helpers ───────────────────────────────────────────────────── */
 
@@ -316,19 +320,37 @@ body {
   }
 }
 
-:focus { outline: none; }
-/* `outline` follows the element's own border-radius on every modern
-   engine, so we don't pin a square 6px ring that would clip pill
-   buttons (.lang-btn / .hub-tab / .back-home / .crumbs a). */
-a:focus-visible,
-button:focus-visible,
-[role="tab"]:focus-visible,
-summary:focus-visible,
-input[type="range"]:focus-visible,
-input[type="text"]:focus-visible {
+/*
+ * The focus ring, given to everything that can hold focus.
+ *
+ * This used to be `:focus { outline: none }` followed by a list of six
+ * selectors that got a ring back — and anything not on the list was left with
+ * no indicator at all. Tabbing through all 46 pages found three kinds:
+ * twenty-one checkboxes, the two metal selects on redox, and the .stage on
+ * twenty-nine experiment pages, which Chromium puts in the tab order because
+ * it is a scroll container — and that stop earns its place: at 320px, 18 of
+ * the 42 stages really do overflow, because a canvas wider than a phone
+ * scrolls inside its stage rather than dragging the page sideways. Measured
+ * on cannon at 320px: Tab reaches the stage after eleven stops and two
+ * ArrowRights scroll it from 0 to 37. A keyboard reader had invisible stops
+ * on most of the site, and this was the one that could actually do something.
+ *
+ * Inverting it means the list cannot go stale: the browser's own ring is
+ * removed only where ours replaces it. `outline` follows the element's own
+ * border-radius on every modern engine, so this does not pin a square ring
+ * that would clip the pill buttons (.lang-btn / .hub-tab / .back-home /
+ * .crumbs a).
+ */
+:focus:not(:focus-visible) { outline: none; }
+
+:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* The stage is as wide as the column, so its ring goes inside rather than
+   drawing a box around the whole page's worth of picture. */
+.stage:focus-visible { outline-offset: -2px; }
 
 .container {
   max-width: var(--max-width);
@@ -375,7 +397,7 @@ input[type="text"]:focus-visible {
 .lang-btn.active {
   background: var(--accent);                                    /* fallback for browsers without color-mix() */
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white) 0%, var(--accent) 100%);
-  color: #0b1024;
+  color: var(--on-accent);
   border-color: rgba(255, 255, 255, 0.30);
   box-shadow: var(--glass-spec), 0 8px 20px var(--accent-glow);
 }
@@ -459,7 +481,7 @@ input[type="text"]:focus-visible {
 .molecule-list .mol-btn.active {
   background: var(--accent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent));
-  color: #0b1024;
+  color: var(--on-accent);
   border-color: rgba(255, 255, 255, 0.30);
   box-shadow: var(--glass-spec), 0 6px 18px var(--accent-glow);
 }
@@ -469,7 +491,6 @@ input[type="text"]:focus-visible {
 /* The active chip is the accent, and light mode's accent is a deep blue, so
    the near-black label on it came in at 2.7:1. Same inversion the language
    pills already make. */
-:root[data-theme-mode="light"] .molecule-list .mol-btn.active { color: #fff; }
 :root[data-theme-mode="light"] .molecule-list .mol-btn.active small { color: rgba(255, 255, 255, 0.94); }
 
 .property-list { margin-top: 1rem; display: grid; gap: 0.45rem; }
@@ -634,7 +655,13 @@ body:not([data-theme]) header.site-header h1::after {
 
 body:not([data-theme]) header.site-header p {
   font-size: clamp(1rem, 0.6vw + 0.85rem, 1.2rem);
-  color: #b8c2db;
+  /* Was #b8c2db, a dark-theme grey nailed down where the ground is not.
+     This rule reaches 404.html and offline.html, the two pages with a hero
+     header and no data-theme on the body, and both carry the theme toggle —
+     so in light mode the subtitle was pale grey on near-white. Measured off
+     the rendered pixels: 1.62:1 against a 4.5 requirement, where the same
+     text in dark reads 11.12:1. --muted is 5.21:1 light and 7.25:1 dark. */
+  color: var(--muted);
   margin-top: 1.2rem;
 }
 
@@ -718,7 +745,7 @@ body:not([data-theme]) header.site-header p {
 .hub-tab.active {
   background: var(--accent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 90%, white), var(--accent));
-  color: #0b1024;
+  color: var(--on-accent);
   box-shadow: var(--glass-spec), 0 6px 18px var(--accent-glow);
 }
 
@@ -1175,7 +1202,22 @@ body:not([data-theme]) header.site-header p {
   grid-column: 1 / 3;
   width: 100%;
   accent-color: var(--accent);
-  height: 4px;
+  /*
+   * 24px is the target, not the track. The track is still the thin line the
+   * browser draws — `appearance` stays `auto`, so `accent-color` still paints
+   * it and the thumb is the platform's — but the box it lives in was 4px
+   * tall, and the box is what a finger has to hit.
+   *
+   * Measured rather than assumed: clicking at each vertical offset from the
+   * track centre and watching for the value to move, the real hit height was
+   * 16px (the UA thumb overhangs the 4px box by six either side). WCAG 2.5.8
+   * asks for 24, and the hit height follows the box exactly once the box is
+   * larger than the thumb — 20px box, 20px hit; 24px box, 24px hit.
+   *
+   * It costs 20px of panel height per slider, and there are 158 of them. That
+   * is the price of the site's controls being usable on a phone at all.
+   */
+  height: 24px;
 }
 
 /* Text inputs (e.g. DNA sequence) — glass field */
@@ -1204,7 +1246,7 @@ button {
   position: relative;
   background: var(--accent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 90%, white) 0%, var(--accent) 100%);
-  color: #0b1024;
+  color: var(--on-accent);
   border: 1px solid rgba(255, 255, 255, 0.30);
   border-radius: 10px;
   padding: 0.62rem 0.9rem;

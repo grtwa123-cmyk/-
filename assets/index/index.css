@@ -63,7 +63,13 @@
   --ink-2: #d9d6cc;
   --ink-3: #b9b8c0;
   --ink-4: #86858f;
-  --ink-5: #6f6e78;
+  /* --ink-5 is the count badge on the legend and nothing else. It sits on
+     --fill-2, not on the page, and at #6f6e78 that came to 3.47:1 against
+     WCAG AA's 4.5 for text this size. #8a8994 is 5.06:1 on the same ground.
+     The light value below had the same problem — 3.53:1 — for the same
+     reason: both were picked against the page rather than against the pill
+     they are actually drawn in. */
+  --ink-5: #8a8994;
   --on-ink: #0a0a0d;
   --hair: rgba(255, 255, 255, 0.10);
   --hair-strong: rgba(255, 255, 255, 0.18);
@@ -96,7 +102,7 @@
      and filter counts came in at 4.2:1 against the page, under WCAG AA's 4.5
      for body-sized text. tests/theme.test.mjs computes that ratio. */
   --ink-4: #5b6480;
-  --ink-5: #6d7694;
+  --ink-5: #545c78;
   --on-ink: #f4f6fc;
   --hair: rgba(18, 24, 46, 0.12);
   --hair-strong: rgba(18, 24, 46, 0.20);
@@ -196,7 +202,9 @@ canvas { display: block; }
 /* The brand mark stays as plain editorial text (no chrome), so the
    wall feels like the hero. */
 .mark { font-size: 13px; font-weight: 700; letter-spacing: 0.22em; color: var(--ink); }
-.sub  { font-size: 9px; color: #8a8a93; letter-spacing: 0.24em; text-transform: uppercase; }
+/* #8a8a93 here was a dark-theme grey nailed down on a ground that flips:
+   5.84:1 on the dark page and 3.03:1 on the light one. --ink-4 is 5.49 / 5.19. */
+.sub  { font-size: 9px; color: var(--ink-4); letter-spacing: 0.24em; text-transform: uppercase; }
 
 /* Tagline gets a faint glass strip — readable above busy parts of the
    scene without competing with the brand. */
