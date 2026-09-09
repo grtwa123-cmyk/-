@@ -92,11 +92,27 @@ function apply() {
 
 if (switcher) {
   switcher.querySelectorAll("[data-ui]").forEach((b) => {
-    b.addEventListener("click", () => {
+    b.addEventListener("click", (ev) => {
       const next = b.dataset.ui;
       if (next === mode) return;
       mode = next;
-      write(mode);
+      /*
+       * Only a real click is a choice.
+       *
+       * index.html gives up on the wall after eight seconds and recovers by
+       * calling .click() on the table button — which came through here and
+       * was written down as the reader's preference. One slow load, one
+       * captive portal, one CDN hiccup, and the wall was off permanently:
+       * the stored choice outlived the outage that caused it, and the next
+       * visit went straight to the table with the network working perfectly.
+       * Reproduced by loading once with the CDN unreachable and again with
+       * it reachable — the second visit still showed the table.
+       *
+       * isTrusted is exactly this distinction: true for a person, false for
+       * element.click(). The fallback still switches the view, it just does
+       * not claim the reader asked for it.
+       */
+      if (ev.isTrusted) write(mode);
       const note = document.getElementById("uiFallbackNote");
       if (note) note.hidden = true;
       // The wall builds a scene graph and installs global listeners at import

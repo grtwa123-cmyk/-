@@ -117,7 +117,62 @@ const B = url('index.html');
     stuck: /Building the wall/.test(document.body.innerText) }));
   chk('CDN blocked: lands on the full table, not a dead spinner',
       st.tableShown && st.rows===TOTAL && !st.stuck, JSON.stringify(st));
+
   await p.close();
+}
+
+// ── 4b. A CDN that HANGS, which is the one that used to stick ─────────────
+/*
+ * Aborting is the easy half. A refused request rejects the script's onerror
+ * straight away, boot.js catches it, and its own recovery does not write
+ * anything down — so a test that aborts cannot see this defect at all, and
+ * one written that way passed against the bug.
+ *
+ * A captive portal, a throttled tunnel or a proxy holding the connection does
+ * not refuse: it hangs. Then nothing rejects, and the eight-second timeout in
+ * index.html wins the race — and it recovers by calling .click() on the table
+ * button, which ran the same handler a person's click runs and wrote "table"
+ * into localStorage. One slow load and the wall was off for good: the stored
+ * choice outlived the outage that caused it, so the next visit went straight
+ * to the table with the network working perfectly.
+ *
+ * `ev.isTrusted` separates a person from element.click(). The fallback still
+ * switches the view; it just no longer claims the reader asked for it.
+ */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const p = await ctx.newPage();
+  const hang = () => new Promise(() => {});          // never fulfils, never aborts
+  await p.route('**/cdnjs.cloudflare.com/**', hang);
+  await p.route('**/cdn.jsdelivr.net/**', hang);
+  await p.goto(B, { waitUntil: 'domcontentloaded' });
+  await p.waitForTimeout(11000);
+  const stalled = await p.evaluate(() => ({
+    table: !document.getElementById('tableView').hidden,
+    saved: (() => { try { return localStorage.getItem('ui-mode'); } catch (e) { return 'unreadable'; } })(),
+  }));
+  chk('a CDN that hangs still lands on the table, and is not remembered as a choice',
+      stalled.table && stalled.saved === null,
+      `table=${stalled.table}, ui-mode=${JSON.stringify(stalled.saved)}`);
+  const blocked = stalled.table;
+
+  // The network is fine again. Same profile, same storage, just a reload.
+  await p.unroute('**/cdnjs.cloudflare.com/**', hang);
+  await p.unroute('**/cdn.jsdelivr.net/**', hang);
+  await installCdnCache(p);
+  await p.goto(B, { waitUntil: 'domcontentloaded' });
+  await p.waitForFunction(() => document.querySelectorAll('#scene canvas').length > 0,
+                          null, { timeout: 30000 }).catch(() => {});
+  const back = await p.evaluate(() => ({
+    wall: !document.getElementById('scene').hidden,
+    canvas: document.querySelectorAll('#scene canvas').length,
+    saved: (() => { try { return localStorage.getItem('ui-mode'); } catch (e) { return 'unreadable'; } })(),
+  }));
+  chk('one unreachable visit does not turn the wall off for good',
+      blocked && back.wall && back.canvas > 0 && back.saved === null,
+      `blocked→table ${blocked}, then wall=${back.wall} canvas=${back.canvas} `
+      + `ui-mode=${JSON.stringify(back.saved)}`);
+  await ctx.close();
 }
 
 // ── 5. i18n + keyboard + mobile ───────────────────────────────────────

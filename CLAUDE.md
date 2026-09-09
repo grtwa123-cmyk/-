@@ -327,6 +327,26 @@ averaged in as epidemics. Every `if (…) keep` in a test is an assertion about
 the mechanism and should be written as one: the sweep now fails unless nine
 of every ten runs took off.
 
+**An automatic recovery is not a preference.** `index.html` gives up on the
+3D wall after eight seconds and recovers by calling `.click()` on the table
+button — which ran the same handler a person's click runs and wrote "table"
+into `localStorage`. One slow load and the wall was off permanently: the
+stored choice outlived the outage that caused it, and the next visit went
+straight to the table with the network working perfectly. `ev.isTrusted` is
+exactly this distinction — true for a person, false for `element.click()` —
+and Playwright's own clicks are trusted, so tests still exercise the real
+path. Wherever a fallback drives the UI through the same code a reader does,
+ask what it writes down.
+
+**A blocked request and a hanging one are different failures, and a test that
+aborts cannot see the second.** `route.abort()` rejects the script's `onerror`
+at once, so `boot.js`'s own catch runs — and that path never persisted
+anything, so the check passed against the bug. A captive portal or a throttled
+tunnel does not refuse, it hangs; then nothing rejects, and the eight-second
+timeout wins the race. `route(() => new Promise(() => {}))` reproduces it. If
+a defect only shows on real network trouble and not under `abort()`, this is
+why.
+
 **Known flake, do not chase:** `kinetics` fails about 1.24% of runs by
 construction. Four hypotheses were tested and all four killed by
 measurement; the bounds cannot be widened without losing the defect they
