@@ -440,8 +440,15 @@
    * separately, from the reactivity, so the two can be put side by side.
    */
   const LN_WINDOW = 30;      // s of plant time
+  const LN_EVERY = LN_WINDOW / 40;
   function recordFlux(s) {
     if (s.n <= 0) return;
+    /* At a fixed interval of PLANT time, not of frames. Sampling once per
+       n substeps gave forty points in the window at the default speed and
+       two at the top of the slider, where the fit then refused to report —
+       the period would quietly stop existing as you sped the plant up. */
+    const last = s.lnHist.length ? s.lnHist[s.lnHist.length - 1].t : -Infinity;
+    if (s.t - last < LN_EVERY && s.lnHist.length) return;
     s.lnHist.push({ t: s.t, ln: Math.log(s.n) });
     while (s.lnHist.length > 1 && s.t - s.lnHist[0].t > LN_WINDOW) s.lnHist.shift();
   }
@@ -486,7 +493,21 @@
   const wayWigner = (t) => 0.066 * Math.pow(Math.max(t, 1e-6), -0.2);
 
   // ── Drawing ───────────────────────────────────────────────────────────
-  const W = canvas.width, H = canvas.height;
+  /*
+   * The drawing's own coordinate space, fixed; the backing store is this
+   * times the display's pixel ratio. Every stage on the site does the same,
+   * and a canvas left at its markup size hands the compositor 860 px to
+   * stretch over 1316 on a 2× display — soft, and the sweep says so.
+   */
+  const W = 860, H = 440;
+  function fitCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(W * dpr), h = Math.round(H * dpr);
+    if (canvas.width === w && canvas.height === h) return;
+    canvas.width = w;
+    canvas.height = h;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
   const VX = 24, VW = 250;                     // vessel panel
   const CX = VX + VW + 34, CW = W - CX - 18;   // chart panel
 
@@ -739,6 +760,7 @@
   }
 
   function draw() {
+    fitCanvas();
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, "#0a0f1e");
     g.addColorStop(1, "#120e1c");
@@ -821,7 +843,7 @@
     const u = readParams();
     for (let k = 0; k < sub; k++) {
       step(st, DT, u);
-      if (k % Math.max(1, Math.round(sub / 6)) === 0) recordFlux(st);
+      recordFlux(st);
     }
     record(st);
   }
