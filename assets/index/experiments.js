@@ -70,4 +70,5 @@ export const EXPERIMENTS = Object.freeze([
   { titleKey: "eqTitle",          url: "experiments/equilibrium.html",   cat: "Chemistry", tags: ["EQUILIBRIUM", "SHIFT"], colors: ["#08130f", "#6fbf8a"], method: "measured", verified: true, motif: "equilibrium" },
   { titleKey: "swTitle",          url: "experiments/string.html",        cat: "Physics",   tags: ["WAVES", "HARMONICS"],   colors: ["#080e1a", "#7ad9ee"], method: "measured", verified: true, motif: "standing" },
   { titleKey: "mdTitle",          url: "experiments/phases.html",        cat: "Chemistry", tags: ["PHASE", "DYNAMICS"],    colors: ["#120d06", "#f0b060"], method: "measured", verified: true, motif: "phases" },
+  { titleKey: "reactorTitle",    url: "experiments/reactor.html",       cat: "Physics",   tags: ["FISSION", "MELTDOWN"],  colors: ["#0e1526", "#ffd166"], method: "measured", verified: true, motif: "reactor" },
 ]);

@@ -648,6 +648,37 @@ const RENDERERS = {
     p.dot(s * 1.3, 0, s * 0.11);
   },
 
+  // Reactor: the vessel in cutaway — control rods dropped through the head,
+  // the fuel band they pass into, and the water line falling past its top.
+  reactor(p, s, ctx) {
+    const w = s * 0.92, top = -s * 1.08, bot = s * 1.05;
+    ctx.beginPath();
+    ctx.moveTo(-w, top + s * 0.3);
+    ctx.quadraticCurveTo(-w, top, -w + s * 0.3, top);
+    ctx.lineTo(w - s * 0.3, top);
+    ctx.quadraticCurveTo(w, top, w, top + s * 0.3);
+    ctx.lineTo(w, bot - s * 0.34);
+    ctx.quadraticCurveTo(w, bot, w - s * 0.34, bot);
+    ctx.lineTo(-w + s * 0.34, bot);
+    ctx.quadraticCurveTo(-w, bot, -w, bot - s * 0.34);
+    ctx.closePath();
+    ctx.stroke();
+    for (let i = 0; i < 5; i++) {                       // fuel assemblies
+      const x = -s * 0.62 + i * s * 0.31;
+      p.line(x, -s * 0.18, x, s * 0.66);
+    }
+    for (let i = 0; i < 3; i++) {                       // control rods
+      const x = -s * 0.46 + i * s * 0.46;
+      p.line(x, top - s * 0.22, x, -s * 0.34);
+    }
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    p.line(-w, -s * 0.44, w, -s * 0.44);                // the water line
+    ctx.restore();
+    ctx.setLineDash([]);
+    p.dot(0, s * 0.24, s * 0.16);                       // the hot spot
+  },
+
   phases(p, s, ctx) {
     // Ordered on the left, disordered on the right: the same particles, and
     // the only difference between the two halves is temperature.

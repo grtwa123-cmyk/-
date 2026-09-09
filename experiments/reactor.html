@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0f1e" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f4f6fc" media="(prefers-color-scheme: light)" />
+  <meta name="description" content="A PWR run from its own mechanism: six delayed-neutron groups, Doppler and moderator feedback, thirteen decay-heat groups, xenon, and zircaloy oxidation — pull the pumps and watch the core boil dry, burst and melt." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Nuclear Reactor — From Criticality to Meltdown · Physics" />
+  <meta property="og:description" content="A PWR run from its own mechanism: six delayed-neutron groups, Doppler and moderator feedback, thirteen decay-heat groups, xenon, and zircaloy oxidation — pull the pumps and watch the core boil dry, burst and melt." />
+  <meta property="og:url" content="https://grtwa123-cmyk.github.io/-/experiments/reactor.html" />
+  <meta property="og:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:image" content="https://grtwa123-cmyk.github.io/-/assets/og-cover.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='12' fill='%230b0f1e'/&gt;&lt;circle cx='32' cy='32' r='6' fill='%23ffd166'/&gt;&lt;g fill='none' stroke='%23ff9b6b' stroke-width='3'&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='9'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='9' transform='rotate(60 32 32)'/&gt;&lt;ellipse cx='32' cy='32' rx='22' ry='9' transform='rotate(120 32 32)'/&gt;&lt;/g&gt;&lt;/svg&gt;" />
+  <title data-i18n="nrPageTitle">Nuclear Reactor · Physics</title>
+  <!-- Blocking on purpose: this stamps the theme on <html> before the
+       first paint, so navigating never flashes the wrong one. -->
+  <script src="../assets/theme.js"></script>
+  <script src="../assets/offline.js" defer></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body data-theme="physics">
+  <div class="container">
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">English</button>
+      <button type="button" class="lang-btn" data-lang="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="lang-btn" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+
+    <div class="crumbs">
+      <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
+      <span><span class="crumb-label" data-i18n="nrCrumb">Physics · Nuclear Reactor</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+    </div>
+
+    <header class="site-header">
+      <h1 data-i18n="nrTitle">Nuclear Reactor — From Criticality to Meltdown</h1>
+      <p data-i18n="nrIntro">A 3000 MW pressurised-water core, run from the mechanism rather than from a script. Neutrons multiply and decay with their six delayed groups, the fuel and the water push back on the reactivity as they heat, fission products keep the core warm long after the rods are in, and hot zircaloy burns in steam. Take the pumps away and none of it has to be told what to do next.</p>
+    </header>
+
+    <main class="experiment">
+  <noscript>
+    <p class="noscript-note">This experiment is computed in your browser, so with
+      JavaScript switched off the stage stays blank and the controls do nothing. The
+      description and the notes below are still here to read, and
+      <a href="../index.html">the rest of the site</a> lists the other experiments.</p>
+  </noscript>
+      <section class="panel" aria-label="Controls">
+        <h2 data-i18n="controls">Controls</h2>
+
+        <div class="control">
+          <label for="rod" data-i18n="nrRodLabel">Control rod reactivity (pcm)</label>
+          <span class="value"><span id="rod-value">0</span></span>
+          <input type="range" id="rod" min="-800" max="300" step="10" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="feed" data-i18n="nrFeedLabel">Steam generator heat sink (%)</label>
+          <span class="value"><span id="feed-value">100</span></span>
+          <input type="range" id="feed" min="0" max="100" step="5" value="100" />
+        </div>
+
+        <div class="control">
+          <label for="eccs" data-i18n="nrEccsLabel">Emergency injection (kg/s)</label>
+          <span class="value"><span id="eccs-value">0</span></span>
+          <input type="range" id="eccs" min="0" max="60" step="2" value="0" />
+        </div>
+
+        <div class="control">
+          <label for="speed" data-i18n="nrSpeedLabel">Plant steps per frame</label>
+          <span class="value"><span id="speed-value">20</span></span>
+          <input type="range" id="speed" min="1" max="2000" step="1" value="20" />
+        </div>
+
+        <div class="buttons">
+          <button id="start-btn" type="button" data-i18n="startBtn">Start</button>
+          <button id="scram-btn" type="button" class="secondary" data-i18n="nrScramBtn">Scram</button>
+          <button id="sbo-btn" type="button" class="secondary" data-i18n="nrSboBtn">Station blackout</button>
+          <button id="reset-btn" type="button" class="secondary" data-i18n="resetBtn">Reset</button>
+          <button id="csv-btn" type="button" class="secondary" data-i18n="csvExportBtn">Export CSV</button>
+        </div>
+
+        <details class="formulas">
+          <summary data-i18n="formulas">Formulas</summary>
+          <ul>
+            <li><span data-i18n="nrFormulaPK">Point kinetics</span>: <code>dn/dt = (ρ − β)/Λ · n + Σ λᵢcᵢ</code></li>
+            <li><span data-i18n="nrFormulaInhour">Inhour equation</span>: <code>ρ = ωΛ + Σ βᵢω/(ω + λᵢ)</code></li>
+            <li><span data-i18n="nrFormulaJump">Prompt jump</span>: <code>n → β/(β − ρ)</code></li>
+            <li><span data-i18n="nrFormulaFeedback">Feedback</span>: <code>ρ = ρ_rod + α_F ΔT_F + α_M ΔT_C</code></li>
+            <li><span data-i18n="nrFormulaDecay">Decay heat</span>: <code>P/P₀ = 0.066 · t^(−0.2)</code></li>
+            <li><span data-i18n="nrFormulaBJ">Zircaloy oxidation</span>: <code>w² = A·e^(−B/RT)·t</code></li>
+            <li><span data-i18n="nrFormulaH2">Hydrogen</span>: <code>Zr + 2H₂O → ZrO₂ + 2H₂</code></li>
+          </ul>
+        </details>
+
+        <details class="formulas" open>
+          <summary data-i18n="nrNotes">Notes</summary>
+          <ul>
+            <li data-i18n="nrNote1">The period on the panel is measured, not looked up: a straight line is fitted through ln n over the last half-minute of plant time and inverted. The inhour equation is solved separately, from the reactivity the core happens to have, and the two are printed side by side so you can watch them agree.</li>
+            <li data-i18n="nrNote2">Pull a little reactivity in and the power jumps almost at once, then climbs slowly. The jump is the prompt neutrons, which live twenty microseconds; the climb waits on the delayed ones, which are six tenths of a percent of the total and take up to eighty seconds to appear. Those six tenths of a percent are the entire reason a reactor can be controlled by hand.</li>
+            <li data-i18n="nrNote3">The core corrects itself. Hotter fuel broadens the U-238 resonances and absorbs more neutrons; hotter water is thinner and moderates worse. Both are negative, so a rod step settles at a new power where the temperature rise has cancelled it exactly — no controller involved.</li>
+            <li data-i18n="nrNote4">A scram does not switch the heat off. Thirteen groups of fission products keep decaying, and their heat is integrated here rather than looked up — an hour after shutdown the core is still making about 1% of rated power, which for this plant is thirty megawatts with nowhere to go.</li>
+            <li data-i18n="nrNote5">Take the heat sink away and that thirty megawatts boils the primary inventory. The level falls, the top of the core comes out of the water, and bare rods in steam are cooled about five thousand times worse than rods under boiling water. Above 1100 K the zircaloy starts burning in the steam, which releases more heat than the decay does and produces hydrogen — the runaway that makes a meltdown a meltdown rather than a slow overheat.</li>
+            <li data-i18n="nrNote6">Two thermal zones, not one: the part of the core under water and the part standing in steam, each with its own fuel and cladding temperature, and a boundary that moves with the level. Within a zone it is still one temperature — there is no hot channel and no axial profile. That is enough to get the shape right. With no cooling at all this core reaches saturation at nine minutes, starts uncovering at fifty, bursts its cladding at eighty-three, melts at a hundred and six and drops the lower head at two hours; Three Mile Island did the same things in the same order, and stopped where this one does not because water came back.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="stage" aria-label="Visualisation">
+        <canvas id="stage" width="860" height="440" aria-label="A cutaway of the reactor vessel showing the water level, the fuel rods coloured by temperature and the control rods, beside charts of power, temperature and reactivity against time"></canvas>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="label" data-i18n="nrOutPower">Fission power</div>
+            <div class="num" id="out-power">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutDecay">Decay heat / Way–Wigner</div>
+            <div class="num"><span id="out-decay">—</span> / <span id="out-decay-ww">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutPeriod">Period, measured / inhour</div>
+            <div class="num"><span id="out-period">—</span> / <span id="out-period-theory">—</span></div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutRho">Reactivity</div>
+            <div class="num" id="out-rho">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutParts">Rod / Doppler / moderator / xenon</div>
+            <div class="num" id="out-rho-parts">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutTf">Peak fuel temperature</div>
+            <div class="num" id="out-tf">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutTl">Peak cladding temperature</div>
+            <div class="num" id="out-tl">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutTc">Coolant temperature</div>
+            <div class="num" id="out-tc">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutTs">Lower head temperature</div>
+            <div class="num" id="out-ts">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutLevel">Water inventory</div>
+            <div class="num" id="out-level">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutOx">Cladding oxidised</div>
+            <div class="num" id="out-ox">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutH2">Hydrogen produced</div>
+            <div class="num" id="out-h2">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutXe">Xe-135 worth</div>
+            <div class="num" id="out-xe">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutState">Condition</div>
+            <div class="num" id="out-state">—</div>
+          </div>
+          <div class="readout">
+            <div class="label" data-i18n="nrOutClock">Plant time</div>
+            <div class="num" id="out-clock">0.0 s</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../i18n.js" defer></script>
+  <script src="../assets/sfx.js" defer></script>
+  <script src="../assets/csv.js" defer></script>
+  <script src="../assets/reset-defaults.js" defer></script>
+  <script src="../assets/url-state.js" defer></script>
+  <script src="../assets/reduced-motion.js" defer></script>
+  <script src="../assets/quality.js" defer></script>
+  <script src="reactor.js" defer></script>
+</body>
+</html>

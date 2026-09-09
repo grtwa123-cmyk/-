@@ -33,6 +33,8 @@ window.i18nRegister("en", {
   "physicsHubTitle": "Physics",
   "projectileDesc": "Newton’s second law with quadratic air drag, integrated with RK4. Range and apex are measured off the flight, not read from a formula — with no air they land on v₀²sin2θ/g to one part in 10¹³. Sweep the angle and the best one comes out 45° in vacuum and slides below it as the air thickens.",
   "projectileTitle": "Projectile Motion",
+  "reactorDesc": "Six delayed-neutron groups, Doppler and moderator feedback, thirteen decay-heat groups and zircaloy oxidation: the period matches the inhour equation, and pulling the pumps boils the core dry.",
+  "reactorTitle": "Nuclear Reactor — Criticality to Meltdown",
   "refractionDesc": "Grow Huygens wavelets from the interface, search for the line they are all tangent to, and read Snell’s law off the result.",
   "refractionTitle": "Refraction & Total Internal Reflection",
   "resDesc": "Drive a damped oscillator and sweep the frequency. The mass is integrated from its equation of motion, and the amplitude it settles at is measured back out of the motion and checked against the closed form.",
