@@ -1,7 +1,7 @@
 # What's next
 
-The catalogue is 42 experiments, every one of them `verified`: 20 physics,
-12 chemistry, 10 biology. 56 test suites, 1590-odd checks. The asymmetry this
+The catalogue is 43 experiments, every one of them `verified`: 21 physics,
+12 chemistry, 10 biology. 57 test suites, 1630-odd checks. The asymmetry this
 plan was about — biology at seven against physics at twenty — is closed. All
 three items are built. What is left is in §3.
 
@@ -259,7 +259,7 @@ nobody has to measure them again to decide they are fine.
   does. Either the badge earns a second page or it should be folded into
   `measured` — a badge with one member is a footnote, not a category. This is
   now the oldest item on the list.
-- **Physics is 20 of 42.** Not a problem to fix by adding, and with biology
+- **Physics is 21 of 43.** Not a problem to fix by adding, and with biology
   caught up there is no case for adding to it soon.
 - **A theme worth pulling on across the catalogue.** Three pages in a row
   turned on the same thing: a textbook law is a limit, and the page is running
