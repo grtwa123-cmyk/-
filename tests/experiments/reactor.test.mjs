@@ -291,45 +291,67 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
 
 // ── The first law, over the whole accident ────────────────────────────
 /*
- * Fission plus decay plus oxidation goes in; internal energy, latent heat of
- * melting, and the enthalpy carried off as steam come out. Nothing else. The
- * audit runs to the moment the vessel fails, because past that the model has
- * withdrawn and holds its thermal state on purpose.
+ * Fission plus decay plus oxidation goes in, with the enthalpy of any water
+ * injected; internal energy, latent heat of melting, the enthalpy carried off
+ * as steam and the heat the steam generator takes come out. Nothing else.
+ * Every node is in the sum — both zones of standing rods, the pool in the
+ * lower head, the coolant, the head — and every path a reader can take,
+ * because the leaks this found were all on paths the plain blackout never
+ * walks:
  *
- * This is the check that found two real defects: the lower head was heating
- * on energy the coolant never gave up (2% of the accident), and clamping the
- * coolant to saturation was throwing the overshoot away.
+ *   - the lower head heating on energy the coolant never gave up (2% of the
+ *     accident, found by the first version of this check);
+ *   - a dry vessel: the standing rods went on "losing" heat to a coolant
+ *     with no mass, and the boil-off clamp threw it away (3 MW);
+ *   - a trickle of injection: each step's kilogram of water was credited
+ *     with boiling off far more heat than it can carry (20 MW).
+ *
+ * Each run stops at the breach, past which the model holds its thermal state
+ * on purpose.
  */
 {
   const rows = await page.evaluate(() => {
     const R = window.__reactor, K = R.K;
+    const CC = K.C_F + K.C_L;
+    const U = (s) => {
+      const wI = s.fuelIn * s.cover, dI = s.fuelIn * (1 - s.cover);
+      const rods = (z, m) => m * (K.C_F * (z.TF - K.TF0) + K.C_L * (z.TL - K.TL0)
+                                  + z.f * K.M_UO2 * K.H_FUS);
+      return rods(s.z.w, wI) + rods(s.z.d, dI)
+           + s.cor.mass * (K.C_F * (s.cor.T - K.TF0) + K.C_L * (s.cor.T - K.TL0)
+                           + s.cor.f * K.M_UO2 * K.H_FUS)
+           + s.m * K.CP_H2O * (s.TC - K.TC0) + K.C_S * (s.TS - K.TC0);
+    };
+    const paths = {
+      'blackout':              () => ({ feed: 0, eccs: 0 }),
+      'injection at 90 min':   (t) => ({ feed: 0, eccs: t > 5400 ? 60 : 0 }),
+      'injection 90→110 min':  (t) => ({ feed: 0, eccs: t > 5400 && t < 6600 ? 60 : 0 }),
+      'feed back at 90 min':   (t) => ({ feed: t > 5400 ? 1 : 0, eccs: 0 }),
+      'a 20 kg/s trickle':     () => ({ feed: 0, eccs: 20 }),
+    };
     const out = [];
-    for (const T of [1200, 2400, 3600, 5400, 7000]) {
+    for (const [name, ctl] of Object.entries(paths)) {
       const s = R.fresh();
       s.scram = true; s.tScram = 0;
-      const dt = 0.05, u = { rod: 0, feed: 0, eccs: 0 };
-      let Ein = 0, boiled = 0, steps = 0;
-      for (let k = 0; k < Math.round(T / dt) && !s.breach; k++) {
-        const before = s.m;
-        R.step(s, dt, u);
+      const dt = 0.05, U0 = U(s);
+      let Ein = 0, Eout = 0;
+      for (let k = 0; k < 6 * 3600 / dt && !s.breach; k++) {
+        const m0 = s.m, c = ctl(s.t);
+        R.step(s, dt, { rod: 0, ...c });
         Ein += (s.pFis + s.pDec + s.pOx) * dt;
-        boiled += before - s.m;
-        steps++;
+        Eout += s.steam * dt * (K.HFG + K.CP_H2O * (K.TSAT - K.TC0)) + s.qSG * dt;
+        const injected = s.m - (m0 - s.steam * dt);   // arrives at the coolant temperature
+        if (injected > 0) Ein += injected * K.CP_H2O * (s.TC - K.TC0);
       }
-      const c = s.cover;
-      const U = c * K.C_F * (s.z.w.TF - K.TF0) + (1 - c) * K.C_F * (s.z.d.TF - K.TF0)
-              + c * K.C_L * (s.z.w.TL - K.TL0) + (1 - c) * K.C_L * (s.z.d.TL - K.TL0)
-              + (c * s.z.w.f + (1 - c) * s.z.d.f) * K.M_UO2 * K.H_FUS
-              + s.m * K.CP_H2O * (s.TC - K.TC0) + K.C_S * (s.TS - K.TC0);
-      const steam = boiled * (K.HFG + K.CP_H2O * (K.TSAT - K.TC0));
-      out.push({ T, t: steps * dt, Ein, err: (Ein - U - steam) / Ein });
+      out.push({ name, t: s.t, Ein, err: (Ein - (U(s) - U0) - Eout) / Ein,
+                 reloc: s.cor.mass, breach: s.breach });
     }
     return out;
   });
   const worst = Math.max(...rows.map((r) => Math.abs(r.err)));
-  chk('the first law closes over the whole accident, to a part in 10⁴',
+  chk(`the first law closes on ${rows.length} paths through the accident, to a part in 10⁴`,
       worst < 1e-4,
-      rows.map((r) => `${(r.t / 60).toFixed(0)}min: ${(r.Ein / 1e9).toFixed(1)}GJ in, ${(1e6 * r.err).toFixed(2)} ppm out`).join(', '));
+      rows.map((r) => `${r.name} (${(r.t / 60).toFixed(0)} min): ${(1e6 * r.err).toFixed(1)} ppm`).join(', '));
 }
 
 // ── Station blackout: the sequence, and what it makes ──────────────────
@@ -337,10 +359,8 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
   const r = await page.evaluate(() => {
     const R = window.__reactor, K = R.K;
     const { s } = R.run({ T: 12000, dt: 0.05, scram: true, feed: 0, eccs: 0 });
-    return { marks: s.marks, h2: s.h2, W: s.W, W_FULL: K.W_FULL,
-             zr: s.W * 1e-6 * K.ZR_AREA, ratio: s.h2 / (s.W * 1e-6 * K.ZR_AREA),
-             expect: K.H2_PER_ZR, melted: s.melted, breach: s.breach, TS: s.TS,
-             headE: K.C_S * (K.T_VESSEL - K.TC0) };
+    return { marks: s.marks, h2: s.h2, zr: s.zr, ratio: s.h2 / s.zr,
+             breach: s.breach, TS: s.TS, m: s.m, ox: s.zr / K.M_ZR };
   });
   const M = r.marks;
   const order = ['sat', 'uncover', 'burst', 'bare', 'zr', 'melt', 'relocate', 'breach'];
@@ -376,9 +396,27 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
       Math.abs(r.ratio / STOICH - 1) < 0.005,
       `${r.h2.toFixed(1)} kg from ${r.zr.toFixed(0)} kg Zr — ratio ${r.ratio.toFixed(6)} `
       + `against ${STOICH.toFixed(6)}`);
-  chk('the vessel fails once its lower head has absorbed C_S·ΔT of heat',
-      r.breach && Math.abs(r.TS - 1700) < 1,
-      `head at ${r.TS.toFixed(1)} K, ${(r.headE / 1e9).toFixed(1)} GJ`);
+  /*
+   * The vessel fails at 1700 K and only once the water has gone. The head
+   * used to stop exchanging heat with the water the moment corium landed on
+   * it, so it failed with ten tonnes still in the vessel — and turning the
+   * injection back on made no difference to when.
+   */
+  chk('the vessel fails at 1700 K, and only once the water has gone',
+      r.breach && Math.abs(r.TS - 1700) < 1 && r.m === 0,
+      `head at ${r.TS.toFixed(1)} K with ${r.m.toFixed(0)} kg of water left, at ${(M.breach / 60).toFixed(0)} min`);
+  /*
+   * And the oxidation stops of its own accord, near where TMI-2's did.
+   * Nothing is tuned to put it there: it stops when the melted core pours
+   * out of the steam into the lower head, and the pool there has no
+   * cladding wall to burn. The model used to treat the pool as the same
+   * zone it came from, so it went on burning over all 560 m² of a wall that
+   * no longer existed until every gram of the zircaloy had gone, and heated
+   * itself to 4800 K doing it.
+   */
+  chk('the cladding stops oxidising part-way, when the melted core leaves the steam',
+      r.ox > 0.25 && r.ox < 0.7,
+      `${(100 * r.ox).toFixed(1)}% of the zircaloy oxidised, ${r.h2.toFixed(0)} kg of hydrogen (TMI-2: ~45%)`);
 }
 
 /*
@@ -438,13 +476,16 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
     const R = window.__reactor, K = R.K;
     const s = R.fresh(); s.scram = true; s.tScram = 0;
     const dt = 0.05, u = { rod: 0, feed: 0, eccs: 0 };
-    let E = 0;
-    for (let k = 0; k < 400000 && !s.breach; k++) { R.step(s, dt, u); E += s.qCOR * dt; }
-    return { E, pred: K.C_S * (K.T_VESSEL - K.TC0), breach: s.breach, t: s.t };
+    let Ein = 0, Eout = 0;
+    for (let k = 0; k < 400000 && !s.breach; k++) {
+      R.step(s, dt, u); Ein += s.qCOR * dt; Eout += s.qHeadW * dt;
+    }
+    return { Ein, Eout, pred: K.C_S * (K.T_VESSEL - K.TC0), breach: s.breach, t: s.t };
   });
-  chk('what the head absorbed is exactly what it took to bring it to 1700 K',
-      r.breach && Math.abs(r.E / r.pred - 1) < 1e-4,
-      `${(r.E / 1e9).toFixed(3)} GJ absorbed vs ${(r.pred / 1e9).toFixed(3)} GJ predicted, at ${(r.t / 60).toFixed(1)} min`);
+  chk('what the head kept of the heat it was given is exactly what brought it to 1700 K',
+      r.breach && Math.abs((r.Ein - r.Eout) / r.pred - 1) < 1e-4 && r.Eout > 0.1 * r.Ein,
+      `${(r.Ein / 1e9).toFixed(1)} GJ in from the corium, ${(r.Eout / 1e9).toFixed(1)} GJ out to the water, `
+      + `${((r.Ein - r.Eout) / 1e9).toFixed(3)} GJ kept vs C_S·ΔT = ${(r.pred / 1e9).toFixed(3)} GJ`);
 }
 
 // ── Emergency injection is a real control, not a decoration ────────────
@@ -453,14 +494,175 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
     const R = window.__reactor;
     const dry = R.run({ T: 9000, dt: 0.05, scram: true, feed: 0, eccs: 0 }).s;
     const wet = R.run({ T: 9000, dt: 0.05, scram: true, feed: 0, eccs: 40 }).s;
-    return { dryTL: dry.TL, dryMelt: dry.melted, dryLvl: dry.m,
-             wetTL: wet.TL, wetMelt: wet.melted, wetLvl: wet.m,
+    return { dryTL: dry.TL, drySlump: dry.slumped, dryLvl: dry.m,
+             wetTL: wet.TL, wetSlump: wet.slumped, wetLvl: wet.m,
              wetMarks: Object.keys(wet.marks) };
   });
+  /* Slumped, not melted: corium that has poured into the lower head and
+     refrozen there is not molten any more, and it is not a core either. */
   chk('40 kg/s of makeup keeps the core covered and stops the meltdown',
-      r.wetMelt === 0 && r.wetTL < 700 && r.dryMelt > 0.9,
-      `with injection: clad ${r.wetTL.toFixed(0)} K, melted ${r.wetMelt.toFixed(3)}; `
-      + `without: clad ${r.dryTL.toFixed(0)} K, melted ${r.dryMelt.toFixed(3)}`);
+      r.wetSlump === 0 && r.wetTL < 700 && r.drySlump > 0.9,
+      `with injection: clad ${r.wetTL.toFixed(0)} K, slumped ${r.wetSlump.toFixed(3)}; `
+      + `without: clad ${r.dryTL.toFixed(0)} K, slumped ${r.drySlump.toFixed(3)}`);
+}
+
+// ── Recovery: what happens when the water comes back ──────────────────
+/*
+ * Everything above runs the accident forward with nothing done about it.
+ * These turn the water back on part-way, which is what a reader does next
+ * and which nothing tested — and every defect found on the second pass over
+ * this page was on one of these paths.
+ */
+{
+  const r = await page.evaluate(() => {
+    const R = window.__reactor, K = R.K;
+    const STEAM = 2 * 18.015 / 91.224;               // Zr + 2H₂O, from the periodic table
+    const paths = {
+      'blackout':               () => ({ feed: 0, eccs: 0 }),
+      'injection at 60 min':    (t) => ({ feed: 0, eccs: t > 3600 ? 60 : 0 }),
+      'injection at 90 min':    (t) => ({ feed: 0, eccs: t > 5400 ? 60 : 0 }),
+      'injection at 106 min':   (t) => ({ feed: 0, eccs: t > 6360 ? 60 : 0 }),
+      'injection 90→110 min':   (t) => ({ feed: 0, eccs: t > 5400 && t < 6600 ? 60 : 0 }),
+      'feed back at 90 min':    (t) => ({ feed: t > 5400 ? 1 : 0, eccs: 0 }),
+      'both back at 95 min':    (t) => ({ feed: t > 5700 ? 1 : 0, eccs: t > 5700 ? 60 : 0 }),
+      'a 20 kg/s trickle':      () => ({ feed: 0, eccs: 20 }),
+      'no scram (ATWS)':        () => ({ feed: 0, eccs: 0 }),
+    };
+    const out = {};
+    for (const [name, ctl] of Object.entries(paths)) {
+      const s = R.fresh();
+      if (name !== 'no scram (ATWS)') { s.scram = true; s.tScram = 0; }
+      const dt = 0.05;
+      let peak = 0, steamUse = 0, standMin = 1, standGrew = 0, zrAfter95 = 0, zrAt95 = null;
+      let oxPeakSlump = 0, oxAt98 = null;
+      for (let k = 0; k < 6 * 3600 / dt && !s.breach; k++) {
+        const steamPrev = s.steam, zr0 = s.zr;
+        R.step(s, dt, { rod: 0, ...ctl(s.t) });
+        peak = Math.max(peak, s.TL, s.TFpeak);
+        const burnt = s.zr - zr0;
+        if (burnt > 0) steamUse = Math.max(steamUse, burnt * STEAM / Math.max(steamPrev * dt, 1e-30));
+        const standing = s.fuelIn - (s.slumped - s.cor.mass);
+        if (standing > standMin + 1e-9) standGrew = Math.max(standGrew, standing - standMin);
+        standMin = Math.min(standMin, standing);
+        if (s.t >= 5700 && zrAt95 === null) zrAt95 = s.zr;
+        if (!s.relocated && s.z.d.g > 0) {
+          oxPeakSlump = Math.max(oxPeakSlump, s.pOx);
+          if (oxAt98 === null && s.z.d.g >= 0.98) oxAt98 = s.pOx;
+        }
+      }
+      out[name] = { peak, steamUse, standGrew, breach: s.breach, reloc: s.cor.mass,
+                    oxFade: oxAt98 === null ? null : oxAt98 / oxPeakSlump,
+                    standing: s.fuelIn, zrAfter95: zrAt95 === null ? 0 : s.zr - zrAt95,
+                    breachMin: s.breach ? s.marks.breach / 60 : null };
+    }
+    return out;
+  });
+  const names = Object.keys(r);
+
+  /*
+   * A ceiling the physics sets, not one picked to pass: nothing here models
+   * vaporisation, so nothing may get hotter than UO₂ boils. On the paths the
+   * reader can reach, the cladding used to: 4813 K in the plain blackout,
+   * 5305 K with injection at 90 minutes, 6526 K once a melted top was left
+   * hanging above the returning water with no heat path at all.
+   */
+  const hot = names.map((n) => [n, r[n].peak]);
+  chk(`nothing in the vessel gets hotter than UO₂ boils (3815 K), on ${names.length} paths`,
+      hot.every(([, T]) => T < 3815),
+      hot.map(([n, T]) => `${n} ${T.toFixed(0)} K`).join(', '));
+
+  /*
+   * Zr + 2H₂O: 0.395 kg of steam per kg of zircaloy, and the steam rising
+   * through the core is what boiled off below it the step before. With the
+   * heat sink restored the water goes subcooled, nothing boils — and 24
+   * tonnes of zirconium used to oxidise anyway, because the only gate was
+   * "there is still some water".
+   */
+  chk('the cladding never burns more steam than the core is boiling',
+      names.every((n) => r[n].steamUse <= 1 + 1e-9),
+      names.map((n) => `${n} ${r[n].steamUse.toFixed(3)}`).join(', '));
+  /*
+   * Only on the path where nothing does boil. With injection as well, the
+   * water rising onto rods at 2000 K quench-boils faster than the steam
+   * generator can cool it, and the cladding burns in that steam — TMI-2's
+   * reflood made its biggest burst of hydrogen exactly this way. The check
+   * above holds every path to the steam it had; this one shows the
+   * steam-starved case stopping dead.
+   */
+  chk('and once the water is subcooled and nothing boils, it stops',
+      r['feed back at 90 min'].zrAfter95 < 0.01,
+      `zirconium burnt after 95 min with the feed back: ${r['feed back at 90 min'].zrAfter95.toFixed(4)} kg `
+      + `(with injection too, the quench boils and ${r['both back at 95 min'].zrAfter95.toFixed(3)} kg burns in it)`);
+
+  /*
+   * Fuel that slumps takes its cladding surface with it, so the reaction on
+   * it dies away as it goes rather than running at full rate until the
+   * instant it relocates. In the plain blackout something else would see to
+   * that anyway — slumped fuel stops boiling the water, and with no steam
+   * the steam limit starves the reaction — so it shows where the steam keeps
+   * coming regardless: a reflood. There, without the surface factor, the top
+   * of the core was still burning at 65% of its peak with 98% of it slumped.
+   */
+  const fade = r['injection at 90 min'].oxFade;
+  chk('in a reflood, the reaction on the slumping top dies away with its cladding',
+      fade !== null && fade < 0.1,
+      `oxidation at 98% slumped: ${fade === null ? 'never reached' : (100 * fade).toFixed(1) + '% of its peak'}`);
+
+  /* Refrozen debris is a lump. It gets back neither its surface nor its
+     place in the drawing — the rods used to redraw themselves as the
+     corium in the lower head froze. */
+  chk('fuel that has slumped never stands up again',
+      names.every((n) => r[n].standGrew === 0),
+      names.filter((n) => r[n].standGrew > 0).map((n) => `${n} +${r[n].standGrew.toFixed(4)}`).join(', ') || 'never');
+
+  /*
+   * TMI-2's ending. Water came back while the top of the core was melting;
+   * the melted part poured into a lower head that still held water, the
+   * rest stayed standing in it, and the vessel held. The relocation rule
+   * used to need the whole core molten, which left the melted top hanging
+   * above the water line — and the head stopped exchanging heat with the
+   * water once corium arrived, so injection at 106 minutes failed the
+   * vessel at the same minute as no injection at all.
+   */
+  const tmi = r['injection at 90 min'];
+  chk('injection at 90 minutes ends like TMI-2: the top relocates, the bottom stands, the vessel holds',
+      !tmi.breach && tmi.reloc > 0.2 && tmi.reloc < 0.95 && tmi.standing > 0.05,
+      `${(100 * tmi.reloc).toFixed(0)}% relocated, ${(100 * tmi.standing).toFixed(0)}% still standing, `
+      + `vessel ${tmi.breach ? 'failed' : 'intact'}`);
+  chk('and water that outruns the boil-off holds the vessel even after the core has melted',
+      r.blackout.breach && !r['injection at 106 min'].breach && r['injection at 106 min'].reloc > 0.99,
+      `blackout fails at ${r.blackout.breachMin.toFixed(0)} min; injection at 106 min: `
+      + `${(100 * r['injection at 106 min'].reloc).toFixed(0)}% relocated, vessel `
+      + `${r['injection at 106 min'].breach ? 'failed' : 'intact'}`);
+  chk('while water that cannot keep up only delays it',
+      r['injection 90→110 min'].breach
+      && r['injection 90→110 min'].breachMin > r.blackout.breachMin,
+      `injection from 90 to 110 min then off: fails at ${r['injection 90→110 min'].breachMin?.toFixed(0)} min `
+      + `instead of ${r.blackout.breachMin.toFixed(0)}`);
+}
+
+/*
+ * The coolant solve has to survive the reader restoring the feed to a vessel
+ * that is nearly dry. Explicit in the coolant temperature, the steam
+ * generator's coupling goes unstable below about 545 kg of water and the
+ * temperature swings by 10⁵ K a step.
+ */
+{
+  const r = await page.evaluate(() => {
+    const R = window.__reactor, K = R.K;
+    const s = R.fresh(); s.scram = true; s.tScram = 0;
+    for (let k = 0; k < 1e6 && s.m > 3 && !s.breach; k++) R.step(s, 0.05, { rod: 0, feed: 0, eccs: 0 });
+    const m0 = s.m;
+    let lo = Infinity, hi = -Infinity;
+    for (let k = 0; k < 20000; k++) {
+      R.step(s, 0.05, { rod: 0, feed: 1, eccs: 0 });
+      lo = Math.min(lo, s.TC); hi = Math.max(hi, s.TC);
+    }
+    return { m0, lo, hi, TSEC: K.TSEC, TSAT: K.TSAT };
+  });
+  chk('restoring the feed to a nearly dry vessel leaves the coolant between the two temperatures it can reach',
+      r.lo >= r.TSEC - 1e-6 && r.hi <= r.TSAT + 1e-6,
+      `${r.m0.toFixed(1)} kg of water: T_C stayed in ${r.lo.toFixed(1)}–${r.hi.toFixed(1)} K`);
 }
 
 // ── Convergence: the step is an instrument setting, not a result ────────
@@ -611,6 +813,33 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
       && Math.abs(moved.Ti / moved.before.t - 1) < 1e-9,
       `measured ${moved.before.m.toFixed(1)} → ${moved.T.toFixed(1)} s; `
       + `inhour ${moved.before.t.toFixed(1)} → ${moved.Ti.toFixed(1)} s`);
+}
+
+// ── A steady reactor reads as steady ──────────────────────────────────
+/*
+ * Two small lies the panel told about a reactor sitting exactly critical.
+ * The measured period printed "—", meaning no data, beside the inhour
+ * side's "∞" after a full minute of perfectly flat flux — flat is a
+ * measurement. And toFixed keeps the sign of a value that rounds to zero,
+ * so the reactivity read "-0.0 pcm".
+ */
+{
+  await page.evaluate(() => {
+    const R = window.__reactor;
+    R.reset(); R.setRunning(false);
+    for (let k = 0; k < 60; k++) R.advance(40);       // two minutes at power
+  });
+  await page.waitForTimeout(120);
+  const shown = {
+    period: await txt('out-period'), theory: await txt('out-period-theory'),
+    rho: await txt('out-rho'), parts: await txt('out-rho-parts'), xe: await txt('out-xe'),
+  };
+  chk('a steady reactor reads ∞ on both halves of the period, not "no data" on one',
+      shown.period === '∞' && shown.theory === '∞',
+      `measured "${shown.period}", inhour "${shown.theory}"`);
+  chk('and no readout prints a negative zero',
+      ![shown.rho, shown.parts, shown.xe].some((t) => /(^|[^\d])-0(\.0+)?(?![\d.])/.test(t)),
+      `ρ "${shown.rho}", parts "${shown.parts}", Xe "${shown.xe}"`);
 }
 
 // ── Reset, reduced motion, and the languages ──────────────────────────

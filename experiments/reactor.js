@@ -33,14 +33,28 @@
  *
  * The lumping, said out loud
  * --------------------------
- * One fuel temperature, one clad temperature, one coolant temperature. A real
- * core has a power profile, a hot channel, and an axial level that uncovers
- * from the top down; this has none of those. What it keeps is the part that
- * decides the outcome — how much heat there is, where it can go, and what the
- * temperature does to the reactivity. The blackout timeline it produces
- * (saturation at 8 min, uncovery at 49, cladding burst at 89, fuel melting at
- * 110, ~345 kg of hydrogen at ~31% cladding oxidation) is close to what
- * happened at TMI-2, which is the most that can be asked of three nodes.
+ * The core is two thermal zones — under water, and standing in steam — with
+ * a boundary that follows the level and one temperature inside each, plus a
+ * pool in the lower head for whatever has melted and fallen there. There is
+ * no hot channel and no axial power profile. One zone was tried first and is
+ * wrong in a way a reader can see: at a single temperature the covered half
+ * cools the bare half, and half a core out of the water sat one degree above
+ * saturation.
+ *
+ * With no cooling at all the model gives saturation at 9 min, uncovery at 50,
+ * cladding burst at 83, fuel melting at 106, relocation into the lower head
+ * at 111 and the head itself at 149, with 44% of the cladding oxidised and
+ * 484 kg of hydrogen made — the same sequence TMI-2 went through, and about
+ * the oxidation it reached (~45%). Nothing was tuned to land there: the
+ * oxidation stops when the melted core pours out of the steam into the
+ * lower head, where the pool has no cladding wall left to burn.
+ *
+ * Past relocation the model leans optimistic. Water in the vessel takes
+ * whatever heat the lower head offers it, with no critical heat flux, so a
+ * hot head quenches in nucleate boiling where a real one would sit in film
+ * boiling. Whether in-vessel water can hold a full core's corium is still
+ * argued over — it is why the AP1000 floods the outside of its vessel. The
+ * page says so in its notes rather than leave a reader to find it.
  */
 (() => {
   /*
@@ -101,6 +115,7 @@
   const ZR_AREA = 5.6e6;                    // cm² of cladding
   const H_OX = 6.42e6;                      // J per kg Zr (586 kJ/mol)
   const H2_PER_ZR = 0.0442;                 // 2·M(H₂)/M(Zr), kg per kg
+  const STEAM_PER_ZR = 0.395;               // 2·M(H₂O)/M(Zr), kg per kg
   const W_FULL = M_ZR * 1e6 / ZR_AREA;      // mg/cm² for the whole wall
 
   // Level: the core sits between these two fractions of the inventory.
@@ -208,13 +223,23 @@
        * thickness and its own melt fraction, and the boundary between them
        * moves with the water level.
        */
-      z: { w: { TF: TF0, TL: TL0, W: 0, f: 0 },
-           d: { TF: TF0, TL: TL0, W: 0, f: 0 } },
+      z: { w: { TF: TF0, TL: TL0, W: 0, f: 0, g: 0 },
+           d: { TF: TF0, TL: TL0, W: 0, f: 0, g: 0 } },
       cover: 1,
+      /*
+       * The rods still standing, as a fraction of the fuel, and the pool in
+       * the lower head that the rest has become. f is the latent-heat
+       * bookkeeping and goes both ways; g, slumped, only goes up — refrozen
+       * debris is a lump, and it gets back neither its surface nor its place
+       * in the picture.
+       */
+      fuelIn: 1,
+      cor: { mass: 0, T: TC0, f: 0 },
+      slumped: 0,
       TF: TF0, TL: TL0, TC: TC0,
       m: M_H2O, TS: TC0,
       I: I_EQ, X: X_EQ,
-      W: 0, h2: 0, melted: 0,
+      W: 0, zr: 0, h2: 0, melted: 0, steam: 0,
       relocated: false, breach: false,
       scram: false, tScram: -1,
       // Everything the readouts show is derived from these, never assumed.
@@ -302,16 +327,19 @@
     pDec *= P0;
 
     /*
-     * The water line, and the zone boundary that follows it. Fuel that goes
-     * from wet to dry arrives at the temperature it had, so the handover
-     * conserves energy exactly; the oxide and the melt fraction move with it
-     * for the same reason.
+     * The water line, and the zone boundary that follows it. The zones
+     * describe only the rods still standing, which occupy the bottom fuelIn
+     * of the core band, so the cover is measured against that height. Fuel
+     * that goes from wet to dry arrives at the temperature it had, so the
+     * handover conserves energy exactly; the oxide, the melt fraction and
+     * the slumped fraction move with it for the same reason.
      */
     const lvl = s.m / M_H2O;
+    const span = s.fuelIn * (CORE_TOP - CORE_BOT);
     const c0 = s.cover;
-    const c1 = Math.max(0, Math.min(1, (lvl - CORE_BOT) / (CORE_TOP - CORE_BOT)));
+    const c1 = span > 1e-12 ? Math.max(0, Math.min(1, (lvl - CORE_BOT) / span)) : 0;
     const mixInto = (to, from, held, moved) => {
-      for (const k of ["TF", "TL", "W", "f"]) {
+      for (const k of ["TF", "TL", "W", "f", "g"]) {
         to[k] = (held * to[k] + moved * from[k]) / (held + moved);
       }
     };
@@ -320,108 +348,221 @@
     s.cover = c1;
 
     /*
-     * The lower head. While the core stands it is washed by the coolant;
-     * once the whole core is molten it slumps in, and the head heats on
-     * corium instead. This model ends when the steel reaches 1700 K.
+     * The lower head, and the pool on it. The head is washed by whatever
+     * water is in the vessel — before relocation and after it — and heated
+     * by whatever corium has landed on it. It only fails once the water has
+     * gone: at TMI-2 the upper core melted and poured into a lower head that
+     * still held water, and the vessel held. Here the head used to stop
+     * talking to the water the moment corium arrived, so turning injection
+     * back on at 105 minutes failed the vessel at the same minute as not
+     * turning it on at all.
      */
-    if (!s.breach && !s.relocated && s.melted >= 1) {
-      s.relocated = true; s.marks.relocate = s.t;
-    }
-    const qCOR = s.breach ? 0
-      : s.relocated ? H_COR * (s.z.d.TF - s.TS)
-      : (s.m > 0 ? H_HEAD_W * (s.TC - s.TS) : 0);
-    if (!s.breach) {
-      s.TS += dt * qCOR / C_S;
-      if (s.TS >= T_VESSEL) { s.breach = true; s.marks.breach = s.t; }
-    }
+    const C_COR = C_F + C_L;                   // fuel and the cladding it took with it
 
     /*
      * Each zone then evolves like a whole core with its own heat-transfer
      * coefficient: the zone fraction multiplies the heat capacity, the power
      * and the surface alike, so it cancels out of the temperature equation
-     * and only reappears where the two zones are summed.
+     * and only reappears where the zones are summed.
      */
     const pSpec = pFis + pDec;                 // W, as if the zone were all of it
-    let pOx = 0, qCL = 0, h2New = 0;
-    const zones = [[s.z.w, c1, A_CLAD * H_BOIL], [s.z.d, 1 - c1, A_CLAD * H_STEAM]];
-    for (const [z, frac, hA] of zones) {
-      if (frac <= 1e-9 || s.breach) continue;
+    let pOx = 0;
+    const zones = [[s.z.w, s.fuelIn * c1, A_CLAD * H_BOIL],
+                   [s.z.d, s.fuelIn * (1 - c1), A_CLAD * H_STEAM]];
 
-      // Baker–Just on this zone's cladding, at this zone's temperature.
-      let pOxZ = 0;
-      if (z.TL > 1100 && z.W < W_FULL && s.m > 0) {
-        let dw = Math.min(oxidationStep(z.W, z.TL, dt), W_FULL - z.W);
-        z.W += dw;
-        const dmZr = dw * 1e-6 * ZR_AREA;      // kg, as if the zone were all of it
-        pOxZ = dmZr * H_OX / dt;
-        h2New += frac * dmZr * H2_PER_ZR;
-        pOx += frac * pOxZ;
-      }
-
-      const qGAP = hGAP * (z.TF - z.TL);
-      const qOut = hA * (z.TL - s.TC);
-      qCL += frac * qOut;
-
-      // Melting and refreezing, at 3120 K, paid for out of the latent heat.
-      // The corium's heat leaves through the head, and only the dry zone
-      // has any corium in it — relocation cannot happen while any of the
-      // core is still under water.
-      const qDown = (s.relocated && z === s.z.d) ? qCOR : 0;
-      let TFn = z.TF + dt * (pSpec - qGAP - qDown) / C_F;
-      if (TFn > T_MELT && z.f < 1) {
-        const spare = (TFn - T_MELT) * C_F / M_UO2;      // J per kg of fuel
-        const used = Math.min(spare, (1 - z.f) * H_FUS);
-        z.f += used / H_FUS;
-        TFn = T_MELT + (spare - used) * M_UO2 / C_F;
-      } else if (TFn < T_MELT && z.f > 0) {
-        const deficit = (T_MELT - TFn) * C_F / M_UO2;
-        const used = Math.min(deficit, z.f * H_FUS);
-        z.f -= used / H_FUS;
-        TFn = T_MELT - (deficit - used) * M_UO2 / C_F;
-      }
-      z.TF = TFn;
-      z.TL += dt * (qGAP + pOxZ - qOut) / C_L;
+    /*
+     * Baker–Just, and the two things it takes for granted.
+     *
+     * It is a rate law for a metal wall with steam on it. The wall has to be
+     * standing: fuel that has slumped has taken its cladding with it, so the
+     * oxidising surface is A·(1 − g), and the pool in the lower head has none
+     * at all. (The pool used to be the same zone it came from, and burned on
+     * over all 560 m² of a wall that no longer existed until it reached
+     * 4800 K. The factor itself matters most in a reflood, where steam keeps
+     * rising past the slumping top: without it the reaction ran at 65% of
+     * its peak with 98% of the fuel already slumped.) And the steam has to be
+     * there: two molecules of water per atom of zirconium, 0.395 kg per kg,
+     * and the only steam rising through bare rods is what boils off below
+     * them. Without that, restoring the heat sink left the water subcooled
+     * and nothing boiling, and 24 tonnes of zirconium oxidised anyway. It
+     * replaces a `water left > 0` gate rather than sitting beside it — no
+     * water, no boiling, no steam.
+     */
+    const ox = [];
+    let zrWant = 0;
+    for (const [z, frac] of zones) {
+      /* No separate "fully slumped" skip: (1 − g) is already zero there, and
+         with both in place the factor could be deleted without anything
+         noticing — the skip quietly did its job at g = 1 and nothing
+         checked the range in between. */
+      if (frac <= 1e-9 || s.breach || z.TL <= 1100 || z.W >= W_FULL) continue;
+      const dw = Math.min(oxidationStep(z.W, z.TL, dt), W_FULL - z.W);
+      const kg = frac * (1 - z.g) * dw * 1e-6 * ZR_AREA;   // this zone's share, really
+      ox.push({ z, frac, dw, kg });
+      zrWant += kg;
+    }
+    const zrSteam = s.steam * dt / STEAM_PER_ZR;      // what last step's boil-off can burn
+    const starve = zrWant > zrSteam ? zrSteam / zrWant : 1;
+    const pOxSpec = new Map();
+    for (const o of ox) {
+      o.z.W += o.dw * starve;
+      const kg = o.kg * starve;
+      s.zr += kg;
+      s.h2 += kg * H2_PER_ZR;
+      pOx += kg * H_OX / dt;
+      pOxSpec.set(o.z, kg * H_OX / dt / o.frac);     // as if the zone were all of it
     }
 
-    s.melted = c1 * s.z.w.f + (1 - c1) * s.z.d.f;
-    s.W = c1 * s.z.w.W + (1 - c1) * s.z.d.W;
-    s.h2 += h2New;
-    // What the reactivity sees is the core average; what fails is the peak.
-    s.TF = c1 * s.z.w.TF + (1 - c1) * s.z.d.TF;
-    s.TL = Math.max(c1 > 1e-9 ? s.z.w.TL : -Infinity, c1 < 1 - 1e-9 ? s.z.d.TL : -Infinity);
-    s.TFpeak = Math.max(c1 > 1e-9 ? s.z.w.TF : -Infinity, c1 < 1 - 1e-9 ? s.z.d.TF : -Infinity);
+    /*
+     * Every heat flux at the start of the step. The surface rule applies to
+     * heat as it does to oxidation: slumped fuel is a lump with a crust, not
+     * rods in a steam flow, and it cannot convect over the area of a wall it
+     * no longer has. Applied to the oxidation alone, the bare core stalled
+     * on the melting plateau — losing 42 MW to steam across 560 m² of rods
+     * that had already slumped, against 33 MW of decay heat — and never
+     * reached the vessel.
+     */
+    const flux = zones.map(([z, frac, hA]) => ({
+      z, frac,
+      qGAP: hGAP * (z.TF - z.TL),
+      qOut: frac > 1e-9 ? hA * (1 - z.g) * (z.TL - s.TC) : 0,
+    }));
+    let qCLraw = 0;
+    for (const f of flux) qCLraw += f.frac * f.qOut;
+    const qCorHead = s.breach || s.cor.mass <= 0 ? 0
+      : H_COR * s.cor.mass * (s.cor.T - s.TS);
 
-    if (!s.breach) {
-      /*
-       * The coolant's books. Heat comes in from the cladding, leaves to the
-       * steam generator, and — while the core is still standing — leaves
-       * into the lower head, which is full of the same water; that last term
-       * was missing at first and the head was heating on energy nothing had
-       * given up, worth two percent of the whole accident.
-       */
-      const qIn = qCL - USG * u.feed * (s.TC - TSEC) - (s.relocated ? 0 : qCOR);
-      const cap = Math.max(s.m, 1) * CP_H2O;
-      if (qIn < 0 || s.TC < TSAT - 1e-9) {
-        const Tn = s.TC + dt * qIn / cap;
-        if (Tn <= TSAT) {
-          s.TC = Tn;
+    /*
+     * The coolant, solved before anything is allowed to dump heat into it.
+     *
+     * Implicit in T_C for the two linear couplings — the steam generator
+     * and the lower head — because explicit, they go unstable below about
+     * 545 kg of water: restore the feed to a nearly dry vessel and the
+     * coolant temperature swung to −10⁵ K. And limited by what the water can
+     * take. When there is not enough of it left to absorb the heat on offer,
+     * all of it boils and the rest of the heat stays in the rods and the
+     * head that produced it. Clamping the boil-off at zero instead threw
+     * that heat away — invisibly, until a dry vessel was leaking 3 MW out of
+     * the first law and a 20 kg/s trickle of injection 20 MW.
+     */
+    let lam = 1, qHeadW = 0, qSG = 0, TCn = s.TC, boil = 0;
+    if (s.breach || s.m <= 0) {
+      lam = 0;                                 // no fluid, no convection
+    } else {
+      const kSG = USG * u.feed, kH = H_HEAD_W, cap = s.m * CP_H2O;
+      TCn = (cap * s.TC + dt * (qCLraw + kH * s.TS + kSG * TSEC)) / (cap + dt * (kH + kSG));
+      if (TCn > TSAT) {
+        TCn = TSAT;
+        const qH = kH * (s.TS - TSAT), qS = kSG * (TSAT - TSEC);
+        const eBoil = dt * (qCLraw + qH - qS) - cap * (TSAT - s.TC);
+        if (eBoil <= s.m * HFG) {
+          boil = Math.max(0, eBoil / HFG);
         } else {
-          /* Clamping to saturation threw the overshoot away. What is left
-             after reaching the boiling point boils, which is where it was
-             always going. */
-          const toSat = (TSAT - s.TC) * cap;
-          s.TC = TSAT;
-          if (s.m > 0) s.m = Math.max(0, s.m - (dt * qIn - toSat) / HFG);
+          boil = s.m;
+          const inflow = Math.max(0, qCLraw) + Math.max(0, qH);
+          const room = (s.m * HFG + cap * (TSAT - s.TC)) / dt
+                     + qS + Math.max(0, -qCLraw) + Math.max(0, -qH);
+          lam = inflow > 0 ? Math.max(0, Math.min(1, room / inflow)) : 1;
         }
-      } else if (s.m > 0) {
-        s.m = Math.max(0, s.m - dt * qIn / HFG);
       }
-      if (u.eccs > 0) s.m = Math.min(M_H2O, s.m + u.eccs * dt);
+      const qH = kH * (s.TS - TCn);
+      qHeadW = qH > 0 ? qH * lam : qH;
+      qSG = kSG * (TCn - TSEC);
     }
+
+    // The lower head: corium in, water out.
+    if (!s.breach) {
+      s.TS += dt * (qCorHead - qHeadW) / C_S;
+      if (s.TS >= T_VESSEL) { s.breach = true; s.marks.breach = s.t; }
+    }
+
+    /* Melting at 3120 K and refreezing from it, paid for out of the latent
+       heat, for a node of capacity C per unit. Returns the new temperature
+       and moves the melt fraction. */
+    const latent = (node, Tn, C) => {
+      if (Tn > T_MELT && node.f < 1) {
+        const spare = (Tn - T_MELT) * C / M_UO2;           // J per kg of fuel
+        const used = Math.min(spare, (1 - node.f) * H_FUS);
+        node.f += used / H_FUS;
+        return T_MELT + (spare - used) * M_UO2 / C;
+      }
+      if (Tn < T_MELT && node.f > 0) {
+        const deficit = (T_MELT - Tn) * C / M_UO2;
+        const used = Math.min(deficit, node.f * H_FUS);
+        node.f -= used / H_FUS;
+        return T_MELT - (deficit - used) * M_UO2 / C;
+      }
+      return Tn;
+    };
+
+    let qCL = 0;
+    for (const f of flux) {
+      if (f.frac <= 1e-9 || s.breach) continue;
+      const z = f.z;
+      const qOut = f.qOut > 0 ? f.qOut * lam : f.qOut;
+      qCL += f.frac * qOut;
+      z.TF = latent(z, z.TF + dt * (pSpec - f.qGAP) / C_F, C_F);
+      z.g = Math.max(z.g, z.f);
+      z.TL += dt * (f.qGAP + (pOxSpec.get(z) || 0) - qOut) / C_L;
+    }
+
+    // The pool: decay heat in, heat out through the head and nowhere else.
+    if (s.cor.mass > 0 && !s.breach) {
+      s.cor.T = latent(s.cor,
+        s.cor.T + dt * (pSpec - H_COR * (s.cor.T - s.TS)) / C_COR, C_COR);
+    }
+
+    /*
+     * Relocation. Molten fuel cannot hang above a water pool: once every
+     * rod above the water line has slumped, that fuel — and the cladding
+     * that went with it — pours into the lower head. The pool's temperature
+     * is the capacity-weighted mean of the two, the only choice that carries
+     * the energy across unchanged, because the zones reference fuel to 900 K
+     * and cladding to 620 K. A bare core relocates whole; a core being
+     * reflooded loses only its top, and the rest stays standing in the water.
+     * The rule used to be "the whole core is molten", which left a melted
+     * top above a rising water line with no heat path at all — it reached
+     * 6500 K before the water got to it.
+     */
+    const zd = s.z.d, dryMass = s.fuelIn * (1 - c1);
+    if (!s.breach && dryMass > 1e-9 && zd.g >= 1 - 1e-9) {
+      const Tnew = (C_F * zd.TF + C_L * zd.TL) / C_COR;
+      const m0c = s.cor.mass, m1c = m0c + dryMass;
+      s.cor.T = (m0c * s.cor.T + dryMass * Tnew) / m1c;
+      s.cor.f = (m0c * s.cor.f + dryMass * zd.f) / m1c;
+      s.cor.mass = m1c;
+      s.fuelIn -= dryMass;
+      s.cover = 1;                             // what is left is what was under water
+      if (!s.relocated) { s.relocated = true; s.marks.relocate = s.t; }
+    }
+
+    const cNow = s.cover, wIn = s.fuelIn * cNow, dIn = s.fuelIn * (1 - cNow);
+    s.melted = wIn * s.z.w.f + dIn * s.z.d.f + s.cor.mass * s.cor.f;
+    s.slumped = wIn * s.z.w.g + dIn * s.z.d.g + s.cor.mass;
+    s.W = s.fuelIn > 1e-9 ? (wIn * s.z.w.W + dIn * s.z.d.W) / s.fuelIn : s.W;
+    // What the reactivity sees is the fuel average; what fails is the peak.
+    s.TF = wIn * s.z.w.TF + dIn * s.z.d.TF + s.cor.mass * s.cor.T;
+    const live = [];
+    if (wIn > 1e-9) live.push([s.z.w.TF, s.z.w.TL]);
+    if (dIn > 1e-9) live.push([s.z.d.TF, s.z.d.TL]);
+    if (s.cor.mass > 1e-9) live.push([s.cor.T, s.cor.T]);
+    s.TFpeak = Math.max(...live.map((q) => q[0]));
+    s.TL = Math.max(...live.map((q) => q[1]));
+
+    // The coolant's new state, from the solve above.
+    if (!s.breach && s.m > 0) {
+      s.TC = TCn;
+      s.m = Math.max(0, s.m - boil);
+      s.steam = boil / dt;                         // kg/s rising through the core
+    } else {
+      s.steam = 0;
+    }
+    if (!s.breach && u.eccs > 0) s.m = Math.min(M_H2O, s.m + u.eccs * dt);
+    s.qSG = qSG;
 
     s.t += dt;
     s.pFis = pFis; s.pDec = pDec; s.pOx = pOx; s.rho = rho; s.parts = parts;
-    s.qCOR = qCOR; s.lvl = lvl;
+    s.qCOR = qCorHead; s.qHeadW = qHeadW; s.lvl = lvl;
 
     const M = s.marks;
     if (M.sat === undefined && s.TC >= TSAT - 0.05) M.sat = s.t;
@@ -460,7 +601,11 @@
     const den = n * stt - st_ * st_;
     if (den <= 0) return null;
     const w = (n * stl - st_ * sl) / den;
-    if (!isFinite(w) || Math.abs(w) < 1e-7) return null;
+    if (!isFinite(w)) return null;
+    /* Flat is a measurement, not an absence of one. Returning null here
+       printed "—" beside the inhour side's "∞" for a reactor that had been
+       holding perfectly steady for a minute — as if the page had no data. */
+    if (Math.abs(w) < 1e-7) return Infinity;
     return 1 / w;
   }
 
@@ -539,7 +684,6 @@
   function drawVessel(s) {
     const x0 = VX, x1 = VX + VW;
     const yCoreTop = yLevel(CORE_TOP), yCoreBot = yLevel(CORE_BOT);
-    const melted = s.melted ?? 0, cov = s.cover ?? 1;
 
     ctx.save();
     ctx.beginPath();
@@ -558,35 +702,40 @@
     ctx.fillRect(x0, LV_BOT + 4, VW, 396 - LV_BOT);
 
     /*
-     * The core: eighteen fuel assemblies, shortened as the fuel melts out
-     * from under them, and painted in two pieces — the part still under
-     * water at the wet zone's cladding temperature, the part standing in
-     * steam at the dry zone's. Those are the two temperatures the model
-     * actually carries, so the picture is the state and not a gloss on it.
+     * The core: eighteen fuel assemblies. Their height is the fuel still
+     * standing — what has relocated is gone from the core, and what has
+     * slumped stays slumped even if it refreezes — and they are painted in
+     * two pieces at the real water line: below it at the wet zone's
+     * cladding temperature, above it at the dry zone's. Those are the
+     * temperatures the model carries, so the picture is the state and not
+     * a gloss on it. Drawing the height from the melt fraction instead let
+     * the rods grow back as relocated corium refroze in the lower head.
      */
     const rods = 18, gap = (VW - 24) / rods;
-    const standing = 1 - melted;
+    const standing = s.fuelIn === undefined ? 1
+      : Math.max(0, s.fuelIn - (s.slumped - (s.cor ? s.cor.mass : 0)));
     const yTopNow = yCoreBot - (yCoreBot - yCoreTop) * standing;
-    const yWet = yTopNow + (yCoreBot - yTopNow) * (1 - cov);
+    const yWater = Math.max(yTopNow, Math.min(yCoreBot, yLevel(s.lvl ?? 1)));
     const zw = s.z ? s.z.w : { TL: TL0 }, zd = s.z ? s.z.d : { TL: TL0 };
     for (let i = 0; i < rods; i++) {
       const x = x0 + 12 + gap * (i + 0.5);
       ctx.lineWidth = gap * 0.52;
-      if (cov > 1e-3 && yWet < yCoreBot) {
+      if (yWater < yCoreBot - 0.5) {
         ctx.strokeStyle = hot(zw.TL);
-        ctx.beginPath(); ctx.moveTo(x, yCoreBot); ctx.lineTo(x, yWet); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, yCoreBot); ctx.lineTo(x, yWater); ctx.stroke();
       }
-      if (cov < 1 - 1e-3 && yTopNow < yWet) {
+      if (yTopNow < yWater - 0.5) {
         ctx.strokeStyle = hot(zd.TL);
-        ctx.beginPath(); ctx.moveTo(x, yWet); ctx.lineTo(x, yTopNow); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, yWater); ctx.lineTo(x, yTopNow); ctx.stroke();
       }
     }
 
-    // What has melted collects in the lower head as a pool.
-    if (melted > 0) {
-      ctx.fillStyle = hot(Math.max(s.TF ?? TF0, 2600));
+    // What has relocated lies in the lower head as a pool.
+    const pool = s.cor ? s.cor.mass : 0;
+    if (pool > 1e-3) {
+      ctx.fillStyle = hot(s.cor.T);
       ctx.beginPath();
-      ctx.ellipse((x0 + x1) / 2, LV_BOT + 16, VW * 0.44, 8 + melted * 30,
+      ctx.ellipse((x0 + x1) / 2, LV_BOT + 16, VW * 0.44 * Math.sqrt(pool), 8 + pool * 30,
                   0, Math.PI, 0, true);
       ctx.fill();
     }
@@ -622,7 +771,7 @@
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.roundRect(x0, 30, VW, 366, 26); ctx.stroke();
     if (s.breach) {
-      ctx.fillStyle = hot(Math.max(s.TF ?? TF0, 2600));
+      ctx.fillStyle = hot(Math.max(s.cor ? s.cor.T : TF0, 2600));
       ctx.beginPath();
       ctx.moveTo((x0 + x1) / 2 - 18, 392);
       ctx.lineTo((x0 + x1) / 2 + 18, 392);
@@ -742,7 +891,7 @@
         ctx.stroke();
       }
       legend(box, [[C_RHO, i18nText("nrLegTotal", "total ρ")],
-                   [C_XE, i18nText("nrLegXenon", "xenon")]]);
+                   [C_XE, i18nText("nrLegXenon", "Δxenon")]]);
     }
   }
 
@@ -777,6 +926,12 @@
   }
 
   // ── Readouts ──────────────────────────────────────────────────────────
+  /* toFixed keeps the sign of a value that rounds to zero, so a reactor
+     sitting exactly critical read "-0.0 pcm". */
+  const fx = (x, d) => {
+    const r = Number(x.toFixed(d));
+    return (r === 0 ? 0 : r).toFixed(d);
+  };
   const clock = (t) => {
     if (t < 120) return `${t.toFixed(1)} s`;
     if (t < 7200) return `${(t / 60).toFixed(1)} min`;
@@ -790,6 +945,10 @@
     if (s.TL >= T_ZR) return i18nText("nrStateZr", "cladding melting");
     if (s.TL >= T_BURST) return i18nText("nrStateBurst", "cladding burst");
     if ((s.cover ?? 1) < 1) return i18nText("nrStateUncovered", "core uncovering");
+    /* Damage does not heal. A core whose cladding has burst and been cooled
+       again is subcritical, and saying only that described the reactor at
+       Three Mile Island the morning after as if nothing had happened. */
+    if (s.marks && s.marks.burst !== undefined) return i18nText("nrStateDamaged", "core damaged, cooled");
     if (s.rho > B) return i18nText("nrStatePrompt", "prompt critical");
     if (s.rho > 1e-5) return i18nText("nrStateSuper", "supercritical");
     if (s.rho < -1e-5) return i18nText("nrStateSub", "subcritical");
@@ -812,19 +971,19 @@
     out.periodTheory.textContent = !isFinite(Ti) ? "∞"
       : Math.abs(Ti) > 9999 ? "∞" : `${Ti.toFixed(1)} s`;
 
-    out.rho.textContent = `${(s.rho * 1e5).toFixed(1)} pcm`;
+    out.rho.textContent = `${fx(s.rho * 1e5, 1)} pcm`;
     const p = s.parts;
     out.rhoParts.textContent =
-      `${(p.rod * 1e5).toFixed(0)} / ${(p.dop * 1e5).toFixed(0)} / `
-      + `${(p.mod * 1e5).toFixed(0)} / ${(p.xe * 1e5).toFixed(0)}`;
+      `${fx(p.rod * 1e5, 0)} / ${fx(p.dop * 1e5, 0)} / `
+      + `${fx(p.mod * 1e5, 0)} / ${fx(p.xe * 1e5, 0)}`;
     out.tf.textContent = `${(s.TFpeak ?? s.TF).toFixed(0)} K`;
     out.tl.textContent = `${s.TL.toFixed(0)} K`;
     out.tc.textContent = `${s.TC.toFixed(1)} K`;
     out.ts.textContent = `${s.TS.toFixed(0)} K`;
     out.level.textContent = `${(100 * (s.lvl ?? 1)).toFixed(1)}%`;
-    out.ox.textContent = `${(100 * s.W / W_FULL).toFixed(2)}%`;
+    out.ox.textContent = `${(100 * s.zr / M_ZR).toFixed(2)}%`;
     out.h2.textContent = `${s.h2.toFixed(1)} kg`;
-    out.xe.textContent = `${(XE_WORTH * s.X / X_EQ * 1e5).toFixed(0)} pcm`;
+    out.xe.textContent = `${fx(XE_WORTH * s.X / X_EQ * 1e5, 0)} pcm`;
     out.state.textContent = condition(s);
     out.clock.textContent = clock(s.t);
   }
@@ -935,8 +1094,9 @@
           rated_thermal_W: P0, beta_total: B, generation_time_s: L,
           alpha_fuel_per_K: aF, alpha_moderator_per_K: aM,
           step_dt_s: DT,
-          zr_oxidised_percent: 100 * st.W / W_FULL, hydrogen_kg: st.h2,
-          melted_fraction: st.melted,
+          zr_oxidised_percent: 100 * st.zr / M_ZR, hydrogen_kg: st.h2,
+          melted_fraction: st.melted, slumped_fraction: st.slumped,
+          relocated_fraction: st.cor.mass,
           measured_period_s: measuredPeriod(st),
           inhour_period_s: inhour(st.rho),
         },
@@ -947,7 +1107,7 @@
   window.__reactor = {
     K: { BETA, LAM, B, L, DA, DL, SC, P0, PF, C_F, C_L, M_UO2, M_ZR, M_H2O,
          CP_H2O, HFG, TF0, TL0, TC0, TSAT, TSEC, aF, aM, hGAP, USG,
-         A_CLAD, H_BOIL, H_STEAM, ZR_AREA, W_FULL, H_OX, H2_PER_ZR,
+         A_CLAD, H_BOIL, H_STEAM, ZR_AREA, W_FULL, H_OX, H2_PER_ZR, STEAM_PER_ZR,
          BJ_A, BJ_B, RCAL, CP_ZR, CP_UO2,
          CORE_TOP, CORE_BOT, T_BURST, T_ZR, T_MELT, H_FUS,
          M_STEEL, CP_STEEL, C_S, H_COR, H_HEAD_W, T_VESSEL,
@@ -978,7 +1138,8 @@
         if (every && k % every === 0) {
           let dec = 0; for (let j = 0; j < DL.length; j++) dec += s.D[j];
           trace.push({ t: s.t, n: s.n, dec, TF: s.TFpeak ?? s.TF, TFavg: s.TF,
-                       TL: s.TL, TC: s.TC, TS: s.TS,
+                       TL: s.TL, TC: s.TC, TS: s.TS, zr: s.zr, steam: s.steam,
+                       slumped: s.slumped, fuelIn: s.fuelIn, cor: s.cor.mass,
                        m: s.m, rho: s.rho, W: s.W, h2: s.h2, melted: s.melted,
                        pFis: s.pFis, pDec: s.pDec, pOx: s.pOx, qCOR: s.qCOR ?? 0,
                        breach: s.breach, relocated: s.relocated });
