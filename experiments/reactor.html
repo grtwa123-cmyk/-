@@ -34,7 +34,7 @@
 
     <div class="crumbs">
       <a href="../physics.html" data-i18n="backToHub">&larr; Back</a>
-      <span><span class="crumb-label" data-i18n="nrCrumb">Physics · Nuclear Reactor</span><span class="version-tag">v1.0.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
+      <span><span class="crumb-label" data-i18n="nrCrumb">Physics · Nuclear Reactor</span><span class="version-tag">v1.1.0</span><span class="method-tag" data-method="measured" data-i18n="methodMeasured" data-i18n-title="methodMeasuredWhy" title="">Measured</span><span class="method-verified" data-i18n="methodVerified" data-i18n-title="methodVerifiedWhy" title="">Verified</span></span>
     </div>
 
     <header class="site-header">
@@ -105,7 +105,7 @@
             <li data-i18n="nrNote3">The core corrects itself. Hotter fuel broadens the U-238 resonances and absorbs more neutrons; hotter water is thinner and moderates worse. Both are negative, so a rod step settles at a new power where the temperature rise has cancelled it exactly — no controller involved.</li>
             <li data-i18n="nrNote4">A scram does not switch the heat off. Thirteen groups of fission products keep decaying, and their heat is integrated here rather than looked up — an hour after shutdown the core is still making about 1% of rated power, which for this plant is thirty megawatts with nowhere to go.</li>
             <li data-i18n="nrNote5">Take the heat sink away and that thirty megawatts boils the primary inventory. The level falls, the top of the core comes out of the water, and bare rods in steam are cooled about five thousand times worse than rods under boiling water. Above 1100 K the zircaloy starts burning in the steam, which releases more heat than the decay does and produces hydrogen — the runaway that makes a meltdown a meltdown rather than a slow overheat.</li>
-            <li data-i18n="nrNote6">Two thermal zones, not one: the part of the core under water and the part standing in steam, each with its own fuel and cladding temperature, and a boundary that moves with the level. Within a zone it is still one temperature — there is no hot channel and no axial profile. That is enough to get the shape right. With no cooling at all this core reaches saturation at nine minutes, starts uncovering at fifty, bursts its cladding at eighty-three, melts at a hundred and six and drops the lower head at two hours; Three Mile Island did the same things in the same order, and stopped where this one does not because water came back.</li>
+            <li data-i18n="nrNote6">Two thermal zones, not one: the part of the core under water and the part standing in steam, each with its own fuel and cladding temperature, and a boundary that moves with the level. Within a zone it is still one temperature — there is no hot channel and no axial profile. That is enough to get the shape right. With no cooling at all this core reaches saturation at nine minutes, starts uncovering at fifty, bursts its cladding at eighty-three, starts to melt at a hundred and six, pours into the lower head at a hundred and eleven and fails it at about two and a half hours, having oxidised 44% of its cladding. Three Mile Island went through the same steps in the same order and oxidised about 45%, and stopped short of the last one because water came back. Here too, injection that outruns the boil-off holds the vessel even after the core has melted — though this model lets water take any heat the lower head offers it, with no boiling crisis, so it errs towards the vessel surviving.</li>
           </ul>
         </details>
       </section>
@@ -131,7 +131,7 @@
             <div class="num" id="out-rho">—</div>
           </div>
           <div class="readout">
-            <div class="label" data-i18n="nrOutParts">Rod / Doppler / moderator / xenon</div>
+            <div class="label" data-i18n="nrOutParts">Rod / Doppler / moderator / Δxenon</div>
             <div class="num" id="out-rho-parts">—</div>
           </div>
           <div class="readout">
