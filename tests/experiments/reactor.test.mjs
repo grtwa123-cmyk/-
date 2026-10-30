@@ -27,6 +27,7 @@
  * planting the corresponding defect and watching the check go red — the two
  * that mattered are named at their check.
  */
+import fs from 'node:fs';
 import { browser, chk, url, finish, lang } from '../lib/harness.mjs';
 
 const B = url('experiments/reactor.html');
@@ -129,6 +130,38 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
   chk('the flux jumps to β/(β − ρ) before the delayed neutrons arrive',
       worst < 0.003,
       rows.map((r) => `${r.pcm}pcm: ${r.n.toFixed(5)} vs ${r.pj.toFixed(5)}`).join(', '));
+}
+
+/*
+ * A scram at the page's own step. The prompt-neutron mode after a trip is
+ * stiff — dt(β − ρ)/Λ ≈ 166 at 0.05 s — and Crank–Nicolson, which is not
+ * L-stable, turned it into a sawtooth: 0, 0.19, 0.001, 0.18 on alternate
+ * steps for ten seconds, flipping direction 349 times in twenty, around a
+ * true drop to 0.096. The averages were right, so nothing noticed until the
+ * plant's log recorded every step and printed it.
+ */
+{
+  const r = await page.evaluate(() => {
+    const R = window.__reactor, K = R.K;
+    const a = { n: 1, C: K.BETA.map((b, i) => b / (K.L * K.LAM[i])) };
+    const ref = { n: 1, C: a.C.slice() };
+    let flips = 0, sign = 0, prev = 1, worstAfterFirst = 0, first = null;
+    for (let k = 1; k <= 400; k++) {
+      R.stepPK(a, -0.06, 0.05);
+      for (let j = 0; j < 1000; j++) R.stepPK(ref, -0.06, 0.00005);
+      const d = Math.sign(a.n - prev);
+      if (d && sign && d !== sign) flips++;
+      if (d) sign = d;
+      prev = a.n;
+      const err = Math.abs(a.n / ref.n - 1);
+      if (k === 1) first = err; else worstAfterFirst = Math.max(worstAfterFirst, err);
+    }
+    return { flips, first, worstAfterFirst };
+  });
+  chk('a scram at the page\'s own step falls smoothly, without ringing',
+      r.flips === 0 && r.worstAfterFirst < 0.02,
+      `${r.flips} reversals in 20 s; first step ${(100 * r.first).toFixed(1)}% off a 1000× finer run `
+      + `(a 0.05 s step cannot resolve a 0.3 ms drop), then at most ${(100 * r.worstAfterFirst).toFixed(2)}%`);
 }
 
 // ── Reactivity feedback ───────────────────────────────────────────────
@@ -840,6 +873,236 @@ const setV = (id, v) => page.$eval('#' + id, (el, val) => {
   chk('and no readout prints a negative zero',
       ![shown.rho, shown.parts, shown.xe].some((t) => /(^|[^\d])-0(\.0+)?(?![\d.])/.test(t)),
       `ρ "${shown.rho}", parts "${shown.parts}", Xe "${shown.xe}"`);
+}
+
+// ── The plant historian: what Export CSV hands over ───────────────────
+/*
+ * The export used to be the chart's trace: one row per frame, the last 460
+ * frames. A reader who left the plant running for a fortnight exported its
+ * last 12.8 hours of cold, flat shutdown — 460 rows at 558 K — while the
+ * header reported 40% of the cladding oxidised and 445 kg of hydrogen that
+ * not one row showed being made. The row spacing was whatever the speed
+ * slider said, and the file carried eight of the panel's fifteen readouts
+ * and none of the events.
+ *
+ * These go through the real button and the real download, and hold the file
+ * to the model it came from.
+ */
+async function grab(pg) {
+  const [dl] = await Promise.all([
+    pg.waitForEvent('download', { timeout: 30000 }),
+    pg.click('#csv-btn'),
+  ]);
+  const text = fs.readFileSync(await dl.path(), 'utf8');
+  const lines = text.trim().split('\n');
+  const meta = {};
+  let i = 0;
+  for (; i < lines.length && lines[i].startsWith('#'); i++) {
+    const m = lines[i].match(/^#\s*([\w-]+)\s*=\s*(.*)$/);
+    if (m) meta[m[1]] = m[2];
+  }
+  const columns = (lines[i] || '').split(',');
+  const raw = lines.slice(i + 1).map((l) => l.split(','));
+  const rows = raw.map((f) => Object.fromEntries(columns.map((c, j) => [c, f[j]])));
+  return { name: dl.suggestedFilename(), text, meta, columns, raw, rows };
+}
+{
+  const ctx = await browser.newContext({ acceptDownloads: true, viewport: { width: 1280, height: 1000 } });
+  const pg = await ctx.newPage();
+  const perrs = [];
+  pg.on('pageerror', (e) => perrs.push(e.message));
+  await pg.goto(B, { waitUntil: 'networkidle' });
+  await pg.waitForFunction(() => !!window.__reactor);
+  const setP = (id, v) => pg.$eval('#' + id, (el, val) => {
+    el.value = String(val);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }, v);
+
+  // The reader's run: rod slider at +300, a blackout, the water back at 90
+  // minutes, and then two days left running at the top of the speed slider.
+  await setP('rod', 300);
+  await pg.evaluate(() => { const R = window.__reactor; R.reset(); R.setRunning(false); R.scram(); });
+  await setP('feed', 0); await setP('eccs', 0);
+  await pg.evaluate(() => { for (let k = 0; k < 54; k++) window.__reactor.advance(2000); });
+  await setP('feed', 100); await setP('eccs', 60);
+  await pg.evaluate(() => { for (let k = 0; k < 1728; k++) window.__reactor.advance(2000); });
+  await lang(pg, 'ko');                      // the file must not change with the reader's language
+  const csv = await grab(pg);
+  const model = await pg.evaluate(() => {
+    const R = window.__reactor, s = R.state();
+    return { t: s.t, marks: s.marks, dt: R.DT, zr: s.zr, h2: s.h2, K: R.K,
+             cols: R.historian.columns };
+  });
+
+  const t = csv.rows.map((r) => Number(r.t_s));
+  const first = csv.rows[0], last = csv.rows[csv.rows.length - 1];
+  chk('the export is the whole run since Reset, not the last 460 frames',
+      first.logged_for === 'start' && Number(first.t_s) === 0
+      && last.logged_for === 'end' && Number(last.t_s) === model.t,
+      `${csv.rows.length} rows from ${first.t_s} s (${first.logged_for}) to ${last.t_s} s (${last.logged_for}), `
+      + `plant time ${model.t} s — ${csv.name}`);
+
+  const names = { sat: 'saturation', uncover: 'uncovery', burst: 'cladding_burst', bare: 'core_bare',
+                  zr: 'cladding_melt', melt: 'fuel_melt', relocate: 'relocation', breach: 'vessel_breach' };
+  const evMissing = Object.entries(model.marks).filter(([k, at]) => {
+    const name = names[k];
+    return Number(csv.meta[`event_${name}_s`]) !== at
+      || !csv.rows.some((r) => Number(r.t_s) === at && r.logged_for.split('+').includes(name));
+  }).map(([k]) => k);
+  chk('every event is in the header timeline and has its own row, at the step it happened',
+      Object.keys(model.marks).length >= 4 && evMissing.length === 0,
+      Object.entries(model.marks).map(([k, at]) => `${names[k]} ${at} s`).join(', ')
+      + (evMissing.length ? ` — missing ${evMissing.join(', ')}` : ''));
+
+  const inAccident = t.filter((x) => x <= 6000).length;
+  const perHourAccident = inAccident / (6000 / 3600);
+  const perHourAfter = (csv.rows.length - inAccident) / ((model.t - 6000) / 3600);
+  chk('and the accident itself is written densely, the shutdown after it sparsely',
+      inAccident > 500 && csv.rows.length < 6000 && perHourAccident > 10 * perHourAfter,
+      `${inAccident} rows in the first 100 minutes (${perHourAccident.toFixed(0)}/h), `
+      + `${csv.rows.length - inAccident} in the ${((model.t - 6000) / 3600).toFixed(1)} h after (${perHourAfter.toFixed(0)}/h) — `
+      + `most of those the xenon pit, written at 10 pcm`);
+
+  /* A plant holding steady writes nothing but a heartbeat each hour, so a
+     quiet stretch in the file still says that it was quiet. */
+  const steady = await pg.evaluate(() => {
+    const R = window.__reactor;
+    const set = (id, v) => { const el = document.getElementById(id); el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); };
+    set('rod', 0); set('feed', 100); set('eccs', 0);
+    R.reset();
+    for (let k = 0; k < 6 * 3600 * 20 / 2000; k++) R.advance(2000);
+    return R.historian.log().rows.map((r) => r[1]);
+  });
+  chk('and a plant holding steady writes one heartbeat an hour and nothing else',
+      steady.length === 7 && steady[0] === 'start' && steady.slice(1).every((w) => w === 'heartbeat'),
+      `six hours at power: ${steady.join(', ')}`);
+
+  chk('with every one of the panel\'s quantities a column, in units the names state',
+      csv.columns.join(',') === model.cols.join(',')
+      && csv.raw.every((f) => f.length === csv.columns.length)
+      && ['hydrogen_kg', 'zr_oxidised_fraction', 'T_lower_head_K', 'water_kg', 'relocated_fraction',
+          'rod_pcm', 'doppler_pcm', 'moderator_pcm', 'xenon_change_pcm', 'omega_measured_per_s']
+        .every((c) => csv.columns.includes(c)),
+      `${csv.columns.length} columns`);
+
+  const COND = new Set(['vessel_breach', 'core_relocated', 'fuel_melting', 'cladding_melting', 'cladding_burst',
+                        'core_uncovering', 'core_damaged_cooled', 'prompt_critical', 'supercritical',
+                        'subcritical', 'critical']);
+  chk('and the condition is a machine token, not the reader\'s language',
+      csv.rows.every((r) => COND.has(r.condition)),
+      [...new Set(csv.rows.map((r) => r.condition))].join(', '));
+
+  /*
+   * The file says the same thing as the model. Identities that hold for
+   * every row of a correct file and break for a column wired to the wrong
+   * quantity — the defect this class of test exists to catch.
+   */
+  const K = model.K, STOICH = 2 * 2.01588 / 91.224;
+  const bad = [];
+  for (const r of csv.rows) {
+    const v = (c) => Number(r[c]);
+    const nearly = (a, b, tol) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));
+    if (!nearly(v('fission_MW'), v('fission_fraction') * K.PF / 1e6, 1e-12)) bad.push(`fission ${r.t_s}`);
+    if (!nearly(v('decay_heat_MW'), v('decay_fraction') * K.P0 / 1e6, 1e-12)) bad.push(`decay ${r.t_s}`);
+    if (!nearly(v('rho_pcm'), v('rod_pcm') + v('doppler_pcm') + v('moderator_pcm') + v('xenon_change_pcm'), 1e-9)) bad.push(`rho ${r.t_s}`);
+    if (!nearly(v('water_kg'), v('level_fraction') * K.M_H2O, 1e-12)) bad.push(`water ${r.t_s}`);
+    if (v('zr_oxidised_fraction') > 0
+        && Math.abs(v('hydrogen_kg') / (v('zr_oxidised_fraction') * K.M_ZR * STOICH) - 1) > 0.005) bad.push(`H2 ${r.t_s}`);
+  }
+  chk('every row holds the identities the model does — powers, reactivity, water, hydrogen',
+      bad.length === 0, bad.slice(0, 4).join(', ') || `${csv.rows.length} rows`);
+
+  const steps = t.map((x) => x / model.dt);
+  const offGrid = steps.filter((k) => Math.abs(k - Math.round(k)) > 1e-6).length;
+  const ugly = csv.rows.filter((r) => !/^\d+(\.\d{1,2})?$/.test(r.t_s)).length;
+  chk('the clock is the step count — no drift, and no float noise in the times',
+      offGrid === 0 && ugly === 0,
+      `${offGrid} times off the 0.05 s grid, ${ugly} printed with float noise; e.g. ${csv.rows[Math.floor(csv.rows.length / 2)].t_s}`);
+  chk('and the values are written at full precision, as the site writes all of them',
+      csv.rows.some((r) => (r.T_coolant_K.split('.')[1] || '').length > 6),
+      csv.rows[1].T_coolant_K);
+
+  // Same run, any speed: the log runs on the step, not the frame.
+  const runAt = (chunk) => pg.evaluate((c) => {
+    const R = window.__reactor;
+    const set = (id, v) => { const el = document.getElementById(id); el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); };
+    set('rod', 0); set('feed', 100); set('eccs', 0);
+    R.reset(); R.scram(); set('feed', 0);
+    const total = 2 * 3600 * 20;
+    for (let k = 0; k < total / c; k++) R.advance(c);
+    return JSON.stringify(R.historian.log().rows);
+  }, chunk);
+  const slow = await runAt(20), fast = await runAt(2000);
+  chk('the same run writes the same rows at any speed',
+      slow === fast && JSON.parse(slow).length > 1000,
+      `${JSON.parse(slow).length} rows at 20 steps a frame, ${JSON.parse(fast).length} at 2000, `
+      + `${slow === fast ? 'identical' : 'different'}`);
+
+  /*
+   * And the log never lets a quantity drift past its deadband unrecorded:
+   * after every single step of a blackout, everything the deadbands watch is
+   * within its band of the last row written.
+   */
+  const drift = await pg.evaluate(() => {
+    const R = window.__reactor, K = R.K, d = R.historian.deadband, C = R.historian.columns;
+    const col = Object.fromEntries(C.map((c, i) => [c, i]));
+    const set = (id, v) => { const el = document.getElementById(id); el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); };
+    set('rod', 0); set('feed', 100); set('eccs', 0);
+    R.reset(); R.scram(); set('feed', 0);
+    let worst = 0, worstWhat = '', worstAt = 0;
+    const note = (x, what, s) => { if (x > worst) { worst = x; worstWhat = what; worstAt = s.t; } };
+    for (let k = 0; k < 3 * 3600 * 20; k++) {
+      R.advance(1);
+      const s = R.state(), log = R.historian.log(), last = log.rows[log.rows.length - 1], g = log.scale;
+      const rel = (a, b) => Math.abs(Math.log(a / b));
+      note(rel(s.TFpeak, last[col.T_fuel_peak_K]) / (d.temperature * g), 'T_fuel_peak', s);
+      note(rel(s.TF, last[col.T_fuel_mean_K]) / (d.temperature * g), 'T_fuel_mean', s);
+      note(rel(s.TL, last[col.T_clad_peak_K]) / (d.temperature * g), 'T_clad', s);
+      note(rel(s.TC, last[col.T_coolant_K]) / (d.temperature * g), 'T_coolant', s);
+      note(rel(s.TS, last[col.T_lower_head_K]) / (d.temperature * g), 'T_head', s);
+      note(Math.abs(s.n - last[col.fission_fraction]) * K.PF / 1e6 / (d.fissionMW * g), 'fission_MW', s);
+      if (s.n > 1e-12 && last[col.fission_fraction] > 1e-12)
+        note(Math.abs(Math.log10(s.n / last[col.fission_fraction])) / (d.fissionLog10 * g), 'fission_log', s);
+      note(rel(s.pDec, last[col.decay_heat_MW] * 1e6) / (d.decayHeat * g), 'decay', s);
+      note(Math.abs(s.rho * 1e5 - last[col.rho_pcm]) / (d.rhoPcm * g), 'rho', s);
+      note(Math.abs(s.m / K.M_H2O - last[col.level_fraction]) / (d.level * g), 'level', s);
+      note(Math.abs(s.zr / K.M_ZR - last[col.zr_oxidised_fraction]) / (d.zr * g), 'zr', s);
+      note(Math.abs(s.slumped - last[col.slumped_fraction]) / (d.core * g), 'slumped', s);
+      note(Math.abs(s.cor.mass - last[col.relocated_fraction]) / (d.core * g), 'relocated', s);
+      note((s.t - last[col.t_s]) / (d.heartbeat * g), 'heartbeat', s);
+    }
+    return { worst, worstWhat, worstAt, rows: R.historian.log().rows.length };
+  });
+  chk('nothing ever drifts past its deadband between rows',
+      drift.worst < 1,
+      `largest unrecorded move ${(100 * drift.worst).toFixed(1)}% of its band (${drift.worstWhat} at ${drift.worstAt.toFixed(2)} s), `
+      + `over 216 000 steps and ${drift.rows} rows`);
+
+  /*
+   * Bounded. Past its cap the log thins itself — every other ordinary row
+   * goes and the deadbands double — and keeps the first row and every
+   * event. Real runs do not reach the cap, so this lowers it to make the
+   * path run at all rather than leave it unexercised.
+   */
+  await pg.evaluate(() => {
+    const R = window.__reactor;
+    const set = (id, v) => { const el = document.getElementById(id); el.value = String(v); el.dispatchEvent(new Event('input', { bubbles: true })); };
+    set('rod', 0); set('feed', 100); set('eccs', 0);
+    R.reset(); R.historian.log().cap = 300; R.scram(); set('feed', 0);
+    for (let k = 0; k < 3 * 3600 * 20 / 2000; k++) R.advance(2000);
+  });
+  const thin = await grab(pg);
+  const thinMarks = await pg.evaluate(() => window.__reactor.state().marks);
+  const kept = Object.keys(thinMarks).every((k) => thin.rows.some((r) => r.logged_for.split('+').includes(names[k])));
+  chk('past its cap the log thins itself and keeps the start and every event',
+      thin.rows.length <= 302 && Number(thin.meta.thinned) >= 1 && kept
+      && thin.rows[0].logged_for === 'start'
+      && Number(thin.meta.deadband_rho_pcm) === 10 * 2 ** Number(thin.meta.thinned),
+      `${thin.rows.length} rows, thinned ${thin.meta.thinned}×, ρ deadband now ${thin.meta.deadband_rho_pcm} pcm, `
+      + `${Object.keys(thinMarks).length} events ${kept ? 'all kept' : 'NOT all kept'}`);
+
+  chk('the export page threw nothing', perrs.length === 0, perrs.slice(0, 2).join(' | '));
+  await ctx.close();
 }
 
 // ── Reset, reduced motion, and the languages ──────────────────────────
