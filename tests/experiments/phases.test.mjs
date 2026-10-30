@@ -102,8 +102,20 @@ const MK = `const M = window.__md;
   chk('ψ₆ falls as the system is heated',
       at(0.15).psi > at(0.45).psi && at(0.45).psi > at(1.50).psi,
       r.map(x=>`T${x.target}:${x.psi.toFixed(2)}`).join(' '));
+  /*
+   * Through the crystal, the liquid and the hot liquid — not through 0.45.
+   * A hundred particles at T* = 0.45 almost always carry a defect that
+   * diffuses: thirty replicates gave D from 4.6e-4 to 2.7e-2, never below
+   * zero. But now and then they form a clean crystal, and since #101 the
+   * readout is a slope, which in a clean crystal is zero with noise of either
+   * sign — CI caught D(0.45) = −1.4e-4 against D(0.15) = 1.3e-5. Asking
+   * D(0.15) < D(0.45) then compares two zeros, and it only ever held because
+   * the old chord was positive by construction. The three links kept here
+   * held thirty times in thirty with the narrowest margin a factor of 1.6
+   * (D(0.8) at most 0.091, D(3.0) at least 0.149).
+   */
   chk('diffusion rises as the system is heated',
-      at(0.15).D < at(0.45).D && at(0.45).D < at(0.80).D && at(0.80).D < at(3.00).D,
+      at(0.15).D < at(0.80).D && at(0.80).D < at(3.00).D,
       r.map(x=>`T${x.target}:${x.D.toExponential(1)}`).join(' '));
   // Compared over the same observation window, so this is a ratio of two
   // things measured the same way rather than of a transport coefficient

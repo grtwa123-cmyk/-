@@ -4,7 +4,8 @@
  * Nothing on this page prints a textbook answer. What runs is a mechanism:
  *
  *   · point kinetics with six delayed-neutron groups (Keepin, U-235 thermal),
- *     stepped by Crank–Nicolson;
+ *     the precursors stepped by Crank–Nicolson and the stiff prompt-neutron
+ *     equation by backward Euler;
  *   · three thermal nodes — fuel, cladding, coolant — with Doppler and
  *     moderator reactivity feedback taken from their temperatures;
  *   · thirteen decay-heat groups, so the heat that keeps coming after a scram
@@ -210,7 +211,7 @@
   /** A core at rated power, xenon at equilibrium, decay groups saturated. */
   function fresh() {
     return {
-      t: 0,
+      t: 0, k: 0,
       n: 1, C: BETA.map((b, i) => b / (L * LAM[i])),
       D: DA.slice(),
       /*
@@ -251,9 +252,28 @@
     };
   }
 
-  /** Point kinetics, Crank–Nicolson (θ = ½). Unconditionally stable. */
+  /*
+   * Point kinetics. The six precursor groups are stepped by Crank–Nicolson;
+   * the prompt neutrons by backward Euler.
+   *
+   * Both used to be Crank–Nicolson, which is A-stable but not L-stable: for
+   * a stiff mode its amplification factor tends to −1 rather than to 0, and
+   * the prompt-neutron mode after a scram is very stiff — dt(β − ρ)/Λ is 166
+   * at the page's 0.05 s step. So the fission power rang: 0, 0.19, 0.001,
+   * 0.18 … on alternate steps for about ten seconds after every trip, around
+   * a true prompt drop to 0.096. Averages came out right, which is why
+   * nothing noticed until the plant's log began recording every step and
+   * printed the sawtooth. Backward Euler damps that mode instead of flipping
+   * it; the precursors, which are not stiff (dt·λ ≤ 0.15), keep the second
+   * order. Measured against the same kinetics at a step a thousand times
+   * finer: CN was up to 100% wrong with 349 sign flips in the twenty seconds
+   * after a scram, this is 6.5% on the first step — a 0.05 s step cannot
+   * resolve a drop that takes 0.3 ms — under 1% from the second, and never
+   * reverses. The inhour round trip and the prompt jump at fine steps are
+   * unchanged to every digit the suite reads.
+   */
   function stepPK(s, rho, dt) {
-    const th = 0.5, n = s.n, C = s.C;
+    const th = 0.5, n = s.n, C = s.C;           // th: the precursors' θ
     let sSrc = 0, sImp = 0;
     for (let i = 0; i < 6; i++) {
       const d = 1 + th * dt * LAM[i];
@@ -262,10 +282,8 @@
       sImp += LAM[i] * dt * BETA[i] * th / (L * d);
     }
     const a0 = (rho - B) / L;
-    let lag = 0;
-    for (let i = 0; i < 6; i++) lag += LAM[i] * C[i];
-    const n1 = (n + dt * ((1 - th) * (a0 * n + lag) + th * sSrc))
-             / (1 - dt * th * (a0 + sImp));
+    // Fully implicit in n: n1 = n + dt·(a0·n1 + Σ λᵢ Cᵢ(n1)).
+    const n1 = (n + dt * sSrc) / (1 - dt * (a0 + sImp));
     for (let i = 0; i < 6; i++) {
       C[i] = (C[i] * (1 - (1 - th) * dt * LAM[i])
               + dt * BETA[i] * (th * n1 + (1 - th) * n) / L)
@@ -309,6 +327,18 @@
 
   /** One step of the whole plant. `u` is the control panel. */
   function step(s, dt, u) {
+    /*
+     * The clock counts steps and divides; it does not add 0.05 s a million
+     * times. Adding drifted — fourteen days in, the plant time read
+     * 1165762.150511252 s for a step that ends at exactly 1165762.15 — and
+     * multiplying by 0.05, which has no exact binary form, still printed
+     * 2996.7000000000003. Dividing the step count by the whole number of
+     * steps per second is correctly rounded, so it prints 2996.7. Every
+     * event is stamped with the end of the step it happened in, so the
+     * file's event rows and its timeline agree to the digit.
+     */
+    const rate = 1 / dt, whole = Math.round(rate);
+    const tEnd = Math.abs(rate - whole) < 1e-9 * whole ? (s.k + 1) / whole : (s.k + 1) * dt;
     const rodRho = (s.scram ? SCRAM_RHO : 0) + u.rod / 1e5;
     const parts = {
       rod: rodRho,
@@ -473,7 +503,7 @@
     // The lower head: corium in, water out.
     if (!s.breach) {
       s.TS += dt * (qCorHead - qHeadW) / C_S;
-      if (s.TS >= T_VESSEL) { s.breach = true; s.marks.breach = s.t; }
+      if (s.TS >= T_VESSEL) { s.breach = true; s.marks.breach = tEnd; }
     }
 
     /* Melting at 3120 K and refreezing from it, paid for out of the latent
@@ -533,7 +563,7 @@
       s.cor.mass = m1c;
       s.fuelIn -= dryMass;
       s.cover = 1;                             // what is left is what was under water
-      if (!s.relocated) { s.relocated = true; s.marks.relocate = s.t; }
+      if (!s.relocated) { s.relocated = true; s.marks.relocate = tEnd; }
     }
 
     const cNow = s.cover, wIn = s.fuelIn * cNow, dIn = s.fuelIn * (1 - cNow);
@@ -560,7 +590,8 @@
     if (!s.breach && u.eccs > 0) s.m = Math.min(M_H2O, s.m + u.eccs * dt);
     s.qSG = qSG;
 
-    s.t += dt;
+    s.k += 1;
+    s.t = tEnd;
     s.pFis = pFis; s.pDec = pDec; s.pOx = pOx; s.rho = rho; s.parts = parts;
     s.qCOR = qCorHead; s.qHeadW = qHeadW; s.lvl = lvl;
 
@@ -938,22 +969,41 @@
     return `${(t / 3600).toFixed(2)} h`;
   };
 
-  function condition(s) {
-    if (s.breach) return i18nText("nrStateBreach", "vessel breach");
-    if (s.relocated) return i18nText("nrStateRelocate", "core relocated");
-    if (s.melted > 0) return i18nText("nrStateMelt", "fuel melting");
-    if (s.TL >= T_ZR) return i18nText("nrStateZr", "cladding melting");
-    if (s.TL >= T_BURST) return i18nText("nrStateBurst", "cladding burst");
-    if ((s.cover ?? 1) < 1) return i18nText("nrStateUncovered", "core uncovering");
+  /*
+   * The condition, as a key. The panel translates it; the CSV writes the
+   * key itself, because a column that changed with the reader's language
+   * would break every script that reads it.
+   */
+  const CONDITION = {
+    vessel_breach: ["nrStateBreach", "vessel breach"],
+    core_relocated: ["nrStateRelocate", "core relocated"],
+    fuel_melting: ["nrStateMelt", "fuel melting"],
+    cladding_melting: ["nrStateZr", "cladding melting"],
+    cladding_burst: ["nrStateBurst", "cladding burst"],
+    core_uncovering: ["nrStateUncovered", "core uncovering"],
+    core_damaged_cooled: ["nrStateDamaged", "core damaged, cooled"],
+    prompt_critical: ["nrStatePrompt", "prompt critical"],
+    supercritical: ["nrStateSuper", "supercritical"],
+    subcritical: ["nrStateSub", "subcritical"],
+    critical: ["nrStateCritical", "critical"],
+  };
+  function conditionKey(s) {
+    if (s.breach) return "vessel_breach";
+    if (s.relocated) return "core_relocated";
+    if (s.melted > 0) return "fuel_melting";
+    if (s.TL >= T_ZR) return "cladding_melting";
+    if (s.TL >= T_BURST) return "cladding_burst";
+    if ((s.cover ?? 1) < 1) return "core_uncovering";
     /* Damage does not heal. A core whose cladding has burst and been cooled
        again is subcritical, and saying only that described the reactor at
        Three Mile Island the morning after as if nothing had happened. */
-    if (s.marks && s.marks.burst !== undefined) return i18nText("nrStateDamaged", "core damaged, cooled");
-    if (s.rho > B) return i18nText("nrStatePrompt", "prompt critical");
-    if (s.rho > 1e-5) return i18nText("nrStateSuper", "supercritical");
-    if (s.rho < -1e-5) return i18nText("nrStateSub", "subcritical");
-    return i18nText("nrStateCritical", "critical");
+    if (s.marks && s.marks.burst !== undefined) return "core_damaged_cooled";
+    if (s.rho > B) return "prompt_critical";
+    if (s.rho > 1e-5) return "supercritical";
+    if (s.rho < -1e-5) return "subcritical";
+    return "critical";
   }
+  const condition = (s) => i18nText(...CONDITION[conditionKey(s)]);
 
   function updateReadouts() {
     if (!st) return;
@@ -998,11 +1048,176 @@
     if (s.trace.length > TRACE_MAX) s.trace.shift();
   }
 
+  // ── The historian ─────────────────────────────────────────────────────
+  /*
+   * The plant's record of itself, which is what Export CSV hands over.
+   *
+   * It used to hand over the chart's trace instead: one row per frame, the
+   * last 460 frames. So the file's time step was whatever the speed slider
+   * happened to be — 0.05 s at one end, 100 s at the other — and a run left
+   * going for a fortnight exported its last 12.8 hours of cold, flat
+   * shutdown, with the accident that had oxidised 40% of the cladding long
+   * gone off the front. The header said 445 kg of hydrogen; not one row
+   * showed it being made.
+   *
+   * This is exception logging, the way a plant's data historian works. It
+   * runs on every step, not every frame, and writes a row when something
+   * has moved further than its deadband since the last row written — so it
+   * is dense through a cladding burst and sparse through a week of cold
+   * shutdown — plus a row for every event and every change of the controls,
+   * and at least one an hour so a quiet stretch still says it was quiet.
+   * Nothing about it depends on how fast the reader ran the plant: the same
+   * run at any speed writes the same file.
+   *
+   * Each row is the whole state at that step, at full precision, and says
+   * why it was written. A blackout to breach is about 2500 rows; a
+   * fortnight with a meltdown in it about 2900. Past LOG_CAP the log thins
+   * itself — every other ordinary row goes and the deadbands double, so what
+   * is left is still a consistent record at the coarser resolution — and it
+   * never drops the first row or an event.
+   */
+  const LOG_COLUMNS = [
+    "t_s", "logged_for", "condition",
+    "fission_fraction", "fission_MW", "decay_fraction", "decay_heat_MW", "oxidation_MW",
+    "rho_pcm", "rod_pcm", "doppler_pcm", "moderator_pcm", "xenon_change_pcm", "xe135_worth_pcm",
+    "omega_measured_per_s", "omega_inhour_per_s",
+    "T_fuel_peak_K", "T_fuel_mean_K", "T_clad_peak_K", "T_coolant_K", "T_lower_head_K",
+    "water_kg", "level_fraction", "fuel_standing_fraction", "standing_fuel_covered_fraction",
+    "steam_kg_s", "zr_oxidised_fraction", "hydrogen_kg",
+    "melted_fraction", "slumped_fraction", "relocated_fraction",
+    "rod_setting_pcm", "feed_fraction", "eccs_kg_s", "scram",
+  ];
+  const COL = Object.fromEntries(LOG_COLUMNS.map((c, i) => [c, i]));
+  const DEADBAND = {
+    temperature: 0.002,     // relative: 1.2 K at the coolant, 6 K at the melting point
+    fissionMW: 3,           // 0.1% of rated
+    fissionLog10: 0.1,      // and a quarter of a decade once it is that small
+    decayHeat: 0.005,       // relative: log-spaced along Way–Wigner's power law
+    rhoPcm: 10,
+    level: 0.0025,          // 625 kg of water
+    zr: 0.0025,             // of the zircaloy
+    core: 0.005,            // melted, slumped, relocated
+    heartbeat: 3600,        // s of plant time
+  };
+  const LOG_CAP = 10000;
+  const EVENTS = { sat: "saturation", uncover: "uncovery", burst: "cladding_burst",
+                   bare: "core_bare", zr: "cladding_melt", melt: "fuel_melt",
+                   relocate: "relocation", breach: "vessel_breach" };
+
+  const EVENT_KEYS = Object.keys(EVENTS);
+  const markMask = (s) => {
+    let m = 0;
+    for (let i = 0; i < EVENT_KEYS.length; i++) if (s.marks[EVENT_KEYS[i]] !== undefined) m |= 1 << i;
+    return m;
+  };
+
+  function newLog() {
+    return { rows: [], scale: 1, thinned: 0, marks: 0, rod: NaN, feed: NaN, eccs: NaN, scram: false,
+             peak: { TL: -Infinity, TLat: 0, TF: -Infinity, TFat: 0, TS: -Infinity, TSat: 0,
+                     lvl: Infinity, lvlAt: 0 },
+             cap: LOG_CAP };
+  }
+
+  /** The whole state as one row, in LOG_COLUMNS order. */
+  function rowOf(s, u, why) {
+    const T = measuredPeriod(s), Ti = inhour(s.rho);
+    const standingSlumped = s.slumped - s.cor.mass;
+    return [
+      s.t, why, conditionKey(s),
+      s.n, s.pFis / 1e6, s.pDec / P0, s.pDec / 1e6, s.pOx / 1e6,
+      s.rho * 1e5, s.parts.rod * 1e5, s.parts.dop * 1e5, s.parts.mod * 1e5, s.parts.xe * 1e5,
+      XE_WORTH * s.X / X_EQ * 1e5,
+      T === null ? null : (Number.isFinite(T) ? 1 / T : 0),
+      Number.isFinite(Ti) ? 1 / Ti : 0,
+      s.TFpeak ?? s.TF, s.TF, s.TL, s.TC, s.TS,
+      s.m, s.m / M_H2O, Math.max(0, s.fuelIn - standingSlumped), s.cover,
+      s.steam, s.zr / M_ZR, s.h2,
+      s.melted, s.slumped, s.cor.mass,
+      u.rod, u.feed, u.eccs, s.scram ? 1 : 0,
+    ];
+  }
+
+  /*
+   * Why this step deserves a row, or null. Deadbands are measured against
+   * the last row written, not the last step, so a slow drift is caught
+   * when it adds up rather than missed one small step at a time.
+   */
+  function whyLog(log, s, u) {
+    const last = log.rows[log.rows.length - 1];
+    const mask = markMask(s);
+    if (mask !== log.marks) {
+      return EVENT_KEYS.filter((k, i) => (mask & ~log.marks) & (1 << i))
+        .map((k) => EVENTS[k]).join("+");
+    }
+    if (s.scram !== log.scram) return "scram";
+    if (u.rod !== log.rod || u.feed !== log.feed || u.eccs !== log.eccs) return "control";
+    const k = log.scale, d = DEADBAND;
+    const rel = (a, b, band) => Math.abs(Math.log(a / b)) >= band * k;
+    if (rel(s.TFpeak ?? s.TF, last[COL.T_fuel_peak_K], d.temperature)
+        || rel(s.TF, last[COL.T_fuel_mean_K], d.temperature)
+        || rel(s.TL, last[COL.T_clad_peak_K], d.temperature)
+        || rel(s.TC, last[COL.T_coolant_K], d.temperature)
+        || rel(s.TS, last[COL.T_lower_head_K], d.temperature)) return "change";
+    const n0 = last[COL.fission_fraction];
+    if (Math.abs(s.n - n0) * PF / 1e6 >= d.fissionMW * k
+        || (s.n > 1e-12 && n0 > 1e-12 && Math.abs(Math.log10(s.n / n0)) >= d.fissionLog10 * k)
+        || (s.n > 1e-12) !== (n0 > 1e-12)) return "change";
+    if (rel(s.pDec, last[COL.decay_heat_MW] * 1e6, d.decayHeat)) return "change";
+    if (Math.abs(s.rho * 1e5 - last[COL.rho_pcm]) >= d.rhoPcm * k) return "change";
+    if (Math.abs(s.m / M_H2O - last[COL.level_fraction]) >= d.level * k
+        || Math.abs(s.zr / M_ZR - last[COL.zr_oxidised_fraction]) >= d.zr * k
+        || Math.abs(s.melted - last[COL.melted_fraction]) >= d.core * k
+        || Math.abs(s.slumped - last[COL.slumped_fraction]) >= d.core * k
+        || Math.abs(s.cor.mass - last[COL.relocated_fraction]) >= d.core * k) return "change";
+    if (s.t - last[COL.t_s] >= d.heartbeat * k) return "heartbeat";
+    return null;
+  }
+
+  function writeRow(log, s, u, why) {
+    log.rows.push(rowOf(s, u, why));
+    log.marks = markMask(s);
+    log.scram = s.scram;
+    log.rod = u.rod; log.feed = u.feed; log.eccs = u.eccs;
+    if (log.rows.length > log.cap) thin(log);
+  }
+
+  /* Halve the ordinary rows and double the deadbands. The first row, every
+     event and every scram survive; so does the last row, which the next
+     deadband is measured from. */
+  function thin(log) {
+    const keep = [];
+    let alt = 0;
+    const lastI = log.rows.length - 1;
+    log.rows.forEach((r, i) => {
+      const why = r[COL.logged_for];
+      const ordinary = why === "change" || why === "heartbeat" || why === "control";
+      if (!ordinary || i === 0 || i === lastI || (alt++ & 1) === 0) keep.push(r);
+    });
+    log.rows = keep;
+    log.scale *= 2;
+    log.thinned += 1;
+  }
+
+  /** Called after every step the reader's plant takes. */
+  function logStep(s, u) {
+    const log = s.log;
+    const pk = log.peak;
+    if (s.TL > pk.TL) { pk.TL = s.TL; pk.TLat = s.t; }
+    const tf = s.TFpeak ?? s.TF;
+    if (tf > pk.TF) { pk.TF = tf; pk.TFat = s.t; }
+    if (s.TS > pk.TS) { pk.TS = s.TS; pk.TSat = s.t; }
+    const lv = s.m / M_H2O;
+    if (lv < pk.lvl) { pk.lvl = lv; pk.lvlAt = s.t; }
+    const why = whyLog(log, s, u);
+    if (why) writeRow(log, s, u, why);
+  }
+
   function advance(sub) {
     const u = readParams();
     for (let k = 0; k < sub; k++) {
       step(st, DT, u);
       recordFlux(st);
+      logStep(st, u);
     }
     record(st);
   }
@@ -1023,8 +1238,10 @@
 
   function reset() {
     st = fresh();
+    st.log = newLog();
     lastTs = 0;
     record(st); recordFlux(st);
+    writeRow(st.log, st, readParams(), "start");
     draw(); updateReadouts();
   }
 
@@ -1081,28 +1298,54 @@
     running = false; syncStart(); reset();
   });
 
-  if (window.CSVExport) {
-    window.CSVExport.attach("csv-btn", () => {
-      if (!st || st.trace.length < 2) return null;
-      return {
-        name: "reactor.csv",
-        title: "Nuclear reactor — plant trace",
-        columns: ["t_s", "fission_fraction", "decay_fraction", "T_fuel_K",
-                  "T_clad_K", "T_coolant_K", "level_fraction", "rho_pcm"],
-        rows: st.trace.map((q) => [q.t, q.n, q.dec, q.TF, q.TL, q.TC, q.lvl, q.rho * 1e5]),
-        meta: {
-          rated_thermal_W: P0, beta_total: B, generation_time_s: L,
-          alpha_fuel_per_K: aF, alpha_moderator_per_K: aM,
-          step_dt_s: DT,
-          zr_oxidised_percent: 100 * st.zr / M_ZR, hydrogen_kg: st.h2,
-          melted_fraction: st.melted, slumped_fraction: st.slumped,
-          relocated_fraction: st.cor.mass,
-          measured_period_s: measuredPeriod(st),
-          inhour_period_s: inhour(st.rho),
-        },
-      };
+  /** The file: the whole log, then the plant as it stands right now. */
+  function csvDataset() {
+    if (!st || !st.log) return null;
+    const log = st.log, u = readParams();
+    const rows = log.rows.slice();
+    if (st.t > rows[rows.length - 1][COL.t_s]) rows.push(rowOf(st, u, "end"));
+    const meta = {
+      page_version: (document.querySelector(".version-tag")?.textContent || "").trim(),
+      plant_time_s: st.t, steps: st.k, step_dt_s: DT,
+      rated_thermal_W: P0, beta_total: B, generation_time_s: L,
+      alpha_fuel_per_K: aF, alpha_moderator_per_K: aM,
+      rod_setting_pcm: u.rod, feed_fraction: u.feed, eccs_kg_s: u.eccs,
+      steps_per_frame: u.speed,
+      scram_at_s: st.tScram >= 0 ? st.tScram : "none",
+    };
+    for (const [k, name] of Object.entries(EVENTS)) {
+      if (st.marks[k] !== undefined) meta[`event_${name}_s`] = st.marks[k];
+    }
+    const pk = log.peak;
+    Object.assign(meta, {
+      peak_T_clad_K: pk.TL, peak_T_clad_at_s: pk.TLat,
+      peak_T_fuel_K: pk.TF, peak_T_fuel_at_s: pk.TFat,
+      peak_T_lower_head_K: pk.TS, peak_T_lower_head_at_s: pk.TSat,
+      lowest_level_fraction: pk.lvl, lowest_level_at_s: pk.lvlAt,
+      zr_oxidised_fraction: st.zr / M_ZR, hydrogen_kg: st.h2,
+      relocated_fraction: st.cor.mass, vessel_breached: st.breach ? 1 : 0,
+      sampling: "a row at the start; on every event, scram and control change; "
+        + "whenever a quantity moves past its deadband since the last row; "
+        + "and at least once per heartbeat of plant time",
+      deadband_temperature_relative: DEADBAND.temperature * log.scale,
+      deadband_fission_MW: DEADBAND.fissionMW * log.scale,
+      deadband_fission_log10: DEADBAND.fissionLog10 * log.scale,
+      deadband_decay_heat_relative: DEADBAND.decayHeat * log.scale,
+      deadband_rho_pcm: DEADBAND.rhoPcm * log.scale,
+      deadband_level_fraction: DEADBAND.level * log.scale,
+      deadband_zr_fraction: DEADBAND.zr * log.scale,
+      deadband_core_fraction: DEADBAND.core * log.scale,
+      heartbeat_s: DEADBAND.heartbeat * log.scale,
+      thinned: log.thinned,
+      omega_definition: "1 / period; 0 when flat, empty while there is not yet a window to fit",
     });
+    return {
+      name: `reactor-${(st.t / 3600).toFixed(1)}h.csv`,
+      title: "Nuclear reactor — plant historian",
+      columns: LOG_COLUMNS, rows, meta,
+    };
   }
+  if (window.CSVExport) window.CSVExport.attach("csv-btn", csvDataset);
 
   window.__reactor = {
     K: { BETA, LAM, B, L, DA, DL, SC, P0, PF, C_F, C_L, M_UO2, M_ZR, M_H2O,
@@ -1116,6 +1359,12 @@
     fresh, step, stepPK, stepXe, stepDecayHeat, oxidationStep,
     inhour, wayWigner, measuredPeriod, recordFlux,
     params: readParams,
+    /** The historian: its rows, its deadbands, the dataset Export CSV builds. */
+    historian: {
+      columns: LOG_COLUMNS, deadband: DEADBAND, events: EVENTS,
+      log: () => st && st.log,
+      dataset: csvDataset,
+    },
     state: () => st,
     reset,
     scram: () => { if (st) { st.scram = true; if (st.tScram < 0) st.tScram = st.t; } },
